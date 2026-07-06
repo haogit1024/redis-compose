@@ -1,26 +1,72 @@
 package com.czh.redis
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
-import org.jetbrains.compose.resources.painterResource
-
-import redis_compose.shared.generated.resources.Res
-import redis_compose.shared.generated.resources.compose_multiplatform
+import androidx.compose.ui.unit.dp
+import java.awt.Cursor
 
 @Composable
 @Preview
 fun App() {
+    var leftPanelWidth by remember { mutableStateOf(300f) }
+    val dividerWidth = 4f
+    val density = LocalDensity.current
 
+    Row(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .width(leftPanelWidth.dp)
+                .fillMaxHeight()
+                .background(Color(0xFFF5F5F5)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text("Left Panel", style = MaterialTheme.typography.titleMedium)
+        }
+
+        Box(
+            modifier = Modifier
+                .width(dividerWidth.dp)
+                .fillMaxHeight()
+                .background(Color.Gray)
+                .pointerHoverIcon(PointerIcon(Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR)))
+                .pointerInput(Unit) {
+                    detectDragGestures { change, dragAmount ->
+                        change.consume()
+                        val deltaDp = with(density) { dragAmount.x.toDp().value }
+                        leftPanelWidth = (leftPanelWidth + deltaDp).coerceIn(100f, 800f)
+                    }
+                }
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight()
+                .background(Color(0xFFE0E0E0)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text("Right Panel", style = MaterialTheme.typography.titleMedium)
+        }
+    }
 }
