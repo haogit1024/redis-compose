@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,6 +22,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.czh.redis.ui.Left
+import com.czh.redis.ui.Right
 import java.awt.Cursor
 
 @Composable
@@ -37,11 +37,10 @@ fun App() {
         Box(
             modifier = Modifier
                 .width(leftPanelWidth.dp)
-                .fillMaxHeight()
-                .background(Color(0xFFF5F5F5)),
+                .fillMaxHeight(),
             contentAlignment = Alignment.Center,
         ) {
-            Text("Left Panel", style = MaterialTheme.typography.titleMedium)
+            Left()
         }
 
         Box(
@@ -62,11 +61,10 @@ fun App() {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight()
-                .background(Color(0xFFE0E0E0)),
+                .fillMaxHeight(),
             contentAlignment = Alignment.Center,
         ) {
-            Text("Right Panel", style = MaterialTheme.typography.titleMedium)
+            Right()
         }
     }
 }
