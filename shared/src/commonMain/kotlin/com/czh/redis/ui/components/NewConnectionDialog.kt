@@ -18,6 +18,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.border
+import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -38,7 +39,7 @@ fun NewConnectionDialog(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                androidx.compose.material3.Text(
+                Text(
                     text = "New Connection",
                     color = AppColors.textPrimary,
                     fontSize = 18.sp,
@@ -50,36 +51,41 @@ fun NewConnectionDialog(
                         .clickable { onDismiss() },
                     contentAlignment = Alignment.Center,
                 ) {
-                    androidx.compose.material3.Text(text = "×", color = AppColors.textSecondary, fontSize = 18.sp)
+                    Text(text = "×", color = AppColors.textSecondary, fontSize = 18.sp)
                 }
             }
 
             Spacer(modifier = Modifier.height(AppDimens.paddingLarge))
 
+            var host by remember { mutableStateOf("127.0.0.1") }
+            var port by remember { mutableStateOf("6379") }
+            var password by remember { mutableStateOf("") }
+            var username by remember { mutableStateOf("") }
+            var connectionName by remember { mutableStateOf("") }
+            var separator by remember { mutableStateOf(":") }
+
             Row(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        androidx.compose.material3.Text(text = "*", color = Color.Red)
-                        androidx.compose.material3.Text(text = "Host", color = AppColors.textPrimary)
+                        Text(text = "*", color = Color.Red)
+                        Text(text = "Host", color = AppColors.textPrimary)
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     CustomTextField(
-                        value = "127.0.0.1",
-                        onValueChange = {},
-                        readOnly = true,
+                        value = host,
+                        onValueChange = { host = it },
                     )
                 }
                 Spacer(modifier = Modifier.width(AppDimens.spacingLarge))
                 Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        androidx.compose.material3.Text(text = "*", color = Color.Red)
-                        androidx.compose.material3.Text(text = "Port", color = AppColors.textPrimary)
+                        Text(text = "*", color = Color.Red)
+                        Text(text = "Port", color = AppColors.textPrimary)
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     CustomTextField(
-                        value = "6379",
-                        onValueChange = {},
-                        readOnly = true,
+                        value = port,
+                        onValueChange = { port = it },
                     )
                 }
             }
@@ -88,21 +94,21 @@ fun NewConnectionDialog(
 
             Row(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {
-                    androidx.compose.material3.Text(text = "Password", color = AppColors.textPrimary)
+                    Text(text = "Password", color = AppColors.textPrimary)
                     Spacer(modifier = Modifier.height(4.dp))
                     CustomTextField(
-                        value = "",
-                        onValueChange = {},
+                        value = password,
+                        onValueChange = { password = it },
                         placeholder = "Auth",
                     )
                 }
                 Spacer(modifier = Modifier.width(AppDimens.spacingLarge))
                 Column(modifier = Modifier.weight(1f)) {
-                    androidx.compose.material3.Text(text = "Username", color = AppColors.textPrimary)
+                    Text(text = "Username", color = AppColors.textPrimary)
                     Spacer(modifier = Modifier.height(4.dp))
                     CustomTextField(
-                        value = "",
-                        onValueChange = {},
+                        value = username,
+                        onValueChange = { username = it },
                         placeholder = "ACL in Redis >= 6.0",
                     )
                 }
@@ -112,34 +118,33 @@ fun NewConnectionDialog(
 
             Row(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {
-                    androidx.compose.material3.Text(text = "Connection Name", color = AppColors.textPrimary)
+                    Text(text = "Connection Name", color = AppColors.textPrimary)
                     Spacer(modifier = Modifier.height(4.dp))
                     CustomTextField(
-                        value = "",
-                        onValueChange = {},
+                        value = connectionName,
+                        onValueChange = { connectionName = it },
                     )
                 }
                 Spacer(modifier = Modifier.width(AppDimens.spacingLarge))
                 Column(modifier = Modifier.weight(1f)) {
-                    androidx.compose.material3.Text(text = "Separator", color = AppColors.textPrimary)
+                    Text(text = "Separator", color = AppColors.textPrimary)
                     Spacer(modifier = Modifier.height(4.dp))
                     CustomTextField(
-                        value = ":",
-                        onValueChange = {},
-                        readOnly = true,
+                        value = separator,
+                        onValueChange = { separator = it },
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(AppDimens.paddingLarge))
 
-            Row(modifier = Modifier.fillMaxWidth()) {
-                var sshChecked by remember { mutableStateOf(false) }
-                var sslChecked by remember { mutableStateOf(false) }
-                var sentinelChecked by remember { mutableStateOf(false) }
-                var clusterChecked by remember { mutableStateOf(false) }
-                var readonlyChecked by remember { mutableStateOf(false) }
+            var sshChecked by remember { mutableStateOf(false) }
+            var sslChecked by remember { mutableStateOf(false) }
+            var sentinelChecked by remember { mutableStateOf(false) }
+            var clusterChecked by remember { mutableStateOf(false) }
+            var readonlyChecked by remember { mutableStateOf(false) }
 
+            Row(modifier = Modifier.fillMaxWidth()) {
                 CustomCheckbox(checked = sshChecked, onCheckedChange = { sshChecked = it }, label = "SSH")
                 Spacer(modifier = Modifier.width(AppDimens.spacingLarge))
                 CustomCheckbox(checked = sslChecked, onCheckedChange = { sslChecked = it }, label = "SSL")
@@ -165,7 +170,7 @@ fun NewConnectionDialog(
                         .padding(AppDimens.paddingMedium),
                     contentAlignment = Alignment.Center,
                 ) {
-                    androidx.compose.material3.Text(text = "Cancel", color = AppColors.textPrimary)
+                    Text(text = "Cancel", color = AppColors.textPrimary)
                 }
                 Spacer(modifier = Modifier.width(AppDimens.spacingMedium))
                 Box(
@@ -175,7 +180,7 @@ fun NewConnectionDialog(
                         .padding(AppDimens.paddingMedium),
                     contentAlignment = Alignment.Center,
                 ) {
-                    androidx.compose.material3.Text(text = "OK", color = Color.White)
+                    Text(text = "OK", color = Color.White)
                 }
             }
         }
