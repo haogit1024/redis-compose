@@ -38,7 +38,7 @@ fun App() {
             modifier = Modifier
                 .width(leftPanelWidth.dp)
                 .fillMaxHeight(),
-            contentAlignment = Alignment.Center,
+            contentAlignment = Alignment.TopStart,
         ) {
             Left()
         }
