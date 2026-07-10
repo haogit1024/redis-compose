@@ -10,7 +10,9 @@ import androidx.compose.ui.Modifier
 import com.czh.redis.ui.components.NewConnectionButton
 
 @Composable
-fun Left() {
+fun Left(
+    onNewConnectionClick: () -> Unit,
+) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
@@ -19,7 +21,7 @@ fun Left() {
             horizontalArrangement = Arrangement.spacedBy(AppDimens.spacingSmall),
         ) {
             NewConnectionButton(
-                onClick = {},
+                onClick = onNewConnectionClick,
                 modifier = Modifier.weight(1f),
             )
         }

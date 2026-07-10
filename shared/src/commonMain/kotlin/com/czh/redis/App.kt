@@ -24,47 +24,57 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.czh.redis.ui.Left
 import com.czh.redis.ui.Right
+import com.czh.redis.ui.components.NewConnectionDialog
 import java.awt.Cursor
 
 @Composable
 @Preview
 fun App() {
     var leftPanelWidth by remember { mutableStateOf(300f) }
+    var showDialog by remember { mutableStateOf(false) }
     val dividerWidth = 4f
     val density = LocalDensity.current
 
-    Row(modifier = Modifier.fillMaxSize()) {
-        Box(
-            modifier = Modifier
-                .width(leftPanelWidth.dp)
-                .fillMaxHeight(),
-            contentAlignment = Alignment.TopStart,
-        ) {
-            Left()
-        }
+    Box(modifier = Modifier.fillMaxSize()) {
+        Row(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .width(leftPanelWidth.dp)
+                    .fillMaxHeight(),
+                contentAlignment = Alignment.TopStart,
+            ) {
+                Left(onNewConnectionClick = { showDialog = true })
+            }
 
-        Box(
-            modifier = Modifier
-                .width(dividerWidth.dp)
-                .fillMaxHeight()
-                .background(Color.Gray)
-                .pointerHoverIcon(PointerIcon(Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR)))
-                .pointerInput(Unit) {
-                    detectDragGestures { change, dragAmount ->
-                        change.consume()
-                        val deltaDp = with(density) { dragAmount.x.toDp().value }
-                        leftPanelWidth = (leftPanelWidth + deltaDp).coerceIn(100f, 800f)
+            Box(
+                modifier = Modifier
+                    .width(dividerWidth.dp)
+                    .fillMaxHeight()
+                    .background(Color.Gray)
+                    .pointerHoverIcon(PointerIcon(Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR)))
+                    .pointerInput(Unit) {
+                        detectDragGestures { change, dragAmount ->
+                            change.consume()
+                            val deltaDp = with(density) { dragAmount.x.toDp().value }
+                            leftPanelWidth = (leftPanelWidth + deltaDp).coerceIn(100f, 800f)
+                        }
                     }
-                }
-        )
+            )
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Right()
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Right()
+            }
         }
+
+        NewConnectionDialog(
+            visible = showDialog,
+            onDismiss = { showDialog = false },
+            onConfirm = { showDialog = false },
+        )
     }
 }
