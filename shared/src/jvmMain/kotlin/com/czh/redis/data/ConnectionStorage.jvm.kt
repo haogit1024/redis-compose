@@ -1,6 +1,5 @@
 package com.czh.redis.data
 
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 
