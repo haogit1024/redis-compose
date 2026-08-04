@@ -12,7 +12,7 @@ data class RedisConnection(
     val port: String = "6379",
     val username: String = "",
     val password: String = "",
-    val separator: String = "",
+    val separator: String = ":",
     val ssh: Boolean = false,
     val ssl: Boolean = false,
     val sentinel: Boolean = false,

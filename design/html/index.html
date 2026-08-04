@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RedisCompose · 设计稿预览</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      overflow-y: auto;
+      padding: 40px 24px;
+    }
+
+    .page {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 8px;
+    }
+
+    .logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    h1 { font-size: 22px; }
+
+    .subtitle {
+      color: var(--text-secondary);
+      margin-bottom: 28px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      text-decoration: none;
+      color: var(--text);
+      transition: transform 0.15s, box-shadow 0.15s;
+      display: block;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      border-color: var(--accent);
+    }
+
+    .card-preview {
+      height: 150px;
+      background: var(--panel-alt);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-body { padding: 14px 16px; }
+
+    .card-body h3 { font-size: 14px; margin-bottom: 4px; }
+
+    .card-body p {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .card-tag {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 11px;
+    }
+
+    /* 配色板 */
+    h2 {
+      font-size: 16px;
+      margin-bottom: 12px;
+    }
+
+    .palette {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 10px;
+      margin-bottom: 36px;
+    }
+
+    .swatch {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--panel);
+    }
+
+    .swatch-color { height: 48px; }
+
+    .swatch-label {
+      padding: 6px 10px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .swatch-label b {
+      display: block;
+      color: var(--text);
+      font-size: 12px;
+    }
+
+    footer {
+      color: var(--text-secondary);
+      font-size: 12px;
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+      line-height: 1.8;
+    }
+
+    footer a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="logo">R</div>
+      <div>
+        <h1>RedisCompose 设计稿预览</h1>
+      </div>
+      <div class="tabbar-right" style="margin-left:auto;display:flex">
+        <button class="theme-toggle" onclick="toggleTheme()">🌓 切换主题</button>
+      </div>
+    </header>
+    <p class="subtitle">
+      Kotlin Multiplatform + Compose Desktop · Redis 桌面管理工具 · 交互式 HTML 设计稿
+    </p>
+
+    <!-- 页面入口 -->
+    <div class="cards">
+      <a class="card" href="main-screen.html">
+        <div class="card-preview">🗂️</div>
+        <div class="card-body">
+          <h3>主界面</h3>
+          <p>连接面板 + Key 树形列表 + 值编辑面板，含 Tab 栏、状态栏、Toast 与右键菜单演示，支持深/浅色主题切换。</p>
+          <span class="card-tag">核心页面</span>
+        </div>
+      </a>
+      <a class="card" href="new-connection-dialog.html">
+        <div class="card-preview">🔌</div>
+        <div class="card-body">
+          <h3>新建连接弹窗</h3>
+          <p>分节表单（基础 / SSH / SSL / 高级），含测试连接反馈与颜色标签选择。</p>
+          <span class="card-tag">弹窗</span>
+        </div>
+      </a>
+      <a class="card" href="new-key-dialog.html">
+        <div class="card-preview">🔑</div>
+        <div class="card-body">
+          <h3>新建 Key 弹窗</h3>
+          <p>类型卡片选择（String/Hash/List/Set/ZSet）+ 按类型动态切换的值表单 + TTL 设置。</p>
+          <span class="card-tag">弹窗</span>
+        </div>
+      </a>
+      <a class="card" href="settings.html">
+        <div class="card-preview">⚙️</div>
+        <div class="card-body">
+          <h3>设置页</h3>
+          <p>外观 / 浏览 / 安全 / 通用四个分区：主题选择、加载参数、只读模式、密码加密开关。</p>
+          <span class="card-tag">页面</span>
+        </div>
+      </a>
+    </div>
+
+    <!-- 配色 -->
+    <h2>设计规范 · 配色</h2>
+    <div class="palette">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#dc382c"></div>
+        <div class="swatch-label"><b>主色（Redis 红）</b>#DC382C</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#3b82f6"></div>
+        <div class="swatch-label"><b>String</b>#3B82F6</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#f59e0b"></div>
+        <div class="swatch-label"><b>Hash</b>#F59E0B</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#8b5cf6"></div>
+        <div class="swatch-label"><b>List</b>#8B5CF6</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#10b981"></div>
+        <div class="swatch-label"><b>Set</b>#10B981</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#ec4899"></div>
+        <div class="swatch-label"><b>ZSet</b>#EC4899</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#06b6d4"></div>
+        <div class="swatch-label"><b>Stream</b>#06B6D4</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#22a45d"></div>
+        <div class="swatch-label"><b>成功/已连接</b>#22A45D</div>
+      </div>
+    </div>
+
+    <footer>
+      设计文档：<a href="../feature-design.md">feature-design.md</a> ·
+      <a href="../ui-design.md">ui-design.md</a> ·
+      设计图片：<a href="../assets/main-screen-light.png">浅色主界面</a> ·
+      <a href="../assets/main-screen-dark.png">深色主界面</a> ·
+      <a href="../assets/new-connection-dialog.png">新建连接弹窗</a>
+      <br />
+      提示：直接用浏览器打开本目录下的 HTML 文件即可预览，无需构建。
+    </footer>
+  </div>
+
+  <script>
+    function toggleTheme() {
+      const root = document.documentElement;
+      root.dataset.theme = root.dataset.theme === "dark" ? "light" : "dark";
+    }
+  </script>
+</body>
+</html>

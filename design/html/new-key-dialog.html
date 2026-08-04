@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RedisCompose · 新建 Key 弹窗设计稿</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body { overflow: hidden; }
+
+    .backdrop-app {
+      position: fixed;
+      inset: 0;
+      filter: blur(3px);
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    .ghost-app { height: 100vh; display: flex; flex-direction: column; }
+    .ghost-bar { height: 38px; background: var(--panel); border-bottom: 1px solid var(--border); }
+    .ghost-body { flex: 1; display: flex; }
+    .ghost-col { background: var(--panel); border-right: 1px solid var(--border); }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dialog {
+      width: 560px;
+      max-height: 88vh;
+      overflow-y: auto;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25);
+    }
+
+    .dialog-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .dialog-header h2 { font-size: 15px; font-weight: 600; }
+
+    .dialog-close {
+      width: 24px; height: 24px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 6px;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .dialog-close:hover { background: var(--accent-soft); color: var(--accent); }
+
+    .dialog-body { padding: 18px 20px; }
+
+    .field { margin-bottom: 12px; }
+
+    .field label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .field label .req { color: var(--error); }
+
+    .field .input, .field select { width: 100%; height: 32px; font-size: 13px; }
+
+    .field-row { display: flex; gap: 12px; }
+    .field-row .field { flex: 1; }
+
+    textarea.input {
+      width: 100%;
+      min-height: 96px;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 12px;
+      font-family: "SF Mono", Menlo, Consolas, monospace;
+      resize: vertical;
+      outline: none;
+    }
+
+    textarea.input:focus { border-color: var(--accent); }
+
+    /* 类型选择卡片 */
+    .type-picker {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .type-card {
+      flex: 1;
+      min-width: 84px;
+      padding: 10px 6px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .type-card:hover { border-color: var(--accent); }
+
+    .type-card.on {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .type-card .badge { margin-bottom: 6px; }
+
+    .type-card .name { font-size: 11px; color: var(--text-secondary); }
+    .type-card.on .name { color: var(--accent); font-weight: 600; }
+
+    /* Hash 行编辑器 */
+    .kv-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+
+    .kv-row .input { flex: 1; }
+
+    .kv-row .del {
+      width: 26px; height: 26px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 6px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .kv-row .del:hover { background: rgba(211, 47, 47, 0.1); color: var(--error); }
+
+    .add-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--accent);
+      font-size: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .dialog-footer {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .dialog-footer .spacer { flex: 1; }
+
+    .hint {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: -6px;
+      margin-bottom: 12px;
+    }
+
+    /* 按类型切换的值表单 */
+    .type-form { display: none; }
+    .type-form.on { display: block; }
+
+    .score-input { flex: 0 0 110px; }
+  </style>
+</head>
+<body>
+  <div class="backdrop-app">
+    <div class="ghost-app">
+      <div class="ghost-bar"></div>
+      <div class="ghost-body">
+        <div class="ghost-col" style="width:280px"></div>
+        <div class="ghost-col" style="width:380px"></div>
+        <div style="flex:1"></div>
+      </div>
+      <div class="ghost-bar" style="height:26px"></div>
+    </div>
+  </div>
+
+  <div class="overlay">
+    <div class="dialog">
+      <div class="dialog-header">
+        <h2>新建 Key</h2>
+        <div class="dialog-close">×</div>
+      </div>
+
+      <div class="dialog-body">
+        <!-- 类型选择 -->
+        <div class="type-picker">
+          <div class="type-card" data-type="string"><span class="badge string">STR</span><div class="name">String</div></div>
+          <div class="type-card on" data-type="hash"><span class="badge hash">HASH</span><div class="name">Hash</div></div>
+          <div class="type-card" data-type="list"><span class="badge list">LIST</span><div class="name">List</div></div>
+          <div class="type-card" data-type="set"><span class="badge set">SET</span><div class="name">Set</div></div>
+          <div class="type-card" data-type="zset"><span class="badge zset">ZSET</span><div class="name">ZSet</div></div>
+        </div>
+
+        <div class="field">
+          <label>Key <span class="req">*</span></label>
+          <input class="input mono" placeholder="例如 user:1001:profile" />
+        </div>
+        <div class="hint">Key 已存在时会提示并询问是否覆盖</div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>TTL（秒）</label>
+            <input class="input mono" value="-1" />
+          </div>
+          <div class="field" style="flex:2;display:flex;align-items:flex-end;padding-bottom:6px">
+            <span style="font-size:12px;color:var(--text-secondary)">-1 表示永久不过期</span>
+          </div>
+        </div>
+
+        <!-- 值表单：随类型动态切换 -->
+
+        <!-- String -->
+        <div class="type-form" data-type="string">
+          <div class="field">
+            <label>值（自动识别 JSON 可格式化）</label>
+            <textarea class="input" placeholder="输入字符串值，或粘贴 JSON...">{"name":"张三","level":7}</textarea>
+          </div>
+        </div>
+
+        <!-- Hash -->
+        <div class="type-form on" data-type="hash">
+          <div class="field">
+            <label>初始字段</label>
+            <div class="kv-row">
+              <input class="input mono" placeholder="field" value="name" />
+              <input class="input mono" placeholder="value" value="张三" />
+              <span class="del">🗑</span>
+            </div>
+            <div class="kv-row">
+              <input class="input mono" placeholder="field" value="level" />
+              <input class="input mono" placeholder="value" value="7" />
+              <span class="del">🗑</span>
+            </div>
+            <span class="add-row">＋ 添加字段</span>
+          </div>
+        </div>
+
+        <!-- List -->
+        <div class="type-form" data-type="list">
+          <div class="field-row">
+            <div class="field" style="flex:0 0 160px">
+              <label>插入位置</label>
+              <select>
+                <option>尾部插入（RPUSH）</option>
+                <option>头部插入（LPUSH）</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>初始成员</label>
+            <div class="kv-row">
+              <input class="input mono" placeholder="member" value="task-001" />
+              <span class="del">🗑</span>
+            </div>
+            <div class="kv-row">
+              <input class="input mono" placeholder="member" value="task-002" />
+              <span class="del">🗑</span>
+            </div>
+            <span class="add-row">＋ 添加成员</span>
+          </div>
+        </div>
+
+        <!-- Set -->
+        <div class="type-form" data-type="set">
+          <div class="field">
+            <label>初始成员（自动去重）</label>
+            <div class="kv-row">
+              <input class="input mono" placeholder="member" value="vip" />
+              <span class="del">🗑</span>
+            </div>
+            <div class="kv-row">
+              <input class="input mono" placeholder="member" value="beta-tester" />
+              <span class="del">🗑</span>
+            </div>
+            <span class="add-row">＋ 添加成员</span>
+          </div>
+        </div>
+
+        <!-- ZSet -->
+        <div class="type-form" data-type="zset">
+          <div class="field">
+            <label>初始成员（member / score）</label>
+            <div class="kv-row">
+              <input class="input mono" placeholder="member" value="player:1001" />
+              <input class="input mono score-input" placeholder="score" value="98.5" />
+              <span class="del">🗑</span>
+            </div>
+            <div class="kv-row">
+              <input class="input mono" placeholder="member" value="player:1002" />
+              <input class="input mono score-input" placeholder="score" value="87.0" />
+              <span class="del">🗑</span>
+            </div>
+            <span class="add-row">＋ 添加成员</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="dialog-footer">
+        <div class="spacer"></div>
+        <button class="btn btn-outline">取消</button>
+        <button class="btn btn-solid">创建</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 类型卡片切换 → 显示对应值表单
+    const cards = document.querySelectorAll(".type-card");
+    const forms = document.querySelectorAll(".type-form");
+    cards.forEach((card) => {
+      card.addEventListener("click", () => {
+        const type = card.dataset.type;
+        cards.forEach((c) => c.classList.toggle("on", c === card));
+        forms.forEach((f) => f.classList.toggle("on", f.dataset.type === type));
+      });
+    });
+  </script>
+</body>
+</html>

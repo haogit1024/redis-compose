@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RedisCompose · 主界面设计稿</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* Toast 通知 */
+    .toasts {
+      position: fixed;
+      right: 16px;
+      bottom: 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 50;
+    }
+
+    .toast {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 240px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-left-width: 3px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+      font-size: 12px;
+    }
+
+    .toast.success { border-left-color: var(--success); }
+    .toast.error { border-left-color: var(--error); }
+
+    .toast .detail {
+      margin-left: auto;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    /* 右键菜单 */
+    .ctx-menu {
+      position: fixed;
+      display: none;
+      min-width: 170px;
+      padding: 5px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+      z-index: 100;
+    }
+
+    .ctx-menu .item {
+      padding: 7px 12px;
+      border-radius: 5px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .ctx-menu .item:hover {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .ctx-menu .item.danger { color: var(--error); }
+
+    .ctx-menu .sep {
+      height: 1px;
+      margin: 4px 6px;
+      background: var(--border);
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Tab 栏 -->
+    <div class="tabbar">
+      <div class="tab active">
+        <span class="dot online"></span> dev-redis — Keys <span class="close">×</span>
+      </div>
+      <div class="tab">
+        <span class="dot online"></span> dev-redis — 控制台 <span class="close">×</span>
+      </div>
+      <div class="tab">
+        <span class="dot online"></span> prod-cache — Keys <span class="close">×</span>
+      </div>
+      <div class="tab-add" title="新建 Tab">＋</div>
+      <div class="tabbar-right">
+        <button class="theme-toggle" onclick="toggleTheme()">🌓 切换主题</button>
+      </div>
+    </div>
+
+    <div class="workspace">
+      <!-- 左侧：连接面板 -->
+      <div class="sidebar">
+        <div class="sidebar-toolbar">
+          <input class="search-input" placeholder="搜索连接..." />
+        </div>
+        <div class="conn-list">
+          <div class="conn-group">▾ 📁 生产环境</div>
+          <div class="conn-item">
+            <span class="color-tag" style="background:#dc382c"></span>
+            <span class="dot online"></span> prod-cache
+          </div>
+          <div class="conn-item">
+            <span class="color-tag" style="background:#f59e0b"></span>
+            <span class="dot offline"></span> prod-session
+          </div>
+
+          <div class="conn-group">▸ 📁 测试环境</div>
+
+          <div class="conn-group">▾ 🔗 本地开发</div>
+          <div class="conn-item selected">
+            <span class="color-tag" style="background:#3b82f6"></span>
+            <span class="dot online"></span> dev-redis
+          </div>
+          <!-- 已连接展开的 DB 列表 -->
+          <div class="db-item active">db0 <span class="db-count">35,210 keys</span></div>
+          <div class="db-item">db1 <span class="db-count">128 keys</span></div>
+          <div class="db-item">db2 <span class="db-count">0 keys</span></div>
+          <div class="conn-item">
+            <span class="color-tag" style="background:#8b5cf6"></span>
+            <span class="dot offline"></span> local-sentinel
+          </div>
+        </div>
+        <div class="sidebar-footer">
+          <button class="btn btn-primary">＋ 新建连接</button>
+        </div>
+      </div>
+
+      <!-- 中间：Key 列表 -->
+      <div class="key-panel">
+        <div class="key-toolbar">
+          <input class="search-input" value="*user*" style="background-color:var(--bg)" />
+          <button class="btn btn-ghost btn-sm" title="刷新">⟳</button>
+        </div>
+        <div class="key-meta">
+          <div class="segment"><span class="on">树形</span><span>平铺</span></div>
+          <span>已加载 1,024 / 35,210</span>
+        </div>
+        <div class="key-list">
+          <div class="tree-row">
+            <span class="chev">▾</span> 📁 <span class="folder-name">user</span>
+            <span class="folder-count">(512)</span>
+          </div>
+          <div class="tree-row">
+            <span class="chev" style="margin-left:14px">▾</span> 📁
+            <span class="folder-name">1001</span> <span class="folder-count">(3)</span>
+          </div>
+          <div class="tree-row selected">
+            <span style="width:26px"></span>
+            <span class="badge hash">HASH</span>
+            <span class="key-name mono">user:1001:profile</span>
+          </div>
+          <div class="tree-row">
+            <span style="width:26px"></span>
+            <span class="badge string">STR</span>
+            <span class="key-name mono">user:1001:settings</span>
+          </div>
+          <div class="tree-row">
+            <span style="width:26px"></span>
+            <span class="badge set">SET</span>
+            <span class="key-name mono">user:1001:tags</span>
+          </div>
+          <div class="tree-row">
+            <span class="chev" style="margin-left:14px">▸</span> 📁
+            <span class="folder-name">1002</span> <span class="folder-count">(2)</span>
+          </div>
+          <div class="tree-row">
+            <span class="chev">▾</span> 📁 <span class="folder-name">order</span>
+            <span class="folder-count">(128)</span>
+          </div>
+          <div class="tree-row">
+            <span style="width:12px"></span>
+            <span class="badge list">LIST</span>
+            <span class="key-name mono">order:pending:123</span>
+          </div>
+          <div class="tree-row">
+            <span style="width:12px"></span>
+            <span class="badge zset">ZSET</span>
+            <span class="key-name mono">order:rank:daily</span>
+          </div>
+          <div class="tree-row">
+            <span style="width:12px"></span>
+            <span class="badge stream">STREAM</span>
+            <span class="key-name mono">order:events</span>
+          </div>
+          <div class="tree-row">
+            <span class="chev">▸</span> 📁 <span class="folder-name">session</span>
+            <span class="folder-count">(89)</span>
+          </div>
+          <div class="tree-row">
+            <span class="chev">▸</span> 📁 <span class="folder-name">cache</span>
+            <span class="folder-count">(1,204)</span>
+          </div>
+          <div class="load-more">⏳ 滚动加载更多（SCAN cursor: 8421）...</div>
+        </div>
+      </div>
+
+      <!-- 右侧：值查看/编辑 -->
+      <div class="value-panel">
+        <div class="value-header">
+          <div class="value-title">
+            <span class="badge hash">HASH</span>
+            <h2 class="mono">user:1001:profile</h2>
+          </div>
+          <div class="chips">
+            <span class="chip">TTL：<b style="color:var(--text)">3600s</b></span>
+            <span class="chip">内存：2.1 KB</span>
+            <span class="chip">字段数：6</span>
+            <div class="value-actions">
+              <button class="btn btn-outline btn-sm">修改 TTL</button>
+              <button class="btn btn-outline btn-sm">重命名</button>
+              <button class="btn btn-outline btn-sm" style="color:var(--error)">删除</button>
+            </div>
+          </div>
+        </div>
+        <div class="value-body">
+          <div class="value-card">
+            <div class="value-card-toolbar">
+              <select>
+                <option>格式化：Auto</option>
+                <option>Text</option>
+                <option>JSON</option>
+                <option>Hex</option>
+              </select>
+              <input class="input" placeholder="搜索字段..." style="width:180px" />
+              <div class="spacer"></div>
+              <button class="btn btn-solid btn-sm">＋ 新增字段</button>
+            </div>
+            <table class="data">
+              <thead>
+                <tr>
+                  <th style="width:180px">Field</th>
+                  <th>Value</th>
+                  <th style="width:70px">操作</th>
+                </tr>
+              </thead>
+              <tbody class="mono">
+                <tr>
+                  <td>name</td>
+                  <td>"张三"</td>
+                  <td><div class="row-icons"><span>✏️</span><span>🗑</span></div></td>
+                </tr>
+                <tr>
+                  <td>email</td>
+                  <td>"zhangsan@example.com"</td>
+                  <td><div class="row-icons"><span>✏️</span><span>🗑</span></div></td>
+                </tr>
+                <tr>
+                  <td>avatar</td>
+                  <td>"https://cdn.example.com/avatar/1001.png"</td>
+                  <td><div class="row-icons"><span>✏️</span><span>🗑</span></div></td>
+                </tr>
+                <tr>
+                  <td>level</td>
+                  <td>"7"</td>
+                  <td><div class="row-icons"><span>✏️</span><span>🗑</span></div></td>
+                </tr>
+                <tr>
+                  <td>preferences</td>
+                  <td>{"theme":"dark","lang":"zh-CN"}</td>
+                  <td><div class="row-icons"><span>✏️</span><span>🗑</span></div></td>
+                </tr>
+                <tr>
+                  <td>last_login</td>
+                  <td>"2026-08-04 09:12:33"</td>
+                  <td><div class="row-icons"><span>✏️</span><span>🗑</span></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 状态栏 -->
+    <div class="statusbar">
+      <span><span class="ok">●</span> 已连接</span>
+      <span class="mono">127.0.0.1:6379</span>
+      <span>db0</span>
+      <span>已加载 1,024 / 35,210 keys</span>
+      <div class="spacer"></div>
+      <span>Redis 7.4.1</span>
+      <span>内存 128.5 MB</span>
+    </div>
+  </div>
+
+  <!-- Toast 演示（成功 + 错误带详情） -->
+  <div class="toasts">
+    <div class="toast success">✓ 已保存 user:1001:profile</div>
+    <div class="toast error">✕ 删除失败：连接超时 <span class="detail">详情 ›</span></div>
+  </div>
+
+  <!-- Key 右键菜单演示 -->
+  <div class="ctx-menu" id="ctxMenu">
+    <div class="item">复制 Key</div>
+    <div class="item">复制值</div>
+    <div class="item">重命名</div>
+    <div class="item">查看内存占用</div>
+    <div class="item">导出</div>
+    <div class="sep"></div>
+    <div class="item danger">删除</div>
+  </div>
+
+  <script>
+    function toggleTheme() {
+      const root = document.documentElement;
+      root.dataset.theme = root.dataset.theme === "dark" ? "light" : "dark";
+    }
+
+    // Key 行右键弹出菜单
+    const menu = document.getElementById("ctxMenu");
+    document.querySelectorAll(".tree-row").forEach((row) => {
+      row.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        menu.style.display = "block";
+        menu.style.left = Math.min(e.clientX, innerWidth - 190) + "px";
+        menu.style.top = Math.min(e.clientY, innerHeight - 240) + "px";
+      });
+    });
+    document.addEventListener("click", () => (menu.style.display = "none"));
+  </script>
+</body>
+</html>

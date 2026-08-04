@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RedisCompose · 新建连接弹窗设计稿</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body { overflow: hidden; }
+
+    /* 背景：模糊化的主界面占位 */
+    .backdrop-app {
+      position: fixed;
+      inset: 0;
+      filter: blur(3px);
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 弹窗 */
+    .dialog {
+      width: 520px;
+      max-height: 88vh;
+      overflow-y: auto;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25);
+    }
+
+    .dialog-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .dialog-header h2 { font-size: 15px; font-weight: 600; }
+
+    .dialog-close {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .dialog-close:hover { background: var(--accent-soft); color: var(--accent); }
+
+    .dialog-body { padding: 18px 20px; }
+
+    .section-label {
+      margin: 16px 0 10px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-label::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .field { margin-bottom: 12px; }
+
+    .field label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .field label .req { color: var(--error); }
+
+    .field .input,
+    .field select {
+      width: 100%;
+      height: 32px;
+      font-size: 13px;
+    }
+
+    .field-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .field-row .field { flex: 1; }
+
+    .accordion {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      margin-bottom: 6px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+      font-size: 13px;
+    }
+
+    .accordion:hover { border-color: var(--accent); color: var(--accent); }
+
+    .accordion .chev { color: var(--text-secondary); font-size: 11px; }
+
+    .accordion.open {
+      border-color: var(--accent);
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+      margin-bottom: 0;
+    }
+
+    .accordion-content {
+      padding: 12px;
+      margin-bottom: 6px;
+      border: 1px solid var(--accent);
+      border-top: none;
+      border-radius: 0 0 var(--radius) var(--radius);
+      background: var(--panel-alt);
+    }
+
+    .switch-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      font-size: 12px;
+    }
+
+    .switch {
+      width: 34px;
+      height: 20px;
+      border-radius: 10px;
+      background: var(--success);
+      position: relative;
+      cursor: pointer;
+    }
+
+    .switch::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #fff;
+    }
+
+    .dialog-footer {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .test-result {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--success);
+    }
+
+    .dialog-footer .spacer { flex: 1; }
+
+    /* 背景占位主界面简化样式 */
+    .ghost-app {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ghost-bar {
+      height: 38px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .ghost-body { flex: 1; display: flex; }
+
+    .ghost-col {
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <!-- 背景模糊占位 -->
+  <div class="backdrop-app">
+    <div class="ghost-app">
+      <div class="ghost-bar"></div>
+      <div class="ghost-body">
+        <div class="ghost-col" style="width:280px"></div>
+        <div class="ghost-col" style="width:380px"></div>
+        <div style="flex:1"></div>
+      </div>
+      <div class="ghost-bar" style="height:26px"></div>
+    </div>
+  </div>
+
+  <!-- 遮罩 + 弹窗 -->
+  <div class="overlay">
+    <div class="dialog">
+      <div class="dialog-header">
+        <h2>新建连接</h2>
+        <div class="dialog-close">×</div>
+      </div>
+
+      <div class="dialog-body">
+        <div class="field">
+          <label>连接名称 <span class="req">*</span></label>
+          <input class="input" value="dev-redis" />
+        </div>
+
+        <div class="section-label">基础</div>
+        <div class="field-row">
+          <div class="field" style="flex:2">
+            <label>Host <span class="req">*</span></label>
+            <input class="input mono" value="127.0.0.1" />
+          </div>
+          <div class="field">
+            <label>Port</label>
+            <input class="input mono" value="6379" />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>用户名（Redis 6+ ACL）</label>
+            <input class="input" placeholder="default" />
+          </div>
+          <div class="field">
+            <label>密码</label>
+            <input class="input" type="password" value="password123" />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>默认 DB</label>
+            <select><option>db0</option><option>db1</option><option>db2</option></select>
+          </div>
+          <div class="field">
+            <label>Key 分隔符</label>
+            <input class="input mono" value=":" />
+          </div>
+          <div class="field">
+            <label>颜色标签</label>
+            <div style="display:flex;gap:6px;align-items:center;height:32px">
+              <span class="color-tag" style="width:16px;height:16px;border-radius:50%;background:#3b82f6"></span>
+              <span class="color-tag" style="width:16px;height:16px;border-radius:50%;background:#dc382c;opacity:.4"></span>
+              <span class="color-tag" style="width:16px;height:16px;border-radius:50%;background:#22a45d;opacity:.4"></span>
+              <span class="color-tag" style="width:16px;height:16px;border-radius:50%;background:#f59e0b;opacity:.4"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-label">扩展</div>
+        <div class="accordion">SSH 隧道 <span class="chev">▸</span></div>
+        <div class="accordion open">SSL/TLS <span class="chev">▾</span></div>
+        <div class="accordion-content">
+          <div class="switch-row">
+            <span>启用 SSL/TLS</span>
+            <div class="switch"></div>
+          </div>
+          <div class="field">
+            <label>CA 证书路径</label>
+            <input class="input mono" placeholder="/path/to/ca.pem" />
+          </div>
+        </div>
+        <div class="accordion">高级（超时 / 只读模式 / 自动重连） <span class="chev">▸</span></div>
+      </div>
+
+      <div class="dialog-footer">
+        <div class="test-result">✓ 连接成功（12ms）</div>
+        <div class="spacer"></div>
+        <button class="btn btn-outline">测试连接</button>
+        <button class="btn btn-outline">取消</button>
+        <button class="btn btn-solid">确定</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
