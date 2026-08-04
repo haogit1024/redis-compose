@@ -24,14 +24,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.czh.redis.data.RedisConnection
 import com.czh.redis.ui.AppColors
 import com.czh.redis.ui.AppDimens
 
 @Composable
 fun NewConnectionDialog(
     visible: Boolean,
+    initialValues: RedisConnection,
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
+    onConfirm: (RedisConnection) -> Unit,
 ) {
     CustomDialog(visible = visible, onDismiss = onDismiss) {
         Column(modifier = Modifier.width(500.dp)) {
@@ -57,12 +59,12 @@ fun NewConnectionDialog(
 
             Spacer(modifier = Modifier.height(AppDimens.paddingLarge))
 
-            var host by remember { mutableStateOf("127.0.0.1") }
-            var port by remember { mutableStateOf("6379") }
-            var password by remember { mutableStateOf("") }
-            var username by remember { mutableStateOf("") }
-            var connectionName by remember { mutableStateOf("") }
-            var separator by remember { mutableStateOf("") }
+            var host by remember { mutableStateOf(initialValues.host) }
+            var port by remember { mutableStateOf(initialValues.port) }
+            var password by remember { mutableStateOf(initialValues.password) }
+            var username by remember { mutableStateOf(initialValues.username) }
+            var connectionName by remember { mutableStateOf(initialValues.name) }
+            var separator by remember { mutableStateOf(initialValues.separator) }
 
             Row(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -138,11 +140,11 @@ fun NewConnectionDialog(
 
             Spacer(modifier = Modifier.height(AppDimens.paddingLarge))
 
-            var sshChecked by remember { mutableStateOf(false) }
-            var sslChecked by remember { mutableStateOf(false) }
-            var sentinelChecked by remember { mutableStateOf(false) }
-            var clusterChecked by remember { mutableStateOf(false) }
-            var readonlyChecked by remember { mutableStateOf(false) }
+            var sshChecked by remember { mutableStateOf(initialValues.ssh) }
+            var sslChecked by remember { mutableStateOf(initialValues.ssl) }
+            var sentinelChecked by remember { mutableStateOf(initialValues.sentinel) }
+            var clusterChecked by remember { mutableStateOf(initialValues.cluster) }
+            var readonlyChecked by remember { mutableStateOf(initialValues.readonly) }
 
             Row(modifier = Modifier.fillMaxWidth()) {
                 CustomCheckbox(checked = sshChecked, onCheckedChange = { sshChecked = it }, label = "SSH")
@@ -176,7 +178,24 @@ fun NewConnectionDialog(
                 Box(
                     modifier = Modifier
                         .background(AppColors.primary, shape = RoundedCornerShape(AppDimens.cornerSmall))
-                        .clickable { onConfirm() }
+                        .clickable {
+                            onConfirm(
+                                RedisConnection(
+                                    id = initialValues.id,
+                                    name = connectionName,
+                                    host = host,
+                                    port = port,
+                                    username = username,
+                                    password = password,
+                                    separator = separator,
+                                    ssh = sshChecked,
+                                    ssl = sslChecked,
+                                    sentinel = sentinelChecked,
+                                    cluster = clusterChecked,
+                                    readonly = readonlyChecked,
+                                )
+                            )
+                        }
                         .padding(AppDimens.paddingMedium),
                     contentAlignment = Alignment.Center,
                 ) {

@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -22,6 +23,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.czh.redis.data.RedisConnection
+import com.czh.redis.data.loadConnections
+import com.czh.redis.data.saveConnections
 import com.czh.redis.ui.Left
 import com.czh.redis.ui.Right
 import com.czh.redis.ui.components.NewConnectionDialog
@@ -32,6 +36,7 @@ import java.awt.Cursor
 fun App() {
     var leftPanelWidth by remember { mutableStateOf(300f) }
     var showDialog by remember { mutableStateOf(false) }
+    val connections = remember { loadConnections().toMutableStateList() }
     val dividerWidth = 4f
     val density = LocalDensity.current
 
@@ -73,8 +78,18 @@ fun App() {
 
         NewConnectionDialog(
             visible = showDialog,
+            initialValues = RedisConnection(host = "127.0.0.1"),
             onDismiss = { showDialog = false },
-            onConfirm = { showDialog = false },
+            onConfirm = { connection ->
+                val existingIndex = connections.indexOfFirst { it.id == connection.id }
+                if (existingIndex >= 0) {
+                    connections[existingIndex] = connection
+                } else {
+                    connections.add(connection.withFreshId())
+                }
+                saveConnections(connections)
+                showDialog = false
+            },
         )
     }
 }
