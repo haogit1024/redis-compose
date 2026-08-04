@@ -62,7 +62,7 @@ fun NewConnectionDialog(
             var password by remember { mutableStateOf("") }
             var username by remember { mutableStateOf("") }
             var connectionName by remember { mutableStateOf("") }
-            var separator by remember { mutableStateOf(":") }
+            var separator by remember { mutableStateOf("") }
 
             Row(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {

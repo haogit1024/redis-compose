@@ -21,7 +21,6 @@ fun CustomTextField(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    label: String = "",
     placeholder: String = "",
     readOnly: Boolean = false,
 ) {
