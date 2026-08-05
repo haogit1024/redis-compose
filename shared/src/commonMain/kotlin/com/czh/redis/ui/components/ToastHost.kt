@@ -18,10 +18,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -29,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import com.czh.redis.ui.LocalAppColors
 import com.czh.redis.ui.Toast
 import com.czh.redis.ui.ToastType
+import kotlinx.coroutines.launch
 
 @Composable
 fun ToastHost(
@@ -101,13 +105,15 @@ fun ToastHost(
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun ErrorDetailDialog(
     toast: Toast,
     onDismiss: () -> Unit,
 ) {
     val colors = LocalAppColors.current
-    val clipboard = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
     AppDialog(
         visible = true,
         onDismiss = onDismiss,
@@ -121,17 +127,21 @@ private fun ErrorDetailDialog(
                 variant = ButtonVariant.OUTLINE,
                 size = ButtonSize.SMALL,
                 onClick = {
-                    clipboard.setText(
-                        AnnotatedString(
-                            buildString {
-                                append(toast.message)
-                                toast.detail?.let {
-                                    append("\n\n")
-                                    append(it)
-                                }
-                            },
-                        ),
-                    )
+                    scope.launch {
+                        clipboard.setClipEntry(
+                            ClipEntry(
+                                AnnotatedString(
+                                    buildString {
+                                        append(toast.message)
+                                        toast.detail?.let {
+                                            append("\n\n")
+                                            append(it)
+                                        }
+                                    },
+                                ),
+                            ),
+                        )
+                    }
                 },
             )
             Spacer(modifier = Modifier.width(8.dp))
