@@ -88,7 +88,8 @@ fun AppRoot(vm: AppViewModel) {
                         .pointerInput(Unit) {
                             detectDragGestures { change, dragAmount ->
                                 change.consume()
-                                leftPanelWidth = (leftPanelWidth + dragAmount.x).coerceIn(200f, 480f)
+                                val deltaDp = with(density) { dragAmount.x.toDp().value }
+                                leftPanelWidth = (leftPanelWidth + deltaDp).coerceIn(200f, 480f)
                             }
                         },
                 )

@@ -2,6 +2,8 @@ package com.czh.redis.redis
 
 import com.czh.redis.data.RedisConnection
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import redis.clients.jedis.DefaultJedisClientConfig
 import redis.clients.jedis.HostAndPort
@@ -15,9 +17,11 @@ class JedisRedisClient(private val connection: RedisConnection) : RedisClient {
     @Volatile
     private var jedis: Jedis? = null
 
-    private suspend fun <T> io(block: () -> T): T = withContext(Dispatchers.IO) { block() }
+    private val mutex = Mutex()
 
-    private suspend fun ioUnit(block: () -> Unit) = withContext(Dispatchers.IO) { block() }
+    private suspend fun <T> io(block: () -> T): T = withContext(Dispatchers.IO) { mutex.withLock { block() } }
+
+    private suspend fun ioUnit(block: () -> Unit) = withContext(Dispatchers.IO) { mutex.withLock { block() } }
 
     private fun client(): Jedis {
         jedis?.let { return it }
