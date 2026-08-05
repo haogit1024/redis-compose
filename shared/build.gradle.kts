@@ -21,6 +21,10 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.kotlinx.serialization.json)
         }
+        jvmMain.dependencies {
+            implementation(libs.jedis)
+            implementation(libs.kotlinx.coroutinesSwing)
+        }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
