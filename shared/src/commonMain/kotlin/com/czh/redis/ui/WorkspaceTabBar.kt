@@ -46,6 +46,7 @@ fun WorkspaceTabBar(vm: AppViewModel, modifier: Modifier = Modifier) {
                     text = tab.title,
                     color = if (active) colors.text else colors.textSecondary,
                     fontSize = 12.sp,
+                    lineHeight = 12.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -56,7 +57,13 @@ fun WorkspaceTabBar(vm: AppViewModel, modifier: Modifier = Modifier) {
                         .clickable { vm.closeTab(tab.id) },
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(text = "×", color = colors.textSecondary, fontSize = 12.sp)
+                    Text(
+                        text = "×",
+                        color = colors.textSecondary,
+                        fontSize = 12.sp,
+                        lineHeight = 12.sp,
+                        modifier = Modifier.align(Alignment.Center),
+                    )
                 }
             }
         }
