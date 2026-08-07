@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-本项目是一个基于 **Kotlin Multiplatform Compose** 的桌面应用开发框架，旨在通过共享代码实现跨平台 UI 开发。
+本项目是一个基于 **Kotlin Multiplatform Compose** 的桌面应用开发框架，旨在通过共享代码实现跨平台 UI 开发。在 github 平台上开源
 
 ### 核心目标
 
