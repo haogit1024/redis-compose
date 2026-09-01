@@ -21,6 +21,7 @@ import com.czh.redis.redis.parseInfoSections
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 enum class TabType { KEYS, CONSOLE, SERVER_INFO, SETTINGS }
 
@@ -42,9 +43,6 @@ class Session(
     var statusError by mutableStateOf<String?>(null)
     var currentDb by mutableStateOf(connection.defaultDb)
     var dbs by mutableStateOf<List<DbInfo>>(emptyList())
-
-    val totalKeys: Long
-        get() = dbs.firstOrNull { it.index == currentDb }?.keyCount ?: 0
 
     val isReadonly: Boolean
         get() = connection.readonly
@@ -295,8 +293,6 @@ class KeyBrowserState(
         return type
     }
 
-    fun flatRows(): List<String> = keys.toList()
-
     private fun rebuildTree() {
         tree = buildKeyTree(keys, session.connection.separator)
     }
@@ -325,6 +321,9 @@ class AppViewModel(private val scope: CoroutineScope) {
 
     fun openTab(connectionId: String, type: TabType) {
         val tabId = tabId(connectionId, type)
+        if (type != TabType.SETTINGS) {
+            connectSession(connectionId)
+        }
         if (tabs.none { it.id == tabId }) {
             val connection = connectionById(connectionId)
             val title = when (type) {
@@ -336,15 +335,12 @@ class AppViewModel(private val scope: CoroutineScope) {
             tabs.add(WorkspaceTab(tabId, title, connectionId, type))
             when (type) {
                 TabType.KEYS -> {
-                    connectSession(connectionId)
                     keyBrowsers.getOrPut(tabId) { KeyBrowserState(this, sessions.getValue(connectionId), scope) }
                 }
                 TabType.CONSOLE -> {
-                    connectSession(connectionId)
                     consoles.getOrPut(tabId) { ConsoleState(this, sessions.getValue(connectionId), scope) }
                 }
                 TabType.SERVER_INFO -> {
-                    connectSession(connectionId)
                     serverInfos.getOrPut(tabId) { ServerInfoState(this, sessions.getValue(connectionId), scope) }.refresh()
                 }
                 TabType.SETTINGS -> Unit
@@ -462,7 +458,7 @@ class AppViewModel(private val scope: CoroutineScope) {
         val toast = Toast(++toastCounter, message, type, detail)
         toasts.add(toast)
         scope.launch {
-            delay(3500)
+            delay(3500.milliseconds)
             toasts.remove(toast)
         }
     }

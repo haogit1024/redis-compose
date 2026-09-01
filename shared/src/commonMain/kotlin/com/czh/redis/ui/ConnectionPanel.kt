@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -28,7 +27,6 @@ import androidx.compose.ui.unit.sp
 import com.czh.redis.data.RedisConnection
 import com.czh.redis.ui.components.AppButton
 import com.czh.redis.ui.components.AppTextField
-import com.czh.redis.ui.components.ButtonVariant
 import com.czh.redis.ui.components.StatusDot
 import com.czh.redis.ui.components.formatCount
 import com.czh.redis.ui.components.rememberRightClickHandler
@@ -118,6 +116,7 @@ private fun ConnectionItem(vm: AppViewModel, conn: RedisConnection) {
     val session = vm.sessions[conn.id]
     val status = session?.status ?: ConnectionStatus.DISCONNECTED
     val connected = status == ConnectionStatus.CONNECTED
+    var expanded by remember { mutableStateOf(true) }
 
     val contextModifier = rememberRightClickHandler { position ->
         vm.contextMenu.show(
@@ -151,7 +150,14 @@ private fun ConnectionItem(vm: AppViewModel, conn: RedisConnection) {
                 .fillMaxWidth()
                 .height(AppDimens.rowHeight)
                 .background(if (connected) colors.selectedBg else Color.Transparent)
-                .clickable { vm.openTab(conn.id, TabType.KEYS) }
+                .clickable {
+                    if (connected) {
+                        expanded = !expanded
+                    } else {
+                        expanded = true
+                        vm.openTab(conn.id, TabType.KEYS)
+                    }
+                }
                 .then(contextModifier)
                 .padding(horizontal = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -175,7 +181,7 @@ private fun ConnectionItem(vm: AppViewModel, conn: RedisConnection) {
             )
         }
 
-        if (connected) {
+        if (connected && expanded) {
             val dbList = session?.dbs.orEmpty()
             dbList.forEach { db ->
                 val activeDb = session?.currentDb == db.index
