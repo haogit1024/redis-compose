@@ -139,8 +139,8 @@ private fun KeyListPanel(
         Spacer(modifier = Modifier.height(6.dp))
 
         val flattened =
-            remember(browser.tree, browser.collapsedDirs, browser.viewMode) {
-                if (browser.viewMode == "tree") flatten(browser.tree, browser.collapsedDirs) else emptyList()
+            remember(browser.tree, browser.expandedDirs, browser.viewMode) {
+                if (browser.viewMode == "tree") flatten(browser.tree, browser.expandedDirs) else emptyList()
             }
 
         if (browser.viewMode == "tree") {
@@ -209,7 +209,7 @@ private fun KeyTreeRow(
 ) {
     val colors = LocalAppColors.current
     if (node.isDirectory) {
-        val expanded = node.path !in browser.collapsedDirs
+        val expanded = node.path in browser.expandedDirs
         Row(
             modifier =
                 Modifier
@@ -354,7 +354,7 @@ private fun EmptyKeysRow(
 
 fun flatten(
     nodes: List<KeyTreeNode>,
-    collapsed: Set<String>,
+    expanded: Set<String>,
 ): List<Pair<KeyTreeNode, Int>> {
     val result = mutableListOf<Pair<KeyTreeNode, Int>>()
 
@@ -364,7 +364,7 @@ fun flatten(
     ) {
         for (node in list) {
             result.add(node to depth)
-            if (node.isDirectory && node.path !in collapsed) {
+            if (node.isDirectory && node.path in expanded) {
                 walk(node.children, depth + 1)
             }
         }

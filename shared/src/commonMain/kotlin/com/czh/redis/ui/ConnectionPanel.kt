@@ -132,14 +132,16 @@ private fun ConnectionItem(
 
     val contextModifier =
         rememberRightClickHandler { position ->
+            val curStatus = vm.sessions[conn.id]?.status ?: ConnectionStatus.DISCONNECTED
+            val curConnected = curStatus == ConnectionStatus.CONNECTED
             vm.contextMenu.show(
                 position.x,
                 position.y,
                 listOf(
                     ContextMenuItem(
-                        label = if (connected) "断开连接" else "连接",
+                        label = if (curConnected) "断开连接" else "连接",
                         onClick = {
-                            if (connected) vm.disconnectSession(conn.id) else vm.openTab(conn.id, TabType.KEYS)
+                            if (curConnected) vm.disconnectSession(conn.id) else vm.openTab(conn.id, TabType.KEYS)
                         },
                     ),
                     ContextMenuItem("编辑", onClick = { vm.openNewConnection(conn) }),

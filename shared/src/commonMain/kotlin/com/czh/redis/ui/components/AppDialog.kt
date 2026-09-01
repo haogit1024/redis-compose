@@ -81,6 +81,7 @@ fun AppDialog(
             Column(
                 modifier =
                     Modifier
+                        .weight(1f)
                         .fillMaxWidth()
                         .verticalScroll(rememberScrollState()),
             ) {

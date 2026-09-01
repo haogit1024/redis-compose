@@ -217,10 +217,10 @@ class KeyBrowserState(
     var selectedType by mutableStateOf<RedisType?>(null)
     var tree by mutableStateOf<List<KeyTreeNode>>(emptyList())
     val keyTypes = mutableStateMapOf<String, RedisType>()
-    var collapsedDirs by mutableStateOf(setOf<String>())
+    var expandedDirs by mutableStateOf(setOf<String>())
 
     fun toggleDir(path: String) {
-        collapsedDirs = if (path in collapsedDirs) collapsedDirs - path else collapsedDirs + path
+        expandedDirs = if (path in expandedDirs) expandedDirs - path else expandedDirs + path
     }
 
     fun refresh() {

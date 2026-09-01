@@ -91,7 +91,7 @@ class ValueState(
         scope.launch {
             try {
                 ttl = session.client.ttl(key)
-                memory = session.client.memoryUsage(key)
+                memory = runCatching { session.client.memoryUsage(key) }.getOrNull()
                 when (type) {
                     RedisType.STRING -> {
                         stringValue = ValueCodec.decode(session.client.getString(key) ?: ByteArray(0)) ?: ""
@@ -130,7 +130,7 @@ class ValueState(
         scope.launch {
             runCatching {
                 ttl = session.client.ttl(currentKey)
-                memory = session.client.memoryUsage(currentKey)
+                memory = runCatching { session.client.memoryUsage(currentKey) }.getOrNull()
             }
         }
     }
