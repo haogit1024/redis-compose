@@ -17,17 +17,21 @@ import androidx.compose.ui.unit.sp
 import com.czh.redis.ui.components.formatCount
 
 @Composable
-fun StatusBar(vm: AppViewModel, modifier: Modifier = Modifier) {
+fun StatusBar(
+    vm: AppViewModel,
+    modifier: Modifier = Modifier,
+) {
     val colors = LocalAppColors.current
     val activeTab = vm.tabs.firstOrNull { it.id == vm.activeTabId }
     val session = activeTab?.connectionId?.let { vm.sessions[it] }
 
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(28.dp)
-            .background(colors.panel)
-            .padding(horizontal = 12.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(28.dp)
+                .background(colors.panel)
+                .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {

@@ -10,13 +10,13 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class SharedCommonTest {
-
     @Test
     fun keyTree_buildsDirectories() {
-        val tree = buildKeyTree(
-            listOf("user:1001:name", "user:1001:age", "user:1002:name", "order:1"),
-            ":",
-        )
+        val tree =
+            buildKeyTree(
+                listOf("user:1001:name", "user:1001:age", "user:1002:name", "order:1"),
+                ":",
+            )
         val roots = tree.map { it.name }.toSet()
         assertEquals(setOf("user", "order"), roots)
         val user = tree.first { it.name == "user" }
@@ -53,14 +53,15 @@ class SharedCommonTest {
 
     @Test
     fun parseInfoSections_splitsSections() {
-        val info = """
+        val info =
+            """
             # Server
             redis_version:7.0.0
             os:macos
 
             # Memory
             used_memory:1024
-        """.trimIndent()
+            """.trimIndent()
         val sections = parseInfoSections(info)
         assertEquals(listOf("Server", "Memory"), sections.map { it.first })
         assertEquals("7.0.0", sections.first().second.first { it.first == "redis_version" }.second)

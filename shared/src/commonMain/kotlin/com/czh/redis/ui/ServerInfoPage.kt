@@ -34,7 +34,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
 @Composable
-fun ServerInfoPage(state: ServerInfoState, modifier: Modifier = Modifier) {
+fun ServerInfoPage(
+    state: ServerInfoState,
+    modifier: Modifier = Modifier,
+) {
     val colors = LocalAppColors.current
     var autoRefresh by remember { mutableStateOf(true) }
 
@@ -47,10 +50,11 @@ fun ServerInfoPage(state: ServerInfoState, modifier: Modifier = Modifier) {
 
     Column(modifier = modifier.background(colors.background)) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(colors.panel)
-                .padding(horizontal = 14.dp, vertical = 8.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(colors.panel)
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -86,10 +90,11 @@ fun ServerInfoPage(state: ServerInfoState, modifier: Modifier = Modifier) {
         }
 
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
         ) {
             OverviewCards(state)
             Spacer(modifier = Modifier.height(12.dp))
@@ -154,12 +159,17 @@ private fun OverviewCards(state: ServerInfoState) {
 }
 
 @Composable
-private fun OverviewCard(label: String, value: String, modifier: Modifier = Modifier) {
+private fun OverviewCard(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
     val colors = LocalAppColors.current
     Column(
-        modifier = modifier
-            .background(colors.panel, RoundedCornerShape(AppDimens.cornerLarge))
-            .padding(14.dp),
+        modifier =
+            modifier
+                .background(colors.panel, RoundedCornerShape(AppDimens.cornerLarge))
+                .padding(14.dp),
     ) {
         Text(text = label, color = colors.textSecondary, fontSize = 11.sp)
         Spacer(modifier = Modifier.height(4.dp))
@@ -182,16 +192,18 @@ private fun AccordionSection(
     var expanded by remember { mutableStateOf(section in setOf("Server", "Clients", "Memory", "Stats", "Replication", "Keyspace")) }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(colors.panel, RoundedCornerShape(AppDimens.cornerLarge))
-            .padding(bottom = 8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(colors.panel, RoundedCornerShape(AppDimens.cornerLarge))
+                .padding(bottom = 8.dp),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded = !expanded }
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded }
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -212,10 +224,11 @@ private fun AccordionSection(
         if (expanded) {
             entries.forEach { (key, value) ->
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(colors.panelAlt)
-                        .padding(horizontal = 20.dp, vertical = 4.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .background(colors.panelAlt)
+                            .padding(horizontal = 20.dp, vertical = 4.dp),
                 ) {
                     Text(
                         text = key,

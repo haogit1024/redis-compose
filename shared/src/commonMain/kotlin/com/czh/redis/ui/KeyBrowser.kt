@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -54,10 +53,11 @@ fun KeyBrowserPage(
             modifier = Modifier.width(360.dp).fillMaxHeight().background(colors.panel),
         )
         Box(
-            modifier = Modifier
-                .width(4.dp)
-                .fillMaxHeight()
-                .background(colors.border),
+            modifier =
+                Modifier
+                    .width(4.dp)
+                    .fillMaxHeight()
+                    .background(colors.border),
         )
         ValuePanel(
             vm = vm,
@@ -90,9 +90,10 @@ private fun KeyListPanel(
 
     Column(modifier = modifier) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(10.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             AppTextField(
@@ -112,15 +113,17 @@ private fun KeyListPanel(
         }
 
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 10.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(AppDimens.cornerMedium))
-                    .background(colors.panelAlt),
+                modifier =
+                    Modifier
+                        .clip(RoundedCornerShape(AppDimens.cornerMedium))
+                        .background(colors.panelAlt),
             ) {
                 ViewToggleItem("树形", browser.viewMode == "tree") { browser.viewMode = "tree" }
                 ViewToggleItem("平铺", browser.viewMode == "flat") { browser.viewMode = "flat" }
@@ -135,9 +138,10 @@ private fun KeyListPanel(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        val flattened = remember(browser.tree, browser.collapsedDirs, browser.viewMode) {
-            if (browser.viewMode == "tree") flatten(browser.tree, browser.collapsedDirs) else emptyList()
-        }
+        val flattened =
+            remember(browser.tree, browser.collapsedDirs, browser.viewMode) {
+                if (browser.viewMode == "tree") flatten(browser.tree, browser.collapsedDirs) else emptyList()
+            }
 
         if (browser.viewMode == "tree") {
             LazyColumn(state = listState, modifier = Modifier.weight(1f).fillMaxWidth()) {
@@ -175,13 +179,18 @@ private fun KeyListPanel(
 }
 
 @Composable
-private fun ViewToggleItem(label: String, selected: Boolean, onClick: () -> Unit) {
+private fun ViewToggleItem(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
     val colors = LocalAppColors.current
     Box(
-        modifier = Modifier
-            .background(if (selected) colors.panel else Color.Transparent, RoundedCornerShape(AppDimens.cornerMedium))
-            .clickable { onClick() }
-            .padding(horizontal = 10.dp, vertical = 4.dp),
+        modifier =
+            Modifier
+                .background(if (selected) colors.panel else Color.Transparent, RoundedCornerShape(AppDimens.cornerMedium))
+                .clickable { onClick() }
+                .padding(horizontal = 10.dp, vertical = 4.dp),
     ) {
         Text(
             text = label,
@@ -202,11 +211,12 @@ private fun KeyTreeRow(
     if (node.isDirectory) {
         val expanded = node.path !in browser.collapsedDirs
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(30.dp)
-                .clickable { browser.toggleDir(node.path) }
-                .padding(start = (8 + depth * 14).dp, end = 10.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(30.dp)
+                    .clickable { browser.toggleDir(node.path) }
+                    .padding(start = (8 + depth * 14).dp, end = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(text = if (expanded) "▾" else "▸", color = colors.textSecondary, fontSize = 11.sp)
@@ -258,30 +268,32 @@ private fun KeyLeafRow(
         browser.ensureType(key)
     }
 
-    val contextModifier = rememberRightClickHandler { position ->
-        vm.contextMenu.show(
-            position.x,
-            position.y,
-            listOf(
-                ContextMenuItem("复制 Key", onClick = {
-                    clipboard.setText(androidx.compose.ui.text.AnnotatedString(key))
-                }),
-                ContextMenuItem("重命名", onClick = { vm.renameRequest = key }),
-                ContextMenuItem("删除", onClick = {
-                    vm.confirm("确定删除 Key「$key」？") { vm.deleteKey(key) }
-                }, danger = true),
-            ),
-        )
-    }
+    val contextModifier =
+        rememberRightClickHandler { position ->
+            vm.contextMenu.show(
+                position.x,
+                position.y,
+                listOf(
+                    ContextMenuItem("复制 Key", onClick = {
+                        clipboard.setText(androidx.compose.ui.text.AnnotatedString(key))
+                    }),
+                    ContextMenuItem("重命名", onClick = { vm.renameRequest = key }),
+                    ContextMenuItem("删除", onClick = {
+                        vm.confirm("确定删除 Key「$key」？") { vm.deleteKey(key) }
+                    }, danger = true),
+                ),
+            )
+        }
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(30.dp)
-            .background(if (selected) colors.selectedBg else Color.Transparent)
-            .clickable { browser.selectKey(key) }
-            .then(contextModifier)
-            .padding(start = indent, end = 10.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(30.dp)
+                .background(if (selected) colors.selectedBg else Color.Transparent)
+                .clickable { browser.selectKey(key) }
+                .then(contextModifier)
+                .padding(start = indent, end = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Spacer(modifier = Modifier.width(18.dp))
@@ -303,9 +315,10 @@ private fun KeyLeafRow(
 private fun LoadingRow(browser: KeyBrowserState) {
     val colors = LocalAppColors.current
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(10.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(10.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -317,12 +330,16 @@ private fun LoadingRow(browser: KeyBrowserState) {
 }
 
 @Composable
-private fun EmptyKeysRow(vm: AppViewModel, browser: KeyBrowserState) {
+private fun EmptyKeysRow(
+    vm: AppViewModel,
+    browser: KeyBrowserState,
+) {
     val colors = LocalAppColors.current
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(24.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(text = "当前 DB 没有 Key", color = colors.textSecondary, fontSize = 12.sp)
@@ -340,7 +357,11 @@ fun flatten(
     collapsed: Set<String>,
 ): List<Pair<KeyTreeNode, Int>> {
     val result = mutableListOf<Pair<KeyTreeNode, Int>>()
-    fun walk(list: List<KeyTreeNode>, depth: Int) {
+
+    fun walk(
+        list: List<KeyTreeNode>,
+        depth: Int,
+    ) {
         for (node in list) {
             result.add(node to depth)
             if (node.isDirectory && node.path !in collapsed) {

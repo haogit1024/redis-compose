@@ -6,12 +6,13 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
 
-fun main() = application {
-    Window(
-        onCloseRequest = ::exitApplication,
-        title = "redis-compose",
-        state = WindowState(size = DpSize(1200.dp, 800.dp)),
-    ) {
-        App()
+fun main() =
+    application {
+        Window(
+            onCloseRequest = ::exitApplication,
+            title = "redis-compose",
+            state = WindowState(size = DpSize(1200.dp, 800.dp)),
+        ) {
+            App()
+        }
     }
-}

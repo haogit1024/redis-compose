@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,6 +23,7 @@ import com.czh.redis.ui.AppDimens
 import com.czh.redis.ui.LocalAppColors
 
 enum class ButtonVariant { SOLID, OUTLINE, GHOST, DANGER }
+
 enum class ButtonSize { SMALL, MEDIUM }
 
 @Composable
@@ -68,11 +68,12 @@ fun AppButton(
     val shape: Shape = RoundedCornerShape(AppDimens.cornerMedium)
 
     Box(
-        modifier = modifier
-            .background(if (enabled) bg else bg.copy(alpha = 0.5f), shape)
-            .border(1.dp, borderColor, shape)
-            .clickable(enabled = enabled) { onClick() }
-            .padding(horizontal = horizontalPad, vertical = verticalPad),
+        modifier =
+            modifier
+                .background(if (enabled) bg else bg.copy(alpha = 0.5f), shape)
+                .border(1.dp, borderColor, shape)
+                .clickable(enabled = enabled) { onClick() }
+                .padding(horizontal = horizontalPad, vertical = verticalPad),
         contentAlignment = Alignment.Center,
     ) {
         if (icon != null) {
@@ -105,10 +106,11 @@ fun IconButton(
 ) {
     val colors = LocalAppColors.current
     Box(
-        modifier = modifier
-            .size(size)
-            .clickable { onClick() }
-            .padding(3.dp),
+        modifier =
+            modifier
+                .size(size)
+                .clickable { onClick() }
+                .padding(3.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(text = icon, color = colors.textSecondary, fontSize = 12.sp)

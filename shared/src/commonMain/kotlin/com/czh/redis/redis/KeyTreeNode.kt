@@ -14,13 +14,20 @@ data class KeyTreeNode(
         get() = if (key != null) listOf(key) else children.flatMap { it.leafKeys }
 }
 
-fun buildKeyTree(keys: List<String>, separator: String): List<KeyTreeNode> {
+fun buildKeyTree(
+    keys: List<String>,
+    separator: String,
+): List<KeyTreeNode> {
     if (separator.isEmpty()) {
         return keys.distinct().map { KeyTreeNode(name = it, path = it, isDirectory = false, key = it) }
     }
     val roots = mutableListOf<KeyTreeNode>()
 
-    fun getOrCreateDir(chain: List<KeyTreeNode>, name: String, path: String): KeyTreeNode {
+    fun getOrCreateDir(
+        chain: List<KeyTreeNode>,
+        name: String,
+        path: String,
+    ): KeyTreeNode {
         val container = chain.lastOrNull()?.children ?: roots
         return container.firstOrNull { it.name == name && it.isDirectory }
             ?: KeyTreeNode(name = name, path = path, isDirectory = true).also { container.add(it) }

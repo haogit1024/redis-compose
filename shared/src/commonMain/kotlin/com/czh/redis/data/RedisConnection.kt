@@ -36,10 +36,11 @@ data class RedisConnection(
     @OptIn(ExperimentalUuidApi::class)
     fun withFreshId(): RedisConnection = copy(id = id.ifEmpty { Uuid.random().toString() })
 
-    fun validate(): String? = when {
-        name.isBlank() -> "连接名称不能为空"
-        host.isBlank() -> "Host 不能为空"
-        port.toIntOrNull() == null -> "端口格式不正确"
-        else -> null
-    }
+    fun validate(): String? =
+        when {
+            name.isBlank() -> "连接名称不能为空"
+            host.isBlank() -> "Host 不能为空"
+            port.toIntOrNull() == null -> "端口格式不正确"
+            else -> null
+        }
 }

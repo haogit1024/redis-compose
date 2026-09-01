@@ -63,40 +63,42 @@ class ConnectionFormState(initial: RedisConnection) {
     var testing by mutableStateOf(false)
     var testResult by mutableStateOf<String?>(null)
 
-    fun build(): RedisConnection = RedisConnection(
-        name = name,
-        host = host,
-        port = port,
-        username = username,
-        password = password,
-        defaultDb = defaultDb,
-        separator = separator,
-        color = color,
-        group = group,
-        ssh = ssh,
-        sshHost = sshHost,
-        sshPort = sshPort,
-        sshUsername = sshUsername,
-        sshPassword = sshPassword,
-        sshPrivateKey = sshPrivateKey,
-        ssl = ssl,
-        sslCa = sslCa,
-        sslCert = sslCert,
-        sslKey = sslKey,
-        connectTimeoutMs = connectTimeoutMs,
-        readonly = readonly,
-    )
+    fun build(): RedisConnection =
+        RedisConnection(
+            name = name,
+            host = host,
+            port = port,
+            username = username,
+            password = password,
+            defaultDb = defaultDb,
+            separator = separator,
+            color = color,
+            group = group,
+            ssh = ssh,
+            sshHost = sshHost,
+            sshPort = sshPort,
+            sshUsername = sshUsername,
+            sshPassword = sshPassword,
+            sshPrivateKey = sshPrivateKey,
+            ssl = ssl,
+            sslCa = sslCa,
+            sslCert = sslCert,
+            sslKey = sslKey,
+            connectTimeoutMs = connectTimeoutMs,
+            readonly = readonly,
+        )
 }
 
-val connectionColorOptions = listOf(
-    "" to "默认",
-    "#DC382C" to "红",
-    "#F59E0B" to "橙",
-    "#22A45D" to "绿",
-    "#3B82F6" to "蓝",
-    "#8B5CF6" to "紫",
-    "#EC4899" to "粉",
-)
+val connectionColorOptions =
+    listOf(
+        "" to "默认",
+        "#DC382C" to "红",
+        "#F59E0B" to "橙",
+        "#22A45D" to "绿",
+        "#3B82F6" to "蓝",
+        "#8B5CF6" to "紫",
+        "#EC4899" to "粉",
+    )
 
 @Composable
 fun NewConnectionDialog(vm: AppViewModel) {
@@ -112,14 +114,15 @@ fun NewConnectionDialog(vm: AppViewModel) {
         val connection = form.build().copy(id = data.editing?.id ?: "")
         scope.launch {
             val start = System.nanoTime()
-            val result = runCatching {
-                val client = createRedisClient(connection)
-                try {
-                    client.ping()
-                } finally {
-                    runCatching { client.close() }
+            val result =
+                runCatching {
+                    val client = createRedisClient(connection)
+                    try {
+                        client.ping()
+                    } finally {
+                        runCatching { client.close() }
+                    }
                 }
-            }
             val elapsed = (System.nanoTime() - start) / 1_000_000
             form.testing = false
             result.fold(
@@ -226,11 +229,12 @@ fun NewConnectionDialog(vm: AppViewModel) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         connectionColorOptions.forEach { (hex, label) ->
                             Box(
-                                modifier = Modifier
-                                    .padding(end = 5.dp)
-                                    .size(18.dp)
-                                    .background(parseColor(hex, Color.Gray), RoundedCornerShape(50))
-                                    .clickable { form.color = hex },
+                                modifier =
+                                    Modifier
+                                        .padding(end = 5.dp)
+                                        .size(18.dp)
+                                        .background(parseColor(hex, Color.Gray), RoundedCornerShape(50))
+                                        .clickable { form.color = hex },
                                 contentAlignment = Alignment.Center,
                             ) {
                                 if (form.color == hex) {
@@ -284,7 +288,11 @@ fun NewConnectionDialog(vm: AppViewModel) {
                     }
                 }
             }
-            Accordion(title = "高级（超时 / 只读模式）", expanded = form.advancedExpanded, onToggle = { form.advancedExpanded = !form.advancedExpanded }) {
+            Accordion(
+                title = "高级（超时 / 只读模式）",
+                expanded = form.advancedExpanded,
+                onToggle = { form.advancedExpanded = !form.advancedExpanded },
+            ) {
                 FormField(label = "连接超时（ms）") {
                     AppTextField(
                         value = form.connectTimeoutMs.toString(),
@@ -316,9 +324,10 @@ private fun FormField(
 private fun SectionLabel(text: String) {
     val colors = LocalAppColors.current
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 6.dp, bottom = 8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 6.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -329,10 +338,11 @@ private fun SectionLabel(text: String) {
         )
         Spacer(modifier = Modifier.width(8.dp))
         Box(
-            modifier = Modifier
-                .weight(1f)
-                .height(1.dp)
-                .background(colors.border),
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .height(1.dp)
+                    .background(colors.border),
         )
     }
 }
@@ -346,11 +356,12 @@ private fun Accordion(
 ) {
     val colors = LocalAppColors.current
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(colors.panelAlt, RoundedCornerShape(AppDimens.cornerMedium))
-            .clickable { onToggle() }
-            .padding(horizontal = 10.dp, vertical = 9.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(colors.panelAlt, RoundedCornerShape(AppDimens.cornerMedium))
+                .clickable { onToggle() }
+                .padding(horizontal = 10.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -384,16 +395,18 @@ private fun SwitchRow(
         Text(text = label, color = colors.text, fontSize = 12.sp)
         Spacer(modifier = Modifier.weight(1f))
         Box(
-            modifier = Modifier
-                .size(width = 34.dp, height = 18.dp)
-                .background(if (checked) colors.success else colors.border, RoundedCornerShape(50))
-                .padding(2.dp),
+            modifier =
+                Modifier
+                    .size(width = 34.dp, height = 18.dp)
+                    .background(if (checked) colors.success else colors.border, RoundedCornerShape(50))
+                    .padding(2.dp),
             contentAlignment = if (checked) Alignment.CenterEnd else Alignment.CenterStart,
         ) {
             Box(
-                modifier = Modifier
-                    .size(14.dp)
-                    .background(Color.White, RoundedCornerShape(50)),
+                modifier =
+                    Modifier
+                        .size(14.dp)
+                        .background(Color.White, RoundedCornerShape(50)),
             )
         }
     }

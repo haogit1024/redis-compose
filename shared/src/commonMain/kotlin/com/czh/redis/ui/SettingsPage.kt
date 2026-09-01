@@ -30,14 +30,18 @@ import com.czh.redis.ui.components.ButtonSize
 import com.czh.redis.ui.components.ButtonVariant
 
 @Composable
-fun SettingsPage(vm: AppViewModel, modifier: Modifier = Modifier) {
+fun SettingsPage(
+    vm: AppViewModel,
+    modifier: Modifier = Modifier,
+) {
     val colors = LocalAppColors.current
     Column(modifier = modifier.fillMaxSize().background(colors.background)) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(colors.panel)
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(colors.panel)
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(text = "设置", color = colors.text, fontSize = 14.sp)
@@ -51,10 +55,11 @@ fun SettingsPage(vm: AppViewModel, modifier: Modifier = Modifier) {
         }
 
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .padding(20.dp),
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp),
         ) {
             SettingsSection(
                 title = "外观",
@@ -62,9 +67,21 @@ fun SettingsPage(vm: AppViewModel, modifier: Modifier = Modifier) {
             ) {
                 SettingRow("应用主题", "浅色 / 深色 / 跟随系统") {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ThemeOption("浅色", vm.settings.theme == "light", colors.panel) { vm.updateSettings(vm.settings.copy(theme = "light")) }
-                        ThemeOption("深色", vm.settings.theme == "dark", colors.panelAlt) { vm.updateSettings(vm.settings.copy(theme = "dark")) }
-                        ThemeOption("跟随系统", vm.settings.theme == "system", colors.tabBg) { vm.updateSettings(vm.settings.copy(theme = "system")) }
+                        ThemeOption(
+                            "浅色",
+                            vm.settings.theme == "light",
+                            colors.panel,
+                        ) { vm.updateSettings(vm.settings.copy(theme = "light")) }
+                        ThemeOption(
+                            "深色",
+                            vm.settings.theme == "dark",
+                            colors.panelAlt,
+                        ) { vm.updateSettings(vm.settings.copy(theme = "dark")) }
+                        ThemeOption(
+                            "跟随系统",
+                            vm.settings.theme == "system",
+                            colors.tabBg,
+                        ) { vm.updateSettings(vm.settings.copy(theme = "system")) }
                     }
                 }
                 SettingRow("值/控制台字体", "等宽字体展示") {
@@ -153,9 +170,10 @@ private fun SettingsSection(
         Text(text = description, color = colors.textSecondary, fontSize = 12.sp)
         Spacer(modifier = Modifier.height(10.dp))
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(colors.panel, RoundedCornerShape(AppDimens.cornerLarge)),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(colors.panel, RoundedCornerShape(AppDimens.cornerLarge)),
         ) {
             content()
         }
@@ -170,9 +188,10 @@ private fun SettingRow(
 ) {
     val colors = LocalAppColors.current
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -194,21 +213,23 @@ private fun ThemeOption(
 ) {
     val colors = LocalAppColors.current
     Column(
-        modifier = Modifier
-            .width(84.dp)
-            .background(
-                if (selected) colors.selectedBg else Color.Transparent,
-                RoundedCornerShape(AppDimens.cornerLarge),
-            )
-            .clickable { onClick() }
-            .padding(6.dp),
+        modifier =
+            Modifier
+                .width(84.dp)
+                .background(
+                    if (selected) colors.selectedBg else Color.Transparent,
+                    RoundedCornerShape(AppDimens.cornerLarge),
+                )
+                .clickable { onClick() }
+                .padding(6.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(36.dp)
-                .background(previewColor, RoundedCornerShape(AppDimens.cornerMedium)),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(36.dp)
+                    .background(previewColor, RoundedCornerShape(AppDimens.cornerMedium)),
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
@@ -242,10 +263,11 @@ private fun SwitchSetting(
 ) {
     val colors = LocalAppColors.current
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onChange(!checked) }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { onChange(!checked) }
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
@@ -253,18 +275,20 @@ private fun SwitchSetting(
             Text(text = description, color = colors.textSecondary, fontSize = 11.sp)
         }
         Box(
-            modifier = Modifier
-                .width(36.dp)
-                .height(20.dp)
-                .background(if (checked) colors.success else colors.border, RoundedCornerShape(50))
-                .padding(2.dp),
+            modifier =
+                Modifier
+                    .width(36.dp)
+                    .height(20.dp)
+                    .background(if (checked) colors.success else colors.border, RoundedCornerShape(50))
+                    .padding(2.dp),
             contentAlignment = if (checked) Alignment.CenterEnd else Alignment.CenterStart,
         ) {
             Box(
-                modifier = Modifier
-                    .width(16.dp)
-                    .height(16.dp)
-                    .background(Color.White, RoundedCornerShape(50)),
+                modifier =
+                    Modifier
+                        .width(16.dp)
+                        .height(16.dp)
+                        .background(Color.White, RoundedCornerShape(50)),
             )
         }
     }

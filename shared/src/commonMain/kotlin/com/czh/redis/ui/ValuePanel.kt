@@ -19,8 +19,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -41,7 +41,6 @@ import com.czh.redis.ui.components.AppTextField
 import com.czh.redis.ui.components.ButtonSize
 import com.czh.redis.ui.components.ButtonVariant
 import com.czh.redis.ui.components.TypeBadge
-import com.czh.redis.ui.components.formatCount
 import kotlinx.coroutines.launch
 
 class HashRow(var originalField: String, field: String, value: String) {
@@ -82,7 +81,10 @@ class ValueState(
     val readonly: Boolean
         get() = session.isReadonly || vm.settings.readonly
 
-    fun load(key: String, type: RedisType) {
+    fun load(
+        key: String,
+        type: RedisType,
+    ) {
         this.key = key
         this.type = type
         loading = true
@@ -201,7 +203,10 @@ class ValueState(
         }
     }
 
-    fun listSave(row: ListRow, index: Int) {
+    fun listSave(
+        row: ListRow,
+        index: Int,
+    ) {
         val currentKey = key ?: return
         scope.launch {
             try {
@@ -276,10 +281,11 @@ class ValueState(
 
     fun zsetSave(row: ZSetRow) {
         val currentKey = key ?: return
-        val score = row.score.toDoubleOrNull() ?: run {
-            vm.showToast("score 必须是数字", ToastType.WARNING)
-            return
-        }
+        val score =
+            row.score.toDoubleOrNull() ?: run {
+                vm.showToast("score 必须是数字", ToastType.WARNING)
+                return
+            }
         scope.launch {
             try {
                 if (row.originalMember.isNotEmpty() && row.member != row.originalMember) {
@@ -338,12 +344,13 @@ fun ValuePanel(
             RedisType.LIST -> ListEditor(state)
             RedisType.SET -> SetEditor(state)
             RedisType.ZSET -> ZSetEditor(state)
-            else -> Box(
-                modifier = Modifier.fillMaxWidth().padding(24.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(text = "该类型暂不支持编辑", color = com.czh.redis.ui.LocalAppColors.current.textSecondary, fontSize = 12.sp)
-            }
+            else ->
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(24.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(text = "该类型暂不支持编辑", color = com.czh.redis.ui.LocalAppColors.current.textSecondary, fontSize = 12.sp)
+                }
         }
     }
 }
@@ -357,9 +364,10 @@ private fun EmptyValueHint(modifier: Modifier = Modifier) {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .background(colors.primary, RoundedCornerShape(14.dp)),
+                modifier =
+                    Modifier
+                        .size(56.dp)
+                        .background(colors.primary, RoundedCornerShape(14.dp)),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(text = "R", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
@@ -381,10 +389,11 @@ private fun ValueHeader(
     val type = state.type ?: return
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(colors.panel)
-            .padding(12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(colors.panel)
+                .padding(12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             TypeBadge(type)
@@ -440,9 +449,10 @@ private fun ValueHeader(
 private fun MetaChip(text: String) {
     val colors = LocalAppColors.current
     Box(
-        modifier = Modifier
-            .background(colors.panelAlt, RoundedCornerShape(AppDimens.cornerMedium))
-            .padding(horizontal = 8.dp, vertical = 3.dp),
+        modifier =
+            Modifier
+                .background(colors.panelAlt, RoundedCornerShape(AppDimens.cornerMedium))
+                .padding(horizontal = 8.dp, vertical = 3.dp),
     ) {
         Text(text = text, color = colors.textSecondary, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
     }
@@ -510,11 +520,12 @@ private fun StringEditor(state: ValueState) {
         AppMultilineTextField(
             value = displayed,
             onValueChange = {
-                state.stringValue = if (state.formatMode == "HEX") {
-                    it.replace(" ", "").trim()
-                } else {
-                    it
-                }
+                state.stringValue =
+                    if (state.formatMode == "HEX") {
+                        it.replace(" ", "").trim()
+                    } else {
+                        it
+                    }
             },
             mono = true,
             minHeight = 220.dp,
@@ -545,9 +556,10 @@ private fun HashEditor(state: ValueState) {
         }
         TableHeader(listOf("Field", "Value", ""))
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState()),
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
         ) {
             rows.forEach { row ->
                 Row(
@@ -603,9 +615,10 @@ private fun ListEditor(state: ValueState) {
         }
         TableHeader(listOf("Index", "Value", ""))
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState()),
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
         ) {
             state.listRows.forEachIndexed { index, row ->
                 Row(
@@ -654,9 +667,10 @@ private fun SetEditor(state: ValueState) {
         )
         TableHeader(listOf("Member", ""))
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState()),
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
         ) {
             state.setRows.forEach { row ->
                 Row(
@@ -698,9 +712,10 @@ private fun ZSetEditor(state: ValueState) {
         )
         TableHeader(listOf("Member", "Score", ""))
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState()),
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
         ) {
             state.zsetRows.forEach { row ->
                 Row(
@@ -742,10 +757,11 @@ private fun ZSetEditor(state: ValueState) {
 private fun TableHeader(columns: List<String>) {
     val colors = LocalAppColors.current
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(colors.panelAlt)
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(colors.panelAlt)
+                .padding(horizontal = 12.dp, vertical = 6.dp),
     ) {
         columns.forEachIndexed { index, column ->
             Text(
@@ -768,17 +784,19 @@ private fun RowActionButtons(
     val colors = LocalAppColors.current
     if (enabled) {
         Box(
-            modifier = Modifier
-                .size(26.dp)
-                .clickable { onSave() },
+            modifier =
+                Modifier
+                    .size(26.dp)
+                    .clickable { onSave() },
             contentAlignment = Alignment.Center,
         ) {
             Text(text = "💾", fontSize = 12.sp)
         }
         Box(
-            modifier = Modifier
-                .size(26.dp)
-                .clickable { onDelete() },
+            modifier =
+                Modifier
+                    .size(26.dp)
+                    .clickable { onDelete() },
             contentAlignment = Alignment.Center,
         ) {
             Text(text = "🗑", fontSize = 12.sp)

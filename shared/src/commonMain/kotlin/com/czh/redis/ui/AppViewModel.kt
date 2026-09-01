@@ -64,7 +64,11 @@ class ContextMenuState {
     var y by mutableStateOf(0f)
     var items by mutableStateOf<List<ContextMenuItem>>(emptyList())
 
-    fun show(x: Float, y: Float, items: List<ContextMenuItem>) {
+    fun show(
+        x: Float,
+        y: Float,
+        items: List<ContextMenuItem>,
+    ) {
         this.x = x
         this.y = y
         this.items = items
@@ -142,31 +146,35 @@ class ConsoleState(
         return true
     }
 
-    private fun renderResult(result: CommandResult): List<ConsoleLine> = when (result) {
-        is CommandResult.Status -> listOf(ConsoleLine(result.value, ConsoleLineKind.RESULT))
-        is CommandResult.Integer -> listOf(ConsoleLine("(integer) ${result.value}", ConsoleLineKind.RESULT))
-        is CommandResult.Bulk -> {
-            val text = com.czh.redis.redis.ValueCodec.decode(result.value)
-                ?: com.czh.redis.redis.ValueCodec.hex(result.value)
-            listOf(ConsoleLine("\"$text\"", ConsoleLineKind.RESULT))
+    private fun renderResult(result: CommandResult): List<ConsoleLine> =
+        when (result) {
+            is CommandResult.Status -> listOf(ConsoleLine(result.value, ConsoleLineKind.RESULT))
+            is CommandResult.Integer -> listOf(ConsoleLine("(integer) ${result.value}", ConsoleLineKind.RESULT))
+            is CommandResult.Bulk -> {
+                val text =
+                    com.czh.redis.redis.ValueCodec.decode(result.value)
+                        ?: com.czh.redis.redis.ValueCodec.hex(result.value)
+                listOf(ConsoleLine("\"$text\"", ConsoleLineKind.RESULT))
+            }
+            is CommandResult.Array ->
+                result.values.mapIndexed { index, value ->
+                    ConsoleLine("${index + 1}) $value", ConsoleLineKind.RESULT)
+                }
+            is CommandResult.Error -> listOf(ConsoleLine("(error) ${result.message}", ConsoleLineKind.ERROR))
+            CommandResult.Nil -> listOf(ConsoleLine("(nil)", ConsoleLineKind.RESULT))
+            CommandResult.Ok -> listOf(ConsoleLine("OK", ConsoleLineKind.RESULT))
         }
-        is CommandResult.Array -> result.values.mapIndexed { index, value ->
-            ConsoleLine("${index + 1}) $value", ConsoleLineKind.RESULT)
-        }
-        is CommandResult.Error -> listOf(ConsoleLine("(error) ${result.message}", ConsoleLineKind.ERROR))
-        CommandResult.Nil -> listOf(ConsoleLine("(nil)", ConsoleLineKind.RESULT))
-        CommandResult.Ok -> listOf(ConsoleLine("OK", ConsoleLineKind.RESULT))
-    }
 
     private fun isWriteCommand(command: String): Boolean {
-        val writeCommands = setOf(
-            "SET", "SETEX", "PSETEX", "SETNX", "GETSET", "APPEND", "SETRANGE", "MSET", "MSETNX", "INCR",
-            "INCRBY", "INCRBYFLOAT", "DECR", "DECRBY", "DEL", "UNLINK", "EXPIRE", "EXPIREAT", "PEXPIRE",
-            "PEXPIREAT", "PERSIST", "RENAME", "RENAMENX", "HSET", "HSETNX", "HDEL", "HINCRBY", "HMSET",
-            "LPUSH", "LPUSHX", "RPUSH", "RPUSHX", "LPOP", "RPOP", "LSET", "LREM", "LTRIM", "SADD",
-            "SREM", "SPOP", "SMOVE", "ZADD", "ZREM", "ZINCRBY", "FLUSHDB", "FLUSHALL", "SELECT",
-            "GETDEL", "GETEX", "COPY", "MOVE", "SWAPDB", "RESTORE", "PING", "MULTI", "EXEC",
-        )
+        val writeCommands =
+            setOf(
+                "SET", "SETEX", "PSETEX", "SETNX", "GETSET", "APPEND", "SETRANGE", "MSET", "MSETNX", "INCR",
+                "INCRBY", "INCRBYFLOAT", "DECR", "DECRBY", "DEL", "UNLINK", "EXPIRE", "EXPIREAT", "PEXPIRE",
+                "PEXPIREAT", "PERSIST", "RENAME", "RENAMENX", "HSET", "HSETNX", "HDEL", "HINCRBY", "HMSET",
+                "LPUSH", "LPUSHX", "RPUSH", "RPUSHX", "LPOP", "RPOP", "LSET", "LREM", "LTRIM", "SADD",
+                "SREM", "SPOP", "SMOVE", "ZADD", "ZREM", "ZINCRBY", "FLUSHDB", "FLUSHALL", "SELECT",
+                "GETDEL", "GETEX", "COPY", "MOVE", "SWAPDB", "RESTORE", "PING", "MULTI", "EXEC",
+            )
         return writeCommands.contains(command.uppercase())
     }
 }
@@ -277,7 +285,10 @@ class KeyBrowserState(
         rebuildTree()
     }
 
-    fun renameKey(oldKey: String, newKey: String) {
+    fun renameKey(
+        oldKey: String,
+        newKey: String,
+    ) {
         val idx = keys.indexOfFirst { it == oldKey }
         if (idx >= 0) keys[idx] = newKey
         val type = keyTypes.remove(oldKey)
@@ -319,19 +330,23 @@ class AppViewModel(private val scope: CoroutineScope) {
 
     fun connectionById(id: String?): RedisConnection? = connections.firstOrNull { it.id == id }
 
-    fun openTab(connectionId: String, type: TabType) {
+    fun openTab(
+        connectionId: String,
+        type: TabType,
+    ) {
         val tabId = tabId(connectionId, type)
         if (type != TabType.SETTINGS) {
             connectSession(connectionId)
         }
         if (tabs.none { it.id == tabId }) {
             val connection = connectionById(connectionId)
-            val title = when (type) {
-                TabType.KEYS -> connection?.name ?: "Keys"
-                TabType.CONSOLE -> "${connection?.name ?: ""} · 控制台"
-                TabType.SERVER_INFO -> "${connection?.name ?: ""} · 服务器信息"
-                TabType.SETTINGS -> "设置"
-            }
+            val title =
+                when (type) {
+                    TabType.KEYS -> connection?.name ?: "Keys"
+                    TabType.CONSOLE -> "${connection?.name ?: ""} · 控制台"
+                    TabType.SERVER_INFO -> "${connection?.name ?: ""} · 服务器信息"
+                    TabType.SETTINGS -> "设置"
+                }
             tabs.add(WorkspaceTab(tabId, title, connectionId, type))
             when (type) {
                 TabType.KEYS -> {
@@ -398,7 +413,10 @@ class AppViewModel(private val scope: CoroutineScope) {
         keyBrowsers.values.filter { it.session.connectionId == connectionId }.forEach { it.refresh() }
     }
 
-    fun switchDb(connectionId: String, db: Int) {
+    fun switchDb(
+        connectionId: String,
+        db: Int,
+    ) {
         val session = sessions[connectionId] ?: return
         session.currentDb = db
         scope.launch {
@@ -454,7 +472,11 @@ class AppViewModel(private val scope: CoroutineScope) {
         saveSettings(newSettings)
     }
 
-    fun showToast(message: String, type: ToastType, detail: String? = null) {
+    fun showToast(
+        message: String,
+        type: ToastType,
+        detail: String? = null,
+    ) {
         val toast = Toast(++toastCounter, message, type, detail)
         toasts.add(toast)
         scope.launch {
@@ -463,7 +485,11 @@ class AppViewModel(private val scope: CoroutineScope) {
         }
     }
 
-    fun confirm(message: String, confirmText: String = "删除", onConfirm: () -> Unit) {
+    fun confirm(
+        message: String,
+        confirmText: String = "删除",
+        onConfirm: () -> Unit,
+    ) {
         confirmRequest = ConfirmRequest(message, confirmText, onConfirm)
     }
 
@@ -486,7 +512,10 @@ class AppViewModel(private val scope: CoroutineScope) {
         }
     }
 
-    fun renameKeyTo(oldKey: String, newKey: String) {
+    fun renameKeyTo(
+        oldKey: String,
+        newKey: String,
+    ) {
         val browser = activeBrowser() ?: return
         val session = sessions[browser.session.connectionId] ?: return
         scope.launch {
@@ -500,7 +529,10 @@ class AppViewModel(private val scope: CoroutineScope) {
         }
     }
 
-    fun setTtl(key: String, ttl: Long) {
+    fun setTtl(
+        key: String,
+        ttl: Long,
+    ) {
         val browser = activeBrowser() ?: return
         val session = sessions[browser.session.connectionId] ?: return
         scope.launch {
@@ -532,7 +564,10 @@ class AppViewModel(private val scope: CoroutineScope) {
         return (0 until 16).map { DbInfo(it, counts[it] ?: 0) }
     }
 
-    private fun tabId(connectionId: String, type: TabType): String = "$connectionId-${type.name}"
+    private fun tabId(
+        connectionId: String,
+        type: TabType,
+    ): String = "$connectionId-${type.name}"
 }
 
 data class NewConnectionDialogData(val editing: RedisConnection?)

@@ -4,6 +4,13 @@ plugins {
     alias(libs.plugins.kotlinJvm)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.ktlint)
+}
+
+ktlint {
+    filter {
+        exclude { it.file.path.contains("/build/") }
+    }
 }
 
 dependencies {

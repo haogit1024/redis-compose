@@ -26,27 +26,30 @@ fun ContextMenuHost(menuState: ContextMenuState) {
     val colors = LocalAppColors.current
 
     Popup(
-        offset = IntOffset(
-            menuState.x.toInt(),
-            menuState.y.toInt(),
-        ),
+        offset =
+            IntOffset(
+                menuState.x.toInt(),
+                menuState.y.toInt(),
+            ),
         onDismissRequest = { menuState.dismiss() },
     ) {
         Column(
-            modifier = Modifier
-                .width(180.dp)
-                .background(colors.panel, RoundedCornerShape(AppDimens.cornerLarge))
-                .padding(5.dp),
+            modifier =
+                Modifier
+                    .width(180.dp)
+                    .background(colors.panel, RoundedCornerShape(AppDimens.cornerLarge))
+                    .padding(5.dp),
         ) {
             menuState.items.forEach { item ->
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            menuState.dismiss()
-                            item.onClick()
-                        }
-                        .padding(horizontal = 10.dp, vertical = 7.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                menuState.dismiss()
+                                item.onClick()
+                            }
+                            .padding(horizontal = 10.dp, vertical = 7.dp),
                     contentAlignment = Alignment.CenterStart,
                 ) {
                     Text(

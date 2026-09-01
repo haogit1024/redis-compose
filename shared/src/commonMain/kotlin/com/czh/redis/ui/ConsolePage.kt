@@ -1,9 +1,7 @@
 package com.czh.redis.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -36,7 +34,10 @@ import com.czh.redis.ui.components.ButtonVariant
 import kotlinx.coroutines.delay
 
 @Composable
-fun ConsolePage(state: ConsoleState, modifier: Modifier = Modifier) {
+fun ConsolePage(
+    state: ConsoleState,
+    modifier: Modifier = Modifier,
+) {
     val colors = LocalAppColors.current
     val listState = rememberLazyListState()
     val focusRequester = remember { FocusRequester() }
@@ -53,10 +54,11 @@ fun ConsolePage(state: ConsoleState, modifier: Modifier = Modifier) {
 
     Column(modifier = modifier.fillMaxSize().background(colors.panel)) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(colors.panelAlt)
-                .padding(horizontal = 14.dp, vertical = 8.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(colors.panelAlt)
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -81,14 +83,15 @@ fun ConsolePage(state: ConsoleState, modifier: Modifier = Modifier) {
         ) {
             items(state.lines.size) { index ->
                 val line = state.lines[index]
-                val lineColor = when (line.kind) {
-                    ConsoleLineKind.PROMPT -> colors.primary
-                    ConsoleLineKind.INPUT -> colors.text
-                    ConsoleLineKind.OUTPUT -> colors.textSecondary
-                    ConsoleLineKind.RESULT -> colors.success
-                    ConsoleLineKind.WARNING -> colors.warn
-                    ConsoleLineKind.ERROR -> colors.error
-                }
+                val lineColor =
+                    when (line.kind) {
+                        ConsoleLineKind.PROMPT -> colors.primary
+                        ConsoleLineKind.INPUT -> colors.text
+                        ConsoleLineKind.OUTPUT -> colors.textSecondary
+                        ConsoleLineKind.RESULT -> colors.success
+                        ConsoleLineKind.WARNING -> colors.warn
+                        ConsoleLineKind.ERROR -> colors.error
+                    }
                 Text(
                     text = line.text,
                     color = lineColor,
@@ -99,10 +102,11 @@ fun ConsolePage(state: ConsoleState, modifier: Modifier = Modifier) {
         }
 
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(colors.panelAlt)
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(colors.panelAlt)
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(

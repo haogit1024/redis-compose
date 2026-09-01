@@ -23,8 +23,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.czh.redis.redis.RedisType
@@ -38,7 +36,9 @@ import com.czh.redis.ui.components.TypeBadge
 import kotlinx.coroutines.launch
 
 class NewKeyField(val original: String, var value: String)
+
 class NewKeyHashRow(var field: String, var value: String)
+
 class NewKeyZRow(val originalMember: String, var member: String, var score: String)
 
 class NewKeyFormState {
@@ -55,7 +55,10 @@ class NewKeyFormState {
 }
 
 @Composable
-fun NewKeyDialog(vm: AppViewModel, session: Session?) {
+fun NewKeyDialog(
+    vm: AppViewModel,
+    session: Session?,
+) {
     if (vm.newKeyRequest == null) return
     if (session == null) {
         vm.newKeyRequest = null
@@ -79,14 +82,18 @@ fun NewKeyDialog(vm: AppViewModel, session: Session?) {
             try {
                 when (form.type) {
                     RedisType.STRING -> client.setString(form.keyName, form.stringValue.toByteArray())
-                    RedisType.HASH -> form.hashRows.filter { it.value.isNotEmpty() || it.field.isNotEmpty() }
-                        .forEach { client.hSet(form.keyName, it.field, it.value.toByteArray()) }
-                    RedisType.LIST -> form.listRows.filter { it.value.isNotEmpty() }
-                        .forEach { client.listPush(form.keyName, it.value.toByteArray(), form.listHead) }
-                    RedisType.SET -> form.setRows.filter { it.value.isNotEmpty() }
-                        .forEach { client.setAdd(form.keyName, it.value.toByteArray()) }
-                    RedisType.ZSET -> form.zsetRows.filter { it.score.toDoubleOrNull() != null && it.member.isNotEmpty() }
-                        .forEach { client.zAdd(form.keyName, it.member.toByteArray(), it.score.toDouble()) }
+                    RedisType.HASH ->
+                        form.hashRows.filter { it.value.isNotEmpty() || it.field.isNotEmpty() }
+                            .forEach { client.hSet(form.keyName, it.field, it.value.toByteArray()) }
+                    RedisType.LIST ->
+                        form.listRows.filter { it.value.isNotEmpty() }
+                            .forEach { client.listPush(form.keyName, it.value.toByteArray(), form.listHead) }
+                    RedisType.SET ->
+                        form.setRows.filter { it.value.isNotEmpty() }
+                            .forEach { client.setAdd(form.keyName, it.value.toByteArray()) }
+                    RedisType.ZSET ->
+                        form.zsetRows.filter { it.score.toDoubleOrNull() != null && it.member.isNotEmpty() }
+                            .forEach { client.zAdd(form.keyName, it.member.toByteArray(), it.score.toDouble()) }
                     else -> Unit
                 }
                 val parsedTtl = form.ttl.toLongOrNull() ?: -1
@@ -228,11 +235,12 @@ private fun TypePickerCard(
 ) {
     val colors = LocalAppColors.current
     Column(
-        modifier = modifier
-            .background(if (selected) colors.selectedBg else colors.panelAlt, RoundedCornerShape(AppDimens.cornerLarge))
-            .border(1.dp, if (selected) colors.primary else colors.border, RoundedCornerShape(AppDimens.cornerLarge))
-            .clickable { onClick() }
-            .padding(vertical = 10.dp),
+        modifier =
+            modifier
+                .background(if (selected) colors.selectedBg else colors.panelAlt, RoundedCornerShape(AppDimens.cornerLarge))
+                .border(1.dp, if (selected) colors.primary else colors.border, RoundedCornerShape(AppDimens.cornerLarge))
+                .clickable { onClick() }
+                .padding(vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         TypeBadge(type)
@@ -282,9 +290,10 @@ private fun KeyFieldRow(
             Spacer(modifier = Modifier.width(6.dp))
         }
         Box(
-            modifier = Modifier
-                .size(26.dp)
-                .clickable { onDelete() },
+            modifier =
+                Modifier
+                    .size(26.dp)
+                    .clickable { onDelete() },
             contentAlignment = Alignment.Center,
         ) {
             Text(text = "🗑", fontSize = 12.sp)
@@ -293,7 +302,10 @@ private fun KeyFieldRow(
 }
 
 @Composable
-private fun AddRowButton(text: String, onClick: () -> Unit) {
+private fun AddRowButton(
+    text: String,
+    onClick: () -> Unit,
+) {
     val colors = LocalAppColors.current
     Text(
         text = text,

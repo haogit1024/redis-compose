@@ -1,19 +1,25 @@
 package com.czh.redis.redis
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlin.ExperimentalStdlibApi
 
 object ValueCodec {
-    private val json = Json { prettyPrint = true; prettyPrintIndent = "  " }
+    @OptIn(ExperimentalSerializationApi::class)
+    private val json =
+        Json {
+            prettyPrint = true
+            prettyPrintIndent = "  "
+        }
 
     @OptIn(ExperimentalStdlibApi::class)
-    fun decode(bytes: ByteArray): String? = runCatching {
-        bytes.decodeToString(throwOnInvalidSequence = true)
-    }.getOrNull()
+    fun decode(bytes: ByteArray): String? =
+        runCatching {
+            bytes.decodeToString(throwOnInvalidSequence = true)
+        }.getOrNull()
 
-    fun hex(bytes: ByteArray): String =
-        bytes.joinToString(" ") { "%02X".format(it.toInt() and 0xFF) }
+    fun hex(bytes: ByteArray): String = bytes.joinToString(" ") { "%02X".format(it.toInt() and 0xFF) }
 
     fun isJson(text: String): Boolean {
         val trimmed = text.trim()
@@ -28,7 +34,10 @@ object ValueCodec {
 
     fun isBinary(bytes: ByteArray): Boolean = decode(bytes) == null
 
-    fun format(bytes: ByteArray, mode: String): String {
+    fun format(
+        bytes: ByteArray,
+        mode: String,
+    ): String {
         val text = decode(bytes)
         return when (mode) {
             "HEX" -> hex(bytes)

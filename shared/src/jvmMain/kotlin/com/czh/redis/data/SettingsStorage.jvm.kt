@@ -6,7 +6,11 @@ import java.io.File
 private val settingsFile: File
     get() = File(System.getProperty("user.home"), ".redis-compose/settings.json")
 
-private val json = Json { ignoreUnknownKeys = true; prettyPrint = true }
+private val json =
+    Json {
+        ignoreUnknownKeys = true
+        prettyPrint = true
+    }
 
 actual fun loadSettings(): AppSettings {
     val file = settingsFile

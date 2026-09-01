@@ -6,7 +6,11 @@ import java.io.File
 private val storageFile: File
     get() = File(System.getProperty("user.home"), ".redis-compose/connections.json")
 
-private val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
+private val json =
+    Json {
+        prettyPrint = true
+        ignoreUnknownKeys = true
+    }
 
 actual fun loadConnections(): List<RedisConnection> {
     val file = storageFile

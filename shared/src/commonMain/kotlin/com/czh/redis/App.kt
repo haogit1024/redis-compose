@@ -20,8 +20,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import com.czh.redis.ui.AppTheme
 import com.czh.redis.ui.AppViewModel
 import com.czh.redis.ui.ConnectionPanel
+import com.czh.redis.ui.ConsolePage
 import com.czh.redis.ui.KeyBrowserPage
 import com.czh.redis.ui.LocalAppColors
 import com.czh.redis.ui.NewConnectionDialog
@@ -39,13 +40,12 @@ import com.czh.redis.ui.SettingsPage
 import com.czh.redis.ui.StatusBar
 import com.czh.redis.ui.TabType
 import com.czh.redis.ui.WorkspaceTabBar
-import com.czh.redis.ui.ConsolePage
-import com.czh.redis.ui.resizeHPointerIcon
 import com.czh.redis.ui.components.ConfirmDialog
 import com.czh.redis.ui.components.ContextMenuHost
 import com.czh.redis.ui.components.RenameDialog
 import com.czh.redis.ui.components.ToastHost
 import com.czh.redis.ui.components.TtlEditDialog
+import com.czh.redis.ui.resizeHPointerIcon
 
 @Composable
 @Preview
@@ -67,9 +67,10 @@ fun AppRoot(vm: AppViewModel) {
     val density = LocalDensity.current
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(colors.background),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(colors.background),
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             WorkspaceTabBar(vm)
@@ -77,30 +78,33 @@ fun AppRoot(vm: AppViewModel) {
             Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 ConnectionPanel(
                     vm = vm,
-                    modifier = Modifier
-                        .width(leftPanelWidth.dp)
-                        .fillMaxHeight(),
+                    modifier =
+                        Modifier
+                            .width(leftPanelWidth.dp)
+                            .fillMaxHeight(),
                 )
 
                 Box(
-                    modifier = Modifier
-                        .width(4.dp)
-                        .fillMaxHeight()
-                        .background(colors.border)
-                        .pointerHoverIcon(resizeHPointerIcon())
-                        .pointerInput(Unit) {
-                            detectDragGestures { change, dragAmount ->
-                                change.consume()
-                                val deltaDp = with(density) { dragAmount.x.toDp().value }
-                                leftPanelWidth = (leftPanelWidth + deltaDp).coerceIn(200f, 480f)
-                            }
-                        },
+                    modifier =
+                        Modifier
+                            .width(4.dp)
+                            .fillMaxHeight()
+                            .background(colors.border)
+                            .pointerHoverIcon(resizeHPointerIcon())
+                            .pointerInput(Unit) {
+                                detectDragGestures { change, dragAmount ->
+                                    change.consume()
+                                    val deltaDp = with(density) { dragAmount.x.toDp().value }
+                                    leftPanelWidth = (leftPanelWidth + deltaDp).coerceIn(200f, 480f)
+                                }
+                            },
                 )
 
                 Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
                 ) {
                     WorkspaceContent(vm)
                 }
@@ -111,9 +115,10 @@ fun AppRoot(vm: AppViewModel) {
 
         ToastHost(
             toasts = vm.toasts.toList(),
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp),
+            modifier =
+                Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp),
         )
         ContextMenuHost(vm.contextMenu)
 
@@ -157,9 +162,10 @@ fun EmptyWorkspace() {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
-                modifier = Modifier
-                    .width(64.dp)
-                    .background(colors.primary, androidx.compose.foundation.shape.RoundedCornerShape(16.dp)),
+                modifier =
+                    Modifier
+                        .width(64.dp)
+                        .background(colors.primary, androidx.compose.foundation.shape.RoundedCornerShape(16.dp)),
             ) {
                 Text(
                     text = "R",
@@ -217,7 +223,10 @@ fun WorkspaceContent(vm: AppViewModel) {
 }
 
 @Composable
-fun ConnectingWorkspace(vm: AppViewModel, tab: com.czh.redis.ui.WorkspaceTab) {
+fun ConnectingWorkspace(
+    vm: AppViewModel,
+    tab: com.czh.redis.ui.WorkspaceTab,
+) {
     val colors = LocalAppColors.current
     val session = tab.connectionId?.let { vm.sessions[it] }
     val name = tab.connectionId?.let { vm.connectionById(it)?.name } ?: "连接"

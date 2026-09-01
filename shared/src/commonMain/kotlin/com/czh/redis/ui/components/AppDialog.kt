@@ -44,18 +44,20 @@ fun AppDialog(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            dismissOnBackPress = true,
-            dismissOnClickOutside = true,
-        ),
+        properties =
+            DialogProperties(
+                dismissOnBackPress = true,
+                dismissOnClickOutside = true,
+            ),
     ) {
         Column(
-            modifier = modifier
-                .width(width)
-                .heightIn(max = maxHeight)
-                .background(colors.panel, RoundedCornerShape(AppDimens.cornerDialog))
-                .border(1.dp, colors.border, RoundedCornerShape(AppDimens.cornerDialog))
-                .padding(AppDimens.paddingLarge),
+            modifier =
+                modifier
+                    .width(width)
+                    .heightIn(max = maxHeight)
+                    .background(colors.panel, RoundedCornerShape(AppDimens.cornerDialog))
+                    .border(1.dp, colors.border, RoundedCornerShape(AppDimens.cornerDialog))
+                    .padding(AppDimens.paddingLarge),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -64,9 +66,10 @@ fun AppDialog(
                 Text(text = title, color = colors.text, fontSize = 15.sp)
                 Spacer(modifier = Modifier.weight(1f))
                 Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clickable { onDismiss() },
+                    modifier =
+                        Modifier
+                            .size(24.dp)
+                            .clickable { onDismiss() },
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(text = "✕", color = colors.textSecondary, fontSize = 14.sp)
@@ -76,9 +79,10 @@ fun AppDialog(
             Spacer(modifier = Modifier.size(AppDimens.paddingMedium))
 
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
             ) {
                 content()
             }

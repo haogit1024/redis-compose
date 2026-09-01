@@ -15,21 +15,26 @@ import com.czh.redis.redis.RedisType
 import com.czh.redis.ui.TypeColors
 
 @Composable
-fun TypeBadge(type: RedisType, modifier: Modifier = Modifier) {
+fun TypeBadge(
+    type: RedisType,
+    modifier: Modifier = Modifier,
+) {
     val color = TypeColors.forType(type)
-    val label = when (type) {
-        RedisType.STRING -> "STR"
-        RedisType.HASH -> "HASH"
-        RedisType.LIST -> "LIST"
-        RedisType.SET -> "SET"
-        RedisType.ZSET -> "ZSET"
-        RedisType.STREAM -> "STREAM"
-        RedisType.NONE -> "NONE"
-    }
+    val label =
+        when (type) {
+            RedisType.STRING -> "STR"
+            RedisType.HASH -> "HASH"
+            RedisType.LIST -> "LIST"
+            RedisType.SET -> "SET"
+            RedisType.ZSET -> "ZSET"
+            RedisType.STREAM -> "STREAM"
+            RedisType.NONE -> "NONE"
+        }
     Box(
-        modifier = modifier
-            .background(color.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
-            .padding(horizontal = 5.dp, vertical = 2.dp),
+        modifier =
+            modifier
+                .background(color.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
+                .padding(horizontal = 5.dp, vertical = 2.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -42,17 +47,22 @@ fun TypeBadge(type: RedisType, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun StatusDot(status: com.czh.redis.ui.ConnectionStatus, modifier: Modifier = Modifier) {
+fun StatusDot(
+    status: com.czh.redis.ui.ConnectionStatus,
+    modifier: Modifier = Modifier,
+) {
     val colors = com.czh.redis.ui.LocalAppColors.current
-    val color = when (status) {
-        com.czh.redis.ui.ConnectionStatus.CONNECTED -> colors.success
-        com.czh.redis.ui.ConnectionStatus.CONNECTING -> colors.warn
-        com.czh.redis.ui.ConnectionStatus.ERROR -> colors.error
-        com.czh.redis.ui.ConnectionStatus.DISCONNECTED -> Color.Gray
-    }
+    val color =
+        when (status) {
+            com.czh.redis.ui.ConnectionStatus.CONNECTED -> colors.success
+            com.czh.redis.ui.ConnectionStatus.CONNECTING -> colors.warn
+            com.czh.redis.ui.ConnectionStatus.ERROR -> colors.error
+            com.czh.redis.ui.ConnectionStatus.DISCONNECTED -> Color.Gray
+        }
     Box(
-        modifier = modifier
-            .background(color, RoundedCornerShape(50))
-            .padding(3.5.dp),
+        modifier =
+            modifier
+                .background(color, RoundedCornerShape(50))
+                .padding(3.5.dp),
     )
 }

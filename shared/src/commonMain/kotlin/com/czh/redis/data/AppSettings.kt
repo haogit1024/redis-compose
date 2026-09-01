@@ -14,9 +14,10 @@ data class AppSettings(
     val encryptPassword: Boolean = true,
     val language: String = "zh-CN",
 ) {
-    fun isDark(platformDark: Boolean): Boolean = when (theme) {
-        "light" -> false
-        "dark" -> true
-        else -> platformDark
-    }
+    fun isDark(platformDark: Boolean): Boolean =
+        when (theme) {
+            "light" -> false
+            "dark" -> true
+            else -> platformDark
+        }
 }

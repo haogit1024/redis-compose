@@ -36,12 +36,13 @@ fun AppSelect(
 
     Box(modifier = modifier) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(height)
-                .clickable { expanded = true }
-                .padding(horizontal = AppDimens.paddingSmall)
-                .then(Modifier.border(1.dp, colors.border, RoundedCornerShape(AppDimens.cornerMedium))),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(height)
+                    .clickable { expanded = true }
+                    .padding(horizontal = AppDimens.paddingSmall)
+                    .then(Modifier.border(1.dp, colors.border, RoundedCornerShape(AppDimens.cornerMedium))),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(

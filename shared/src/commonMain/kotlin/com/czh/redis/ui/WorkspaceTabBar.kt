@@ -18,28 +18,33 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.czh.redis.ui.components.AppButton
-import com.czh.redis.ui.components.ButtonVariant
 import com.czh.redis.ui.components.ButtonSize
+import com.czh.redis.ui.components.ButtonVariant
 
 @Composable
-fun WorkspaceTabBar(vm: AppViewModel, modifier: Modifier = Modifier) {
+fun WorkspaceTabBar(
+    vm: AppViewModel,
+    modifier: Modifier = Modifier,
+) {
     val colors = LocalAppColors.current
 
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(38.dp)
-            .background(colors.tabBg),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(38.dp)
+                .background(colors.tabBg),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         vm.tabs.forEach { tab ->
             val active = vm.activeTabId == tab.id
             Row(
-                modifier = Modifier
-                    .height(38.dp)
-                    .background(if (active) colors.panel else colors.tabBg)
-                    .clickable { vm.activeTabId = tab.id }
-                    .padding(horizontal = 12.dp),
+                modifier =
+                    Modifier
+                        .height(38.dp)
+                        .background(if (active) colors.panel else colors.tabBg)
+                        .clickable { vm.activeTabId = tab.id }
+                        .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -52,9 +57,10 @@ fun WorkspaceTabBar(vm: AppViewModel, modifier: Modifier = Modifier) {
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Box(
-                    modifier = Modifier
-                        .size(16.dp)
-                        .clickable { vm.closeTab(tab.id) },
+                    modifier =
+                        Modifier
+                            .size(16.dp)
+                            .clickable { vm.closeTab(tab.id) },
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(

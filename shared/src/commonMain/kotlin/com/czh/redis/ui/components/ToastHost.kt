@@ -48,19 +48,21 @@ fun ToastHost(
         horizontalAlignment = Alignment.End,
     ) {
         toasts.forEach { toast ->
-            val borderColor = when (toast.type) {
-                ToastType.SUCCESS -> colors.success
-                ToastType.ERROR -> colors.error
-                ToastType.WARNING -> colors.warn
-                ToastType.INFO -> colors.primary
-            }
+            val borderColor =
+                when (toast.type) {
+                    ToastType.SUCCESS -> colors.success
+                    ToastType.ERROR -> colors.error
+                    ToastType.WARNING -> colors.warn
+                    ToastType.INFO -> colors.primary
+                }
             Row(
-                modifier = Modifier
-                    .widthIn(min = 260.dp, max = 420.dp)
-                    .background(colors.panel, RoundedCornerShape(8.dp))
-                    .border(1.dp, colors.border, RoundedCornerShape(8.dp))
-                    .border(3.dp, borderColor, RoundedCornerShape(8.dp))
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                modifier =
+                    Modifier
+                        .widthIn(min = 260.dp, max = 420.dp)
+                        .background(colors.panel, RoundedCornerShape(8.dp))
+                        .border(1.dp, colors.border, RoundedCornerShape(8.dp))
+                        .border(3.dp, borderColor, RoundedCornerShape(8.dp))
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(text = "●", color = borderColor, fontSize = 10.sp)
@@ -86,9 +88,10 @@ fun ToastHost(
                                 text = "查看详情",
                                 color = colors.primary,
                                 fontSize = 11.sp,
-                                modifier = Modifier
-                                    .clickable { detailToast = toast }
-                                    .padding(2.dp),
+                                modifier =
+                                    Modifier
+                                        .clickable { detailToast = toast }
+                                        .padding(2.dp),
                             )
                         }
                     }

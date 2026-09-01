@@ -11,7 +11,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.text.TextStyle
@@ -39,11 +38,12 @@ fun AppTextField(
     onPreviewKeyEvent: (androidx.compose.ui.input.key.KeyEvent) -> Boolean = { false },
 ) {
     val colors = LocalAppColors.current
-    val textStyle = TextStyle(
-        color = colors.text,
-        fontSize = fontSize.sp,
-        fontFamily = if (mono) FontFamily.Monospace else FontFamily.Default,
-    )
+    val textStyle =
+        TextStyle(
+            color = colors.text,
+            fontSize = fontSize.sp,
+            fontFamily = if (mono) FontFamily.Monospace else FontFamily.Default,
+        )
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
@@ -52,12 +52,13 @@ fun AppTextField(
         readOnly = readOnly,
         singleLine = singleLine,
         visualTransformation = if (password) PasswordVisualTransformation() else VisualTransformation.None,
-        modifier = modifier
-            .fillMaxWidth()
-            .background(colors.panel, RoundedCornerShape(AppDimens.cornerMedium))
-            .border(1.dp, colors.border, RoundedCornerShape(AppDimens.cornerMedium))
-            .padding(horizontal = AppDimens.paddingSmall, vertical = 0.dp)
-            .onPreviewKeyEvent(onPreviewKeyEvent),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .background(colors.panel, RoundedCornerShape(AppDimens.cornerMedium))
+                .border(1.dp, colors.border, RoundedCornerShape(AppDimens.cornerMedium))
+                .padding(horizontal = AppDimens.paddingSmall, vertical = 0.dp)
+                .onPreviewKeyEvent(onPreviewKeyEvent),
         decorationBox = { innerTextField ->
             Box(
                 modifier = Modifier.fillMaxWidth().height(height),
@@ -89,17 +90,19 @@ fun AppMultilineTextField(
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
-        textStyle = TextStyle(
-            color = colors.text,
-            fontSize = 12.sp,
-            fontFamily = if (mono) FontFamily.Monospace else FontFamily.Default,
-        ),
+        textStyle =
+            TextStyle(
+                color = colors.text,
+                fontSize = 12.sp,
+                fontFamily = if (mono) FontFamily.Monospace else FontFamily.Default,
+            ),
         cursorBrush = SolidColor(colors.primary),
-        modifier = modifier
-            .fillMaxWidth()
-            .background(colors.panel, RoundedCornerShape(AppDimens.cornerMedium))
-            .border(1.dp, colors.border, RoundedCornerShape(AppDimens.cornerMedium))
-            .padding(AppDimens.paddingMedium),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .background(colors.panel, RoundedCornerShape(AppDimens.cornerMedium))
+                .border(1.dp, colors.border, RoundedCornerShape(AppDimens.cornerMedium))
+                .padding(AppDimens.paddingMedium),
         decorationBox = { innerTextField ->
             Box(modifier = Modifier.fillMaxWidth().height(minHeight)) {
                 if (value.isEmpty() && placeholder.isNotEmpty()) {
