@@ -681,17 +681,24 @@ class ConsoleState(
     val onToast: (String, ToastKind) -> Unit,
     val onRecordCommand: (String) -> Unit,
     private val scope: CoroutineScope,
+    private val onDatabaseSelected: (Int) -> Unit = {},
 ) {
     val entries = mutableStateListOf<ConsoleEntry>()
     val history = mutableStateListOf<String>()
+    val historyItems = mutableStateListOf<ConsoleHistoryItem>()
     var input by mutableStateOf("")
     var isRunning by mutableStateOf(false)
     var suggestionVisible by mutableStateOf(false)
+    var historyCursor by mutableStateOf(-1)
 
     fun execute(raw: String)
     fun clear()
     fun fillFromHistory(direction: Int)
     fun fillCommand(command: String)
+    fun updateInput(value: String)
+    fun acceptSuggestion(command: String)
+    fun plainTextLog(): String
+    fun dispose()
 }
 ```
 

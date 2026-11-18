@@ -12,7 +12,7 @@
 | 3 — AppState 与外壳 | 已验收 | 2026-11-18 | 见下文 §Phase 3 | 见“遗留风险” |
 | 4 — Key 浏览器 | 已验收 | 2026-11-18 | 见下文 §Phase 4 | 见“遗留风险” |
 | 5 — 值编辑器 | 已验收 | 2026-11-18 | 见下文 §Phase 5 | 见“遗留风险” |
-| 6 — 控制台 | 未开始 | — | — | — |
+| 6 — 控制台 | 已验收 | 2026-11-19 | 见下文 §Phase 6 | 见“遗留风险” |
 | 7 — 洞察 | 未开始 | — | — | — |
 | 8 — 连接库 | 未开始 | — | — | — |
 | 9 — 设置 + 命令面板 | 未开始 | — | — | — |
@@ -420,12 +420,71 @@
 
 ---
 
+## Phase 6 — 命令控制台（已验收）
+
+### 完成内容
+
+#### 工具与状态
+
+- `util/RedisCommandParser.kt`：单行命令解析，支持单/双引号、双引号内 `\" \\ \n \t \r \b` 转义、空参数；未闭合引号返回 null，控制台显示解析错误且不发送。
+- `util/RedisCommandCatalog.kt`：本地常用命令 + 语法表（含 MEMORY USAGE / SLOWLOG GET / CLIENT LIST / CONFIG GET 等多词命令），按前缀最多 6 条建议。
+- `util/WriteCommandGuard.kt`：`READ / WRITE / UNKNOWN` 分类；覆盖计划中的写命令，并额外覆盖 SORT/位图/Streams/Geo/ACL 等；多词命令检查前两个 token；未知命令在只读模式下拦截；`DUMP / PUBLISH / CLIENT LIST / SELECT / CONFIG GET` 等允许。
+- `feature/console/ConsoleEntry.kt`：Command / Note / Output / Error；Command 记录执行时 prompt（db 准确）；另维护历史行（时间、耗时、摘要、失败态）。
+- `feature/console/ConsoleState.kt`：
+  - 初始 Note、欢迎语随连接/版本刷新；历史从 `settings.recentCommands` 恢复（最多 20 条），会话历史上限 200。
+  - `execute`：解析 → Command entry → 历史 → 只读拦截 → `gateway.execute` → Output/Error；连接异常才 toast；命令错误只进终端。
+  - 历史 ↑↓、点击填充、`fillCommand`、清空只保留 history；输入补全与建议状态独立维护。
+  - `SELECT n` 成功后同步 `RedisSession.currentDatabase` 并通知 AppState 刷新 Keys 面板；命令耗时记录，成功后调用 `onRecordCommand`（AppState 写 `recentCommands`，最多 20 条、去重相邻）。
+  - 只读模式 PUBLISH 允许但追加 Note 说明副作用；未知命令给出专门提示。
+  - 每个 tab 独立 SupervisorJob；关闭 tab 取消进行中的命令。
+- `feature/console/ConsoleOutput.kt`：递归 reply → 终端行；Simple/Integer/Bulk/Nil/Error/Array；UTF-8 bulk 引号、非 UTF-8 HEX、多行 bulk 逐行；嵌套数组编号 + 缩进；数组最多 200 项、深度 3、bulk 300 行、单结果 600 行、单条日志 500 entries 截断；`plainText` 供复制日志。
+
+#### UI
+
+- `ConsoleScreen`：主区（toolbar / terminal / quick commands / composer）+ 272dp 历史栏；内容宽度 < 720dp 时隐藏历史栏；深/浅主题下终端始终使用深色 token。
+- `ConsoleToolbar`：`Command console` + host:port / dbN + 只读 badge + 真实 RTT badge + 命令帮助 Dialog（快捷键、只读规则、PUBLISH 说明）。
+- 终端：37dp 标题栏（三色圆点、`redis-cli — 连接名`、db 徽标、复制/清空）、`LazyColumn` 日志、用户上滚暂停自动滚动、回到底部恢复。
+- `ConsoleBlock`：命令时间 + `redis@name:port[db]>` prompt + 命令；结果头部类型/数量/耗时；递归行按 tone 着色；错误红色 `(error)`。
+- `CommandComposer`：聚焦环、prompt、单行输入、`⌘↵ 执行` 提示、运行按钮 loading；补全 Popup（最多 6 条，命令 + 语法）；Enter 执行、Tab 补全、Esc 关闭、↑↓ 历史。
+- `QuickCommands`：INFO memory / DBSIZE / SLOWLOG GET 10 / SCAN 0 COUNT 100 / MEMORY DOCTOR；点击只填充并聚焦。
+- `ConsoleHistoryPane`：真实会话历史（时间、命令、耗时、摘要、失败色）、静态收藏命令（只填充不执行）、快捷键提示；持久命中的 recentCommands 以 `--:-- / 历史` 恢复。
+- 复制全部日志到剪贴板并 toast；清空会话保留历史；导出文件按计划未实现（按钮未提供）。
+- 终端专用颜色 token 加入 `AppColors`（深/浅主题均保持深色终端），新增 console/terminal 尺寸与 `terminal`、`terminalSmall` 文本样式。
+- `AppState` 增加 `consoles` 生命周期：打开 Console tab 创建、关闭 tab/保存或删除连接/退出 dispose；命令成功写入 `settings.recentCommands`。
+
+### 验证
+
+| 命令 | 结果 |
+| --- | --- |
+| `./gradlew :app:jvmTest` | 164 tests，0 failures（新增 parser/guard/catalog/output/console state/AppState 用例） |
+| `./gradlew ktlintCheck` | 通过 |
+| `./gradlew build` | 通过 |
+| `./gradlew :desktopApp:run` | 启动成功，进程存活 |
+| 离屏渲染 | 1440×900 深/浅、802×590 内容宽度、输入填充/历史恢复；终端深色底、嵌套数组、历史栏和 composer 布局正常 |
+| 真实 Redis 控制台联调 | PING / DBSIZE / INFO memory / GET / SCAN(嵌套数组) 通过；只读模式 SET 被拦截、GET 正常；测试 Key 清理后 db0 恢复 0 |
+
+真实联调使用 `redis-compose:phase6:<timestamp>:` 前缀，只创建一个测试 String 并在 finally 删除；未记录服务器地址或密码。
+
+### 遗留风险与边界
+
+1. **补全弹层未离屏验证**：补全使用 `Popup`，离屏渲染不包含弹层；逻辑由 catalog 单测与 Composer 代码检查覆盖。macOS 未授权自动按键，Enter/Tab/↑↓/Esc 未做 UI 自动回放。
+2. **导出文件未实现**：计划为可选项；当前只提供复制全部日志。
+3. **HGETALL 表格**：按计划可选项，当前以递归数组（字段/值交替）显示，没有两列表格。
+4. **PING 显示引号**：Jedis 对 PING 返回 bulk，控制台显示 `"PONG"` 而非 `PONG`；属于网关/协议信息损失，不影响结果。
+5. **历史恢复**：仅 recentCommands 持久化；重开 tab 后历史栏以 `--:-- / 历史` 恢复命令，耗时/摘要不保留。
+6. **只读安全**：未知命令一律拦截；PUBLISH 允许并提示副作用。若未来接入 Pub/Sub 面板需重新评估。
+7. **大输出**：输出有项数/深度/行数/entry 上限；极端二进制或超大 bulk 仍可能占用较多内存。
+8. **非目标**：多行命令、Monitor、Pub/Sub 订阅、完整参数补全、命令收藏持久化。
+9. **剪贴板**：仍使用 `LocalClipboardManager`（deprecation warning），Phase 10 统一替换。
+
+---
+
 ## 当前基线
 
 - 分支：`feat/rewrite-ui`；模块：`:desktopApp` + `:app`。
 - 包名：`com.czh.rediscompose`；入口：`com.czh.rediscompose.desktop.MainKt`。
 - 应用启动直接进入新外壳（顶栏 / rail / 连接侧栏 / tab / 状态栏），不再显示设计画廊。
-- `AppState` + `RedisSession` 已接管连接、tab、主题、设置与旧数据迁移；测试 128/128 通过。
-- Keys 页已接入真实 SCAN Key 浏览器与值面板（6 种类型查看、String/Hash/List/Set/ZSet 编辑、Stream 只读、TTL/重命名/删除/新建）；Console / Insights / Connections / Settings 仍是占位内容。
-- 下一步 Phase 6：命令控制台、历史与结果渲染；不要提前实现洞察/连接库/设置。
-- 下一阶段前置条件：Phase 5 已在测试实例完成真实读写联调，Phase 6 可直接复用同一连接；开始前需用户确认 Phase 5 验收。
+- `AppState` + `RedisSession` 已接管连接、tab、主题、设置与旧数据迁移；测试 164/164 通过。
+- Keys 页已接入真实 SCAN Key 浏览器与值面板；Console 页已接入真实命令控制台（执行、递归结果、历史、补全、只读拦截）；Insights / Connections / Settings 仍是占位内容。
+- 下一步 Phase 7：服务器洞察仪表盘（KPI、会话内采样图表、慢查询、健康检查）；不要提前实现连接库/设置。
+- 下一阶段前置条件：Phase 6 已在测试实例完成真实命令联调；Phase 7 可直接复用同一连接与 `RedisSession.summary`；开始前需用户确认 Phase 6 验收。

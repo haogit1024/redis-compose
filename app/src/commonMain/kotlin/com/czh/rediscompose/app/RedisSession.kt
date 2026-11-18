@@ -101,6 +101,14 @@ class RedisSession(
         currentDatabase = index
     }
 
+    /**
+     * Keeps [currentDatabase] in sync when a command (such as console `SELECT`) changed the
+     * database on the shared connection.
+     */
+    fun recordDatabaseSelection(index: Int) {
+        if (index in 0 until DATABASE_COUNT) currentDatabase = index
+    }
+
     fun disconnect() {
         runCatching { gateway.close() }
         sessionJob.cancel()

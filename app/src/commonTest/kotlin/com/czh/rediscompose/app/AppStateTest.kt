@@ -198,6 +198,24 @@ class AppStateTest {
     }
 
     @Test
+    fun `console tab records recent commands and closes with the tab`() {
+        val container = FakeAppContainer(initialConnections = listOf(profile()))
+        val state = state(container)
+        state.openTab("c1", WorkspaceTabKind.CONSOLE)
+        val console = assertNotNull(state.consoleFor("c1"))
+        container.gateway.executeReply = com.czh.rediscompose.domain.command.RedisReply.Simple("PONG")
+
+        console.execute("PING")
+
+        assertEquals(listOf("PING"), state.settings.recentCommands)
+        assertEquals(listOf("PING"), container.settingsRepository.saved?.recentCommands)
+
+        state.closeTab("c1:console")
+        assertNull(state.consoleFor("c1"))
+        state.close()
+    }
+
+    @Test
     fun `switching database refreshes the key browser`() {
         val container = FakeAppContainer(initialConnections = listOf(profile()))
         val state = state(container)

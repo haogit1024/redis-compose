@@ -49,6 +49,10 @@ class FakeRedisGateway(
     var memoryByKey: Map<String, Long> = emptyMap()
     var encodingByKey: Map<String, String> = emptyMap()
     var writeError: Exception? = null
+    var executeReply: RedisReply? = null
+    var executeError: Exception? = null
+
+    val executedCommands = mutableListOf<List<String>>()
 
     /** Page size used by [scan]; smaller than the requested COUNT keeps tests multi-page. */
     var scanPageSize: Int = 1_000
@@ -320,12 +324,16 @@ class FakeRedisGateway(
 
     override suspend fun commandStats(): List<CommandStat> = emptyList()
 
-    override suspend fun execute(args: List<String>): RedisReply =
-        when {
+    override suspend fun execute(args: List<String>): RedisReply {
+        executedCommands += args
+        executeError?.let { throw it }
+        executeReply?.let { return it }
+        return when {
             args.size == 2 && args[0].equals("XLEN", ignoreCase = true) ->
                 RedisReply.Integer((streamValues[args[1]]?.size ?: 0).toLong())
             else -> RedisReply.Nil
         }
+    }
 
     override fun close() {
         connected = false

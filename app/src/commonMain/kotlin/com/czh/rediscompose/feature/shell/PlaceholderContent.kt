@@ -45,6 +45,7 @@ import com.czh.rediscompose.design.theme.LocalAppColors
 import com.czh.rediscompose.design.theme.LocalAppDimens
 import com.czh.rediscompose.design.theme.LocalAppTypography
 import com.czh.rediscompose.domain.connection.ConnectionProfile
+import com.czh.rediscompose.feature.console.ConsoleScreen
 import com.czh.rediscompose.feature.workspace.WorkspaceScreen
 
 @Composable
@@ -77,7 +78,14 @@ private fun WorkspaceContent(state: AppState) {
                 AppLoading(label = "正在准备 Key 浏览器…")
             }
         }
-        WorkspaceTabKind.CONSOLE -> ConsolePlaceholder(state, tab)
+        WorkspaceTabKind.CONSOLE -> {
+            val console = state.consoleFor(tab.connectionId)
+            if (console != null) {
+                ConsoleScreen(console = console)
+            } else {
+                AppLoading(label = "正在准备命令控制台…")
+            }
+        }
         WorkspaceTabKind.INSIGHTS -> InsightsPlaceholder(state, tab)
     }
 }
@@ -125,26 +133,6 @@ private fun EmptyWorkspace(state: AppState) {
                 icon = AppIcons.Connections,
             )
         }
-    }
-}
-
-@Composable
-private fun ConsolePlaceholder(
-    state: AppState,
-    tab: WorkspaceTab,
-) {
-    val connection = state.connections.firstOrNull { it.id == tab.connectionId }
-    PageScaffold(
-        eyebrow = "WORKSPACE · CONSOLE",
-        title = "命令控制台",
-        description = "Phase 6 将提供命令输入、历史、补全与结果渲染。",
-        meta = connection,
-    ) {
-        PlaceholderCard(
-            icon = AppIcons.Console,
-            title = "控制台尚未接入",
-            description = "当前阶段只验证标签页与连接会话；命令面板与执行结果会在后续阶段实现。",
-        )
     }
 }
 

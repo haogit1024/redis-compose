@@ -45,6 +45,8 @@ data class AppTypography(
     val metaValue: TextStyle,
     val metaLabel: TextStyle,
     val collectionIndex: TextStyle,
+    val terminal: TextStyle,
+    val terminalSmall: TextStyle,
     val button: TextStyle,
     val buttonSmall: TextStyle,
     val input: TextStyle,
@@ -231,6 +233,22 @@ fun rememberAppTypography(): AppTypography {
                     fontFamily = monoFamily,
                     fontWeight = FontWeight.W400,
                     fontSize = 9.sp,
+                    letterSpacing = 0.sp,
+                    lineHeight = 12.sp,
+                ),
+            terminal =
+                TextStyle(
+                    fontFamily = monoFamily,
+                    fontWeight = FontWeight.W400,
+                    fontSize = 10.5.sp,
+                    letterSpacing = 0.sp,
+                    lineHeight = 18.7.sp,
+                ),
+            terminalSmall =
+                TextStyle(
+                    fontFamily = monoFamily,
+                    fontWeight = FontWeight.W400,
+                    fontSize = 8.5.sp,
                     letterSpacing = 0.sp,
                     lineHeight = 12.sp,
                 ),

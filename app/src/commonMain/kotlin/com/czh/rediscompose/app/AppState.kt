@@ -9,6 +9,7 @@ import com.czh.rediscompose.design.component.ToastKind
 import com.czh.rediscompose.domain.connection.ConnectionProfile
 import com.czh.rediscompose.domain.settings.AppSettings
 import com.czh.rediscompose.domain.settings.ThemeMode
+import com.czh.rediscompose.feature.console.ConsoleState
 import com.czh.rediscompose.feature.workspace.WorkspaceState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -36,6 +37,7 @@ class AppState(
     val tabs = mutableStateListOf<WorkspaceTab>()
 
     private val workspaces = mutableMapOf<String, WorkspaceState>()
+    private val consoles = mutableMapOf<String, ConsoleState>()
 
     var activePage by mutableStateOf(AppPage.WORKSPACE)
         private set
@@ -65,6 +67,9 @@ class AppState(
 
     /** Key browser state for a connection, created when its Keys tab opens. */
     fun workspaceFor(connectionId: String): WorkspaceState? = workspaces[connectionId]
+
+    /** Command console state for a connection, created when its Console tab opens. */
+    fun consoleFor(connectionId: String): ConsoleState? = consoles[connectionId]
 
     fun setPage(page: AppPage) {
         activePage = page
@@ -105,6 +110,7 @@ class AppState(
             )
         }
         if (kind == WorkspaceTabKind.KEYS) ensureWorkspace(connectionId, session)
+        if (kind == WorkspaceTabKind.CONSOLE) ensureConsole(connectionId, session)
         activeTabId = tabId
         commandPaletteVisible = false
     }
@@ -120,8 +126,10 @@ class AppState(
         val index = tabs.indexOfFirst { it.id == tabId }
         if (index < 0) return
         val closing = tabs.removeAt(index)
-        if (closing.kind == WorkspaceTabKind.KEYS) {
-            workspaces.remove(closing.connectionId)?.dispose()
+        when (closing.kind) {
+            WorkspaceTabKind.KEYS -> workspaces.remove(closing.connectionId)?.dispose()
+            WorkspaceTabKind.CONSOLE -> consoles.remove(closing.connectionId)?.dispose()
+            WorkspaceTabKind.INSIGHTS -> Unit
         }
         if (activeTabId == tabId) {
             val next = tabs.getOrNull(index) ?: tabs.getOrNull(index - 1)
@@ -171,6 +179,7 @@ class AppState(
         connectJobs.remove(profile.id)?.cancel()
         sessions.remove(profile.id)?.disconnect()
         workspaces.remove(profile.id)?.dispose()
+        consoles.remove(profile.id)?.dispose()
         for (tabIndex in tabs.indices) {
             val tab = tabs[tabIndex]
             if (tab.connectionId == profile.id && tab.kind == WorkspaceTabKind.KEYS) {
@@ -184,6 +193,7 @@ class AppState(
         connectJobs.remove(connectionId)?.cancel()
         sessions.remove(connectionId)?.disconnect()
         workspaces.remove(connectionId)?.dispose()
+        consoles.remove(connectionId)?.dispose()
         tabs.removeAll { it.connectionId == connectionId }
         connections = connections.filterNot { it.id == connectionId }
         if (activeConnectionId == connectionId) {
@@ -214,6 +224,8 @@ class AppState(
         connectJobs.clear()
         workspaces.values.forEach { it.dispose() }
         workspaces.clear()
+        consoles.values.forEach { it.dispose() }
+        consoles.clear()
         sessions.values.forEach { it.disconnect() }
         sessions.clear()
         toastController.clear()
@@ -248,6 +260,34 @@ class AppState(
             )
         }
 
+    private fun ensureConsole(
+        connectionId: String,
+        session: RedisSession,
+    ): ConsoleState =
+        consoles.getOrPut(connectionId) {
+            ConsoleState(
+                session = session,
+                settings = { settings },
+                onToast = { message, kind -> showToast(message, kind) },
+                onRecordCommand = ::recordCommand,
+                scope = session.scope,
+                onDatabaseSelected = { workspaces[connectionId]?.refresh() },
+            )
+        }
+
+    private fun recordCommand(command: String) {
+        val current = settings.recentCommands
+        val updated =
+            if (current.lastOrNull() == command) {
+                current
+            } else {
+                (current + command).takeLast(RECENT_COMMAND_LIMIT)
+            }
+        if (updated != current) {
+            updateSettings(settings.copy(recentCommands = updated))
+        }
+    }
+
     private fun ensureConnected(session: RedisSession) {
         if (session.status == SessionStatus.CONNECTING || session.status == SessionStatus.CONNECTED) {
             return
@@ -270,4 +310,8 @@ class AppState(
         message?.lineSequence()?.firstOrNull()?.takeIf { it.isNotBlank() }
             ?: this::class.simpleName
             ?: "未知错误"
+
+    private companion object {
+        const val RECENT_COMMAND_LIMIT = 20
+    }
 }

@@ -13,7 +13,7 @@
 用户明确对现有 UI、目录结构、命名不满意，**允许完全抛弃旧代码**。因此：
 
 - **不要求**兼容旧包名、旧组件、旧 `AppViewModel`、旧 `ui/` 结构。
-- **不要求在中间阶段保持功能完整**。阶段 0–9 的应用允许暂时缺少功能，只要每个阶段能编译、能启动、有一个可见的阶段性成果。
+- **不要求在中间阶段保持功能完整**。阶段 0–10 的应用允许暂时缺少功能，只要每个阶段能编译、能启动、有一个可见的阶段性成果。
 - 旧代码只在阶段 0 作为“可参考但不复用”的实现被删除；需要重写的 Redis 逻辑在新架构里重新实现。
 - `design/` 与 `plan/` 不属于运行时，不参与打包，不要删除。
 
@@ -47,11 +47,12 @@ redis-compose/
 │       ├── commonMain/kotlin/com/czh/rediscompose/
 │       │   ├── app/                    # RedisComposeApp, AppState, AppContainer, AppPage
 │       │   ├── domain/
-│       │   │   ├── connection/
-│       │   │   ├── key/
-│       │   │   ├── command/
-│       │   │   ├── server/
-│       │   │   └── settings/
+│       │   │   ├── connection/         # ConnectionProfile 等
+│       │   │   ├── repository/         # PasswordCipher 等
+│       │   │   ├── key/                # KeyType, KeyNode, KeyTreeBuilder
+│       │   │   ├── command/            # RedisReply 等
+│       │   │   ├── server/             # ServerSnapshot 等
+│       │   │   └── settings/           # AppSettings 等
 │       │   ├── data/
 │       │   │   └── redis/              # RedisGateway, RedisReply, ValueCodec, InfoParser（接口/纯逻辑）
 │       │   ├── design/
@@ -66,7 +67,7 @@ redis-compose/
 │       │   │   ├── insights/
 │       │   │   ├── connections/
 │       │   │   └── settings/
-│       │   └── util/                   # Formatters, KeyTreeBuilder 等纯函数
+│       │   └── util/                   # Formatters, RedisCommandParser, WriteCommandGuard 等纯函数
 │       ├── commonMain/composeResources/
 │       │   ├── font/                   # Inter / JetBrains Mono
 │       │   └── drawable/               # 品牌占位资源（可选）
@@ -84,7 +85,8 @@ redis-compose/
 ### 0.4 包边界规则
 
 - `feature/**` 只能依赖 `design/**`、`domain/**`、`app/AppState`、`util/**`。
-- `feature/**` **不能**直接依赖 `data/jedis`，也不能直接 import Jedis。
+- `feature/**` **不能**直接依赖 `data/jedis`、`data/storage`，也不能直接 import Jedis。
+- 已知例外：Phase 5–6 的 state/编辑器和预览 fixture 仍引用 `data/redis` 的纯编解码 `ValueCodec` 与 `RedisGateway` 接口；Phase 10 评估把这些纯类型下沉到 `util`/`domain`，不把 Jedis/文件存储带进 feature。
 - `data/**` 实现 `domain/**` 的接口。
 - `design/**` 不能依赖 `feature/**` 或 `data/**`。
 - `app/**` 是组合根：持有 container、创建 state、把数据传给 feature。
@@ -96,17 +98,19 @@ redis-compose/
 
 | 阶段 | 文档 | 产出 | 依赖 | 状态 |
 | --- | --- | --- | --- | --- |
-| 0 | [`00-bootstrap.md`](00-bootstrap.md) | 模块/包重置，可启动的空壳 | — | 未开始 |
-| 1 | [`01-design-system.md`](01-design-system.md) | 主题、字体、图标、基础组件、组件画廊 | 0 | 未开始 |
-| 2 | [`02-domain-data.md`](02-domain-data.md) | 领域模型、Redis Gateway、持久化、加密 | 0 | 未开始 |
-| 3 | [`03-app-state-shell.md`](03-app-state-shell.md) | AppState、会话、外壳、导航、连接侧栏、状态栏、基础命令面板 | 1, 2 | 未开始 |
-| 4 | [`04-workspace-keys.md`](04-workspace-keys.md) | Key 浏览器：树、搜索、筛选、置顶、空/错状态 | 3 | 未开始 |
-| 5 | [`05-workspace-values.md`](05-workspace-values.md) | 值检查器、6 种类型编辑器、Key 操作 | 4 | 未开始 |
-| 6 | [`06-console.md`](06-console.md) | 命令控制台、历史、补全、结果渲染 | 3, 5 | 未开始 |
+| 0 | [`00-bootstrap.md`](00-bootstrap.md) | 模块/包重置，可启动的空壳 | — | 已验收 |
+| 1 | [`01-design-system.md`](01-design-system.md) | 主题、字体、图标、基础组件、组件画廊 | 0 | 已验收 |
+| 2 | [`02-domain-data.md`](02-domain-data.md) | 领域模型、Redis Gateway、持久化、加密 | 0 | 已验收 |
+| 3 | [`03-app-state-shell.md`](03-app-state-shell.md) | AppState、会话、外壳、导航、连接侧栏、状态栏、基础命令面板 | 1, 2 | 已验收 |
+| 4 | [`04-workspace-keys.md`](04-workspace-keys.md) | Key 浏览器：树、搜索、筛选、置顶、空/错状态 | 3 | 已验收 |
+| 5 | [`05-workspace-values.md`](05-workspace-values.md) | 值检查器、6 种类型编辑器、Key 操作 | 4 | 已验收 |
+| 6 | [`06-console.md`](06-console.md) | 命令控制台、历史、补全、结果渲染 | 3, 5 | 已验收 |
 | 7 | [`07-insights.md`](07-insights.md) | 实时指标、图表、慢查询、健康检查 | 3 | 未开始 |
 | 8 | [`08-connections.md`](08-connections.md) | 连接库、筛选、新建/编辑侧滑、测试连接 | 3 | 未开始 |
 | 9 | [`09-settings-palette.md`](09-settings-palette.md) | 设置页、主题/强调色/密度、命令面板扩展、全局快捷键 | 5, 8 | 未开始 |
 | 10 | [`10-polish-release.md`](10-polish-release.md) | 全量打磨、测试、性能、删除遗留、文档 | 全部 | 未开始 |
+
+> 状态以 [`STATUS.md`](STATUS.md) 为准；本表只同步粗粒度结果，完成内容、验证命令与遗留风险见各阶段章节。
 
 **不要跳阶段。** 每个阶段结束必须停下，更新 `STATUS.md`，向用户报告，不要自行开始下一阶段。
 
@@ -205,10 +209,10 @@ redis-compose/
 | 风险 | 处理 |
 | --- | --- |
 | 模块重命名导致 Gradle/IDE 配置失效 | 阶段 0 同时更新 `settings.gradle.kts`、`desktopApp/build.gradle.kts`、mainClass、packageName；跑完整 build |
-| 字体资源下载不到 | Phase 1 提供系统字体回退；在 `AppTypography` 注释 `TODO(phase-1)` |
+| 字体与中文字形 | Inter / JetBrains Mono 已打包进 Compose Resources；Inter 不含 CJK，中文由系统字体回退（macOS 为 PingFang SC）。若需完全统一字形，Phase 10 再评估打包 CJK 字体 |
 | Material Icons 版本缺少个别图标 | `AppIcons` 里选最接近的 Outlined 图标；feature 代码不直接引用 Material 图标名 |
-| 旧连接的 JSON 数据格式不同 | `ConnectionProfile` 字段保持宽松；`Json { ignoreUnknownKeys = true }`；阶段 10 补迁移 |
-| 大 Key / 大值卡顿 | 值截断、列表 LazyColumn、扫描分批、IO 不在主线程（详见 acceptance） |
+| 旧连接的 JSON 数据格式不同 | `ConnectionProfile` 字段保持宽松；`Json { ignoreUnknownKeys = true }`；Phase 3 已覆盖 pre-rewrite 的字符串端口/扁平字段等格式，Phase 10 再做长期迁移与清理 |
+| 大 Key / 大值 / 大输出卡顿 | 值截断、集合 LazyColumn、SCAN 分批、控制台条目/数组/行数上限、IO 不在主线程（详见 acceptance 与 STATUS.md） |
 | AI Agent 跳阶段 | 每份阶段文档首尾都有 "STOP" 约束；`STATUS.md` 作为门禁 |
 
 ---
