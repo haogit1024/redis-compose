@@ -27,7 +27,7 @@ fun AppKbd(
     val colors = LocalAppColors.current
     val dimens = LocalAppDimens.current
     val typography = LocalAppTypography.current
-    val shape = RoundedCornerShape(dimens.radiusXs)
+    val shape = RoundedCornerShape(dimens.radiusChip)
     Box(
         modifier =
             modifier

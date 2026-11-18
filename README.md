@@ -2,7 +2,7 @@
 
 A Kotlin Multiplatform / Compose Desktop workspace for Redis, built with a custom design system.
 
-这是 Redis Compose 的重写版本。项目按分阶段计划推进，Phase 0（结构重置）、Phase 1（设计系统）与 Phase 2（领域与数据层）已完成；当前应用启动到临时组件画廊，下一步是 Phase 3（AppState 与外壳）。
+这是 Redis Compose 的重写版本。项目按分阶段计划推进，Phase 0（结构重置）、Phase 1（设计系统）、Phase 2（领域与数据层）与 Phase 3（AppState 与外壳）已完成；当前应用启动到可导航的应用外壳，下一步是 Phase 4（Key 浏览器）。
 
 ## 模块
 

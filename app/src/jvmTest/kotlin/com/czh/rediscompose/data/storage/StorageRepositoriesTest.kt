@@ -1,6 +1,9 @@
 package com.czh.rediscompose.data.storage
 
+import com.czh.rediscompose.domain.connection.ConnectionColor
+import com.czh.rediscompose.domain.connection.ConnectionEnvironment
 import com.czh.rediscompose.domain.connection.ConnectionProfile
+import com.czh.rediscompose.domain.connection.SshAuthMethod
 import com.czh.rediscompose.domain.connection.SshConfig
 import com.czh.rediscompose.domain.settings.AppSettings
 import com.czh.rediscompose.domain.settings.ThemeMode
@@ -40,6 +43,18 @@ class StorageRepositoriesTest {
             Files.createDirectories(paths.baseDir)
             Files.writeString(paths.settings, """{"theme": """)
             assertEquals(AppSettings(), JsonSettingsRepository(paths).load())
+        }
+
+    @Test
+    fun `legacy lowercase theme is migrated`() =
+        runBlocking {
+            val paths = paths()
+            Files.createDirectories(paths.baseDir)
+            Files.writeString(paths.settings, """{"theme":"light","fontSize":15,"readonly":true}""")
+            val settings = JsonSettingsRepository(paths).load()
+            assertEquals(ThemeMode.LIGHT, settings.theme)
+            assertEquals(15, settings.editorFontSize)
+            assertEquals(true, settings.globalReadOnly)
         }
 
     @Test
@@ -91,5 +106,41 @@ class StorageRepositoriesTest {
             Files.createDirectories(paths.baseDir)
             Files.writeString(paths.connections, "not json")
             assertTrue(JsonConnectionRepository(paths, AesGcmPasswordCipher(paths)).load().isEmpty())
+        }
+
+    @Test
+    fun `pre-rewrite connections file is migrated`() =
+        runBlocking {
+            val paths = paths()
+            Files.createDirectories(paths.baseDir)
+            Files.writeString(
+                paths.connections,
+                """
+                [{
+                  "id":"old","name":"Old Prod","host":"redis.example.com","port":"6380",
+                  "username":"app","password":"secret","defaultDb":3,"separator":"|",
+                  "color":"mint","group":"Production","ssh":true,"sshHost":"jump",
+                  "sshPort":"2222","sshUsername":"deploy","sshPrivateKey":"~/.ssh/id_ed25519",
+                  "ssl":true,"sslCa":"~/ca.pem","readonly":true,
+                  "connectTimeoutMs":8000,"readTimeoutMs":9000
+                }]
+                """.trimIndent(),
+            )
+            val loaded = JsonConnectionRepository(paths, AesGcmPasswordCipher(paths)).load().single()
+            assertEquals(6380, loaded.port)
+            assertEquals(3, loaded.defaultDatabase)
+            assertEquals("|", loaded.keySeparator)
+            assertEquals(ConnectionColor.MINT, loaded.color)
+            assertEquals(ConnectionEnvironment.PRODUCTION, loaded.environment)
+            assertEquals(true, loaded.readOnly)
+            assertEquals(8_000, loaded.connectTimeoutMillis)
+            assertEquals(9_000, loaded.readTimeoutMillis)
+            assertTrue(loaded.tls.enabled)
+            assertEquals("~/ca.pem", loaded.tls.caPath)
+            assertTrue(loaded.ssh.enabled)
+            assertEquals("jump", loaded.ssh.host)
+            assertEquals(2222, loaded.ssh.port)
+            assertEquals("~/.ssh/id_ed25519", loaded.ssh.privateKeyPath)
+            assertEquals(SshAuthMethod.PRIVATE_KEY, loaded.ssh.authMethod)
         }
 }

@@ -66,7 +66,7 @@ fun AppBadge(
             AppBadgeTone.Warning -> colors.warning.copy(alpha = 0.22f)
             AppBadgeTone.Danger -> colors.danger.copy(alpha = 0.22f)
         }
-    val shape = RoundedCornerShape(5.dp)
+    val shape = RoundedCornerShape(dimens.radiusChip)
     Row(
         modifier =
             modifier
@@ -102,7 +102,7 @@ fun AppTypeChip(
 ) {
     val dimens = LocalAppDimens.current
     val typography = LocalAppTypography.current
-    val shape = RoundedCornerShape(5.dp)
+    val shape = RoundedCornerShape(dimens.radiusChip)
     Box(
         modifier =
             modifier

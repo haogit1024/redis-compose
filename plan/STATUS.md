@@ -9,7 +9,7 @@
 | 0 — 重置脚手架 | 已验收 | 2026-11-18 | 见下文 §Phase 0 | 无阻塞项 |
 | 1 — 设计系统 | 已验收 | 2026-11-18 | 见下文 §Phase 1 | 见“遗留风险” |
 | 2 — 领域与数据层 | 已验收 | 2026-11-18 | 见下文 §Phase 2 | 见“遗留风险” |
-| 3 — AppState 与外壳 | 未开始 | — | — | — |
+| 3 — AppState 与外壳 | 已验收 | 2026-11-18 | 见下文 §Phase 3 | 见“遗留风险” |
 | 4 — Key 浏览器 | 未开始 | — | — | — |
 | 5 — 值编辑器 | 未开始 | — | — | — |
 | 6 — 控制台 | 未开始 | — | — | — |
@@ -182,7 +182,65 @@
 4. **`formatEpochSeconds`**：common 声明 + jvm actual（`java.time` 本地时区），是唯一新增的 expect/actual；其余格式化逻辑跨平台纯函数。
 5. **Gateway 集成测试**：没有真实 Redis 或 fake server，jedis 命令映射只做了编译与失败路径验证；Phase 3 首次连接时需人工跑 `ping → scan → 6 类型读写 → TTL → 删除`。
 6. **启动读取**：`createDesktopAppContainer` 用 `runBlocking(Dispatchers.IO)` 同步读取小文件（计划允许），后续设置写入 debounce 留给 Phase 9。
-7. **旧数据**：`ignoreUnknownKeys` + 字段默认值兼容旧连接文件；不做格式迁移。
+7. **旧数据**：Phase 3 已补充 pre-rewrite `settings.json` / `connections.json` 迁移（字符串端口、扁平 SSH/TLS 字段、lowercase theme）。
+
+---
+
+## Phase 3 — AppState、会话与外壳（已验收）
+
+### 完成内容
+
+#### 状态与容器
+
+- `app/AppPage.kt`：`AppPage`、`WorkspaceTabKind`、`WorkspaceTab`（tab id 复用规则）。
+- `app/RedisSession.kt`：连接生命周期（DISCONNECTED / CONNECTING / CONNECTED / ERROR）、ping 延迟、固定 16 个 DB、`INFO` 摘要、切换 DB、幂等断开、会话作用域。
+- `app/AppState.kt`：settings / connections / sessions / tabs / active page/tab/connection / 命令面板 / toast；连接、tab 复用与关闭、DB 切换、主题与设置持久化、连接增删级联关闭。
+- `app/ToastMessage.kt`：`ToastMessage` + `ToastController`（最多 3 条、3 秒自动消失）。
+- `app/RedisComposeApp.kt` 接收 `AppContainer`，按 `ThemeMode` 解析系统/深/浅主题，创建 `AppState` 并在 dispose 时关闭会话。
+- `desktopApp/Main.kt` 创建 `createDesktopAppContainer()` 并传入根组合。
+- **旧数据迁移**：`JsonSettingsRepository` 识别 pre-rewrite 小写 theme 与旧字段名；`JsonConnectionRepository` 识别字符串 `port`、扁平 `ssh`/`ssl` 字段、`defaultDb`/`separator`/`readonly` 等，映射到新模型。真实用户连接文件可直接加载。
+
+#### 外壳 UI（`feature/shell/`）
+
+- `AppShell.kt`：54dp 顶栏 + Row(rail / sidebar / main) + 30dp 状态栏；Connections/Settings 页隐藏侧栏与 tab 栏；根级 ⌘K/Ctrl+K、Esc；toast 位于状态栏之上。
+- `AppTopBar.kt`：品牌 + v0.1、环境/连接面包屑、点击式全局搜索（⌘K）、连接状态 pill（真实延迟/状态）、主题切换、通知、头像。
+- `AppRail.kt`：Keys/Console/Insights、Connections/Settings、底部在线点与快捷键；激活态 38dp、accentSoft、左侧 2dp 条；全部有 tooltip。
+- `ConnectionSidebar.kt`：连接数量/搜索/环境分组（最近打开→名称）、连接卡（颜色、名称、环境、host:port、真实状态/版本/clients）、展开 DB 列表（16 个、限高滚动）、底部 Server Health（真实内存条/百分比）+ 洞察/控制台入口；空侧栏状态。
+- `WorkspaceTabBar.kt`：tab 胶囊、hover 关闭、加号、db 切换菜单、只读/可写徽标、刷新与更多菜单（刷新为占位提示）。
+- `AppStatusBar.kt`：真实连接状态、host:port、db、keys、内存、clients、RTT、Redis 版本；无连接时只显示“未连接”和应用信息，不显示假数据。
+- `CommandPalette.kt`：600dp 导航型命令面板，页面 + 连接分组，输入过滤、↑↓/Enter/Esc、最多 3 条 Toast 不受影响；无连接时控制台/洞察置灰并标注“需要连接”。
+- `PlaceholderContent.kt`：空工作区、Keys/Console/Insights 占位页、连接库空状态/已有连接只读列表（可点击打开）、设置页只读摘要。
+- `ShellPreviews.kt`：预览专用 container + fake gateway，提供 1440×900 深/浅、1120×720、空状态、已连接状态与各子组件 `@Preview`。
+- `AppDimens` 新增 rail / tab / palette / 状态栏 / 面包屑尺寸 token；shell 代码无 `Color(0x...)`、无裸 `sp`。
+
+### 验证
+
+| 命令 | 结果 |
+| --- | --- |
+| `./gradlew :app:jvmTest` | 89 tests，0 failures（新增 AppState/主题持久化/旧数据迁移用例） |
+| `./gradlew ktlintCheck` | 通过 |
+| `./gradlew build` | 通过 |
+| `./gradlew :desktopApp:run` | 启动直接进入新外壳；真实旧连接文件成功加载并显示在侧栏 |
+
+视觉检查（ImageComposeScene 离屏 + 实际窗口截图）：
+
+- 1440×900 深/浅、1120×720：顶栏 / rail / 侧栏 / tab 栏 / 状态栏比例正常，无溢出。
+- 已连接状态：DB 列表、健康卡、状态栏 keys/内存/clients/RTT、tab 与 db pill 均使用会话数据。
+- 空状态：无连接 / 无 tab / 空侧栏 / 空命令面板均正确。
+- 命令面板：页面与连接分组、选中态、快捷键提示、无连接时禁用项可见。
+- 浅色主题下无深色残留块；强调色派生色同步变化。
+
+### 遗留风险与边界
+
+1. **真实 Redis 联调仍未执行**：环境没有 Redis/Docker；连接成功态用 fake gateway（预览/测试）与离屏渲染验证。真实 `ping → scan → 6 类型读写 → TTL → 删除` 需要用户本地 Redis 手动跑一次。
+2. **键盘自动化受限**：macOS 未授权 osascript 发送按键，⌘K/↑↓/Enter/Esc 只做了代码级检查与面板静态渲染，未做自动键盘回放。
+3. **主题切换的真实写入**：为避免改动用户现有 `settings.json`，验收时没有在真实窗口点击主题按钮；改用 `ThemePersistenceTest` 验证 `updateTheme → 文件 → 重新加载`。
+4. **连接库/设置页是占位**：只提供空状态、只读连接列表与设置摘要；新建/编辑表单是 Phase 8，完整设置是 Phase 9。
+5. **连接增删**：`AppState.saveConnection/deleteConnection` 已支持持久化与级联关闭，但 Phase 3 没有对应表单 UI。
+6. **DB 列表滚动**：选中连接后 DB 列表限高，超出部分在列表内滚动；未再加内层滚动条，避免与侧栏滚动条重叠。
+7. **刷新/更多菜单**：刷新与部分操作仍是占位 toast，Phase 4/9 接入真实行为。
+8. **启动读取**：容器在首帧前同步读取小文件；设置写入尚未 debounce（Phase 9）。
+9. **旧数据迁移**：已覆盖 pre-rewrite 文件格式；更早/损坏文件回退默认值。
 
 ---
 
@@ -190,7 +248,8 @@
 
 - 分支：`feat/rewrite-ui`；模块：`:desktopApp` + `:app`。
 - 包名：`com.czh.rediscompose`；入口：`com.czh.rediscompose.desktop.MainKt`。
-- 应用启动即进入 `DesignGalleryScreen`（深色、IRIS）；Phase 2 没有新增页面。
-- 领域模型 / RedisGateway / Jedis / 持久化 / 加密 / 解析器已就绪，测试 75/75 通过。
-- 下一步 Phase 3：用 `createDesktopAppContainer()` 创建 `AppState`，实现会话、外壳、导航、连接侧栏与状态栏；不要提前实现 Key 浏览器内容。
-- 下一阶段前置条件：无用户侧配置；建议在 Phase 3 联调前准备一个本地或可访问的 Redis 7 实例。
+- 应用启动直接进入新外壳（顶栏 / rail / 连接侧栏 / tab / 状态栏），不再显示设计画廊。
+- `AppState` + `RedisSession` 已接管连接、tab、主题、设置与旧数据迁移；测试 89/89 通过。
+- Keys / Console / Insights / Connections / Settings 仍是占位内容。
+- 下一步 Phase 4：实现 Key 浏览器与真实 SCAN 数据；不要提前实现值编辑器。
+- 下一阶段前置条件：建议准备一个可访问的 Redis 7 实例，用于真实连接与 SCAN 联调。
