@@ -24,7 +24,11 @@ data class RecordedScan(
 )
 
 /**
- * In-memory backend for AppState tests and future feature tests.
+ * In-memory backend for AppState and feature tests.
+ *
+ * Read-only fields (`scanKeys`, `keyTypeByKey`, …) keep the Phase 4 tests working. Writes
+ * also update a small in-memory value store, which Phase 5 uses to exercise real save,
+ * rename, TTL and delete flows without a Redis server.
  */
 class FakeRedisGateway(
     var pingError: Exception? = null,
@@ -42,9 +46,22 @@ class FakeRedisGateway(
     var scanError: Exception? = null
     var keyTypeByKey: Map<String, KeyType> = emptyMap()
     var keyTtlByKey: Map<String, Long> = emptyMap()
+    var memoryByKey: Map<String, Long> = emptyMap()
+    var encodingByKey: Map<String, String> = emptyMap()
+    var writeError: Exception? = null
 
     /** Page size used by [scan]; smaller than the requested COUNT keeps tests multi-page. */
     var scanPageSize: Int = 1_000
+
+    val stringValues = mutableMapOf<String, ByteArray>()
+    val hashValues = mutableMapOf<String, LinkedHashMap<String, ByteArray>>()
+    val listValues = mutableMapOf<String, MutableList<ByteArray>>()
+    val setValues = mutableMapOf<String, LinkedHashSet<String>>()
+    val zsetValues = mutableMapOf<String, LinkedHashMap<String, Double>>()
+    val streamValues = mutableMapOf<String, MutableList<StreamEntryBytes>>()
+    val streamGroupCounts = mutableMapOf<String, Int>()
+    val ttlValues = mutableMapOf<String, Long>()
+    val storeKeys = linkedSetOf<String>()
 
     val scanCalls = mutableListOf<RecordedScan>()
     val typeRequests = mutableListOf<String>()
@@ -75,11 +92,12 @@ class FakeRedisGateway(
     ): ScanPage {
         scanCalls += RecordedScan(cursor = cursor, pattern = pattern, count = count)
         scanError?.let { throw it }
+        val allKeys = (scanKeys + storeKeys).distinct()
         val matched =
             if (pattern.isNullOrBlank()) {
-                scanKeys
+                allKeys
             } else {
-                scanKeys.filter { matchesGlob(it, pattern) }
+                allKeys.filter { matchesGlob(it, pattern) }
             }
         val start = cursor.toInt().coerceIn(0, matched.size)
         val pageSize = minOf(count.coerceAtLeast(1), scanPageSize.coerceAtLeast(1))
@@ -90,102 +108,211 @@ class FakeRedisGateway(
 
     override suspend fun keyType(key: String): KeyType {
         typeRequests += key
-        return keyTypeByKey[key] ?: KeyType.STRING
+        keyTypeByKey[key]?.let { return it }
+        return when {
+            stringValues.containsKey(key) -> KeyType.STRING
+            hashValues.containsKey(key) -> KeyType.HASH
+            listValues.containsKey(key) -> KeyType.LIST
+            setValues.containsKey(key) -> KeyType.SET
+            zsetValues.containsKey(key) -> KeyType.ZSET
+            streamValues.containsKey(key) -> KeyType.STREAM
+            key in storeKeys || key in scanKeys -> KeyType.STRING
+            else -> KeyType.NONE
+        }
     }
 
     override suspend fun keyTtl(key: String): Long {
         ttlRequests += key
-        return keyTtlByKey[key] ?: -1L
+        return ttlValues[key] ?: keyTtlByKey[key] ?: -1L
     }
 
-    override suspend fun keyMemoryUsage(key: String): Long? = null
+    override suspend fun keyMemoryUsage(key: String): Long? = memoryByKey[key]
 
-    override suspend fun keyEncoding(key: String): String? = null
+    override suspend fun keyEncoding(key: String): String? = encodingByKey[key]
 
-    override suspend fun getString(key: String): ByteArray? = null
+    override suspend fun getString(key: String): ByteArray? = stringValues[key]
 
     override suspend fun setString(
         key: String,
         value: ByteArray,
-    ) = Unit
+    ) {
+        checkWrite()
+        stringValues[key] = value
+        touch(key)
+    }
 
-    override suspend fun getHash(key: String): List<HashFieldBytes> = emptyList()
+    override suspend fun getHash(key: String): List<HashFieldBytes> =
+        hashValues[key]
+            .orEmpty()
+            .map { (field, value) -> HashFieldBytes(field = field, value = value) }
+            .sortedBy { it.field.lowercase() }
 
     override suspend fun hashSet(
         key: String,
         field: String,
         value: ByteArray,
-    ) = Unit
+    ) {
+        checkWrite()
+        hashValues.getOrPut(key) { linkedMapOf() }[field] = value
+        touch(key)
+    }
 
     override suspend fun hashDelete(
         key: String,
         field: String,
-    ) = Unit
+    ) {
+        checkWrite()
+        val hash = hashValues[key] ?: return
+        hash.remove(field)
+        if (hash.isEmpty()) {
+            hashValues.remove(key)
+            removeKeyIfEmpty(key)
+        }
+    }
 
-    override suspend fun getList(key: String): List<ByteArray> = emptyList()
+    override suspend fun getList(key: String): List<ByteArray> = listValues[key].orEmpty()
 
     override suspend fun listPush(
         key: String,
         value: ByteArray,
         head: Boolean,
-    ) = Unit
+    ) {
+        checkWrite()
+        val list = listValues.getOrPut(key) { mutableListOf() }
+        if (head) list.add(0, value) else list.add(value)
+        touch(key)
+    }
 
     override suspend fun listSet(
         key: String,
         index: Long,
         value: ByteArray,
-    ) = Unit
+    ) {
+        checkWrite()
+        val list = listValues[key] ?: return
+        if (index >= 0 && index < list.size) {
+            list[index.toInt()] = value
+        }
+    }
 
     override suspend fun listRemove(
         key: String,
         value: ByteArray,
-    ) = Unit
+    ) {
+        checkWrite()
+        val list = listValues[key] ?: return
+        val index = list.indexOfFirst { it.contentEquals(value) }
+        if (index >= 0) list.removeAt(index)
+        if (index >= 0 && list.isEmpty()) {
+            listValues.remove(key)
+            removeKeyIfEmpty(key)
+        }
+    }
 
-    override suspend fun getSet(key: String): List<ByteArray> = emptyList()
+    override suspend fun getSet(key: String): List<ByteArray> = setValues[key].orEmpty().sorted().map { it.encodeToByteArray() }
 
     override suspend fun setAdd(
         key: String,
         value: ByteArray,
-    ) = Unit
+    ) {
+        checkWrite()
+        setValues.getOrPut(key) { linkedSetOf() }.add(value.decodeToString())
+        touch(key)
+    }
 
     override suspend fun setRemove(
         key: String,
         value: ByteArray,
-    ) = Unit
+    ) {
+        checkWrite()
+        val set = setValues[key] ?: return
+        set.remove(value.decodeToString())
+        if (set.isEmpty()) {
+            setValues.remove(key)
+            removeKeyIfEmpty(key)
+        }
+    }
 
-    override suspend fun getSortedSet(key: String): List<SortedSetEntryBytes> = emptyList()
+    override suspend fun getSortedSet(key: String): List<SortedSetEntryBytes> =
+        zsetValues[key]
+            .orEmpty()
+            .map { (member, score) -> SortedSetEntryBytes(member = member.encodeToByteArray(), score = score) }
 
     override suspend fun sortedSetAdd(
         key: String,
         member: ByteArray,
         score: Double,
-    ) = Unit
+    ) {
+        checkWrite()
+        zsetValues.getOrPut(key) { linkedMapOf() }[member.decodeToString()] = score
+        touch(key)
+    }
 
     override suspend fun sortedSetRemove(
         key: String,
         member: ByteArray,
-    ) = Unit
+    ) {
+        checkWrite()
+        val zset = zsetValues[key] ?: return
+        zset.remove(member.decodeToString())
+        if (zset.isEmpty()) {
+            zsetValues.remove(key)
+            removeKeyIfEmpty(key)
+        }
+    }
 
     override suspend fun getStream(
         key: String,
         count: Int,
-    ): List<StreamEntryBytes> = emptyList()
+    ): List<StreamEntryBytes> = streamValues[key].orEmpty().take(if (count > 0) count else Int.MAX_VALUE)
 
-    override suspend fun getStreamGroupCount(key: String): Int? = null
+    override suspend fun getStreamGroupCount(key: String): Int? = streamGroupCounts[key]
 
-    override suspend fun deleteKeys(keys: List<String>) = Unit
+    override suspend fun deleteKeys(keys: List<String>) {
+        checkWrite()
+        keys.forEach { key ->
+            stringValues.remove(key)
+            hashValues.remove(key)
+            listValues.remove(key)
+            setValues.remove(key)
+            zsetValues.remove(key)
+            streamValues.remove(key)
+            streamGroupCounts.remove(key)
+            ttlValues.remove(key)
+            storeKeys.remove(key)
+        }
+    }
 
     override suspend fun renameKey(
         oldKey: String,
         newKey: String,
-    ) = Unit
+    ) {
+        checkWrite()
+        stringValues.remove(oldKey)?.let { stringValues[newKey] = it }
+        hashValues.remove(oldKey)?.let { hashValues[newKey] = it }
+        listValues.remove(oldKey)?.let { listValues[newKey] = it }
+        setValues.remove(oldKey)?.let { setValues[newKey] = it }
+        zsetValues.remove(oldKey)?.let { zsetValues[newKey] = it }
+        streamValues.remove(oldKey)?.let { streamValues[newKey] = it }
+        streamGroupCounts.remove(oldKey)?.let { streamGroupCounts[newKey] = it }
+        ttlValues.remove(oldKey)?.let { ttlValues[newKey] = it }
+        storeKeys.remove(oldKey)
+        storeKeys.add(newKey)
+    }
 
     override suspend fun expire(
         key: String,
         seconds: Long,
-    ) = Unit
+    ) {
+        checkWrite()
+        ttlValues[key] = seconds
+    }
 
-    override suspend fun persist(key: String) = Unit
+    override suspend fun persist(key: String) {
+        checkWrite()
+        ttlValues.remove(key)
+        keyTtlByKey = keyTtlByKey - key
+    }
 
     override suspend fun slowLog(count: Int): List<SlowLogEntry> = emptyList()
 
@@ -193,10 +320,37 @@ class FakeRedisGateway(
 
     override suspend fun commandStats(): List<CommandStat> = emptyList()
 
-    override suspend fun execute(args: List<String>): RedisReply = RedisReply.Nil
+    override suspend fun execute(args: List<String>): RedisReply =
+        when {
+            args.size == 2 && args[0].equals("XLEN", ignoreCase = true) ->
+                RedisReply.Integer((streamValues[args[1]]?.size ?: 0).toLong())
+            else -> RedisReply.Nil
+        }
 
     override fun close() {
         connected = false
+    }
+
+    private fun checkWrite() {
+        writeError?.let { throw it }
+    }
+
+    private fun touch(key: String) {
+        storeKeys.add(key)
+    }
+
+    private fun removeKeyIfEmpty(key: String) {
+        val empty =
+            !stringValues.containsKey(key) &&
+                !hashValues.containsKey(key) &&
+                !listValues.containsKey(key) &&
+                !setValues.containsKey(key) &&
+                !zsetValues.containsKey(key) &&
+                !streamValues.containsKey(key)
+        if (empty) {
+            storeKeys.remove(key)
+            ttlValues.remove(key)
+        }
     }
 
     companion object {

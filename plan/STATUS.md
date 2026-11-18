@@ -11,7 +11,7 @@
 | 2 — 领域与数据层 | 已验收 | 2026-11-18 | 见下文 §Phase 2 | 见“遗留风险” |
 | 3 — AppState 与外壳 | 已验收 | 2026-11-18 | 见下文 §Phase 3 | 见“遗留风险” |
 | 4 — Key 浏览器 | 已验收 | 2026-11-18 | 见下文 §Phase 4 | 见“遗留风险” |
-| 5 — 值编辑器 | 未开始 | — | — | — |
+| 5 — 值编辑器 | 已验收 | 2026-11-18 | 见下文 §Phase 5 | 见“遗留风险” |
 | 6 — 控制台 | 未开始 | — | — | — |
 | 7 — 洞察 | 未开始 | — | — | — |
 | 8 — 连接库 | 未开始 | — | — | — |
@@ -341,12 +341,91 @@
 
 ---
 
+## Phase 5 — 值检查器与编辑器（已验收）
+
+### 完成内容
+
+#### 领域 / 文本处理
+
+- `design/text/JsonHighlighter.kt`：无异常 JSON 词法高亮（key/string/number/boolean/punctuation），支持转义引号、嵌套、Unicode、非法输入；`JsonHighlighterTest` 6 个用例。
+- `KeyValue.StringValue` 新增 `isBinary` 与 `byteLength`：非 UTF-8 值以 HEX 展示并进入只读，大值用原始字节数计算截断；同步更新 `domain-and-data.md`。
+- `util/Formatters`：新增 `truncateUtf8`（不拆码点）与 `currentEpochSeconds` expect/actual；支持大值截断和真实的“读取于 HH:mm:ss”。
+
+#### WorkspaceState
+
+- 详情状态：`keyDetail` / `detailLoading` / `detailError` / `detailLoadedAtEpochSeconds`，选择 Key 时取消旧 job 并用 generation 防止旧详情覆盖新选择；失败保留已选 Key 并可重试。
+- 详情加载顺序：TYPE → TTL → MEMORY USAGE → OBJECT ENCODING → 值；Stream 额外用 `XLEN` 取真实条目总数、`XINFO GROUPS` 取组数。
+- 值解析：String（UTF-8 / HEX / JSON 检测）、Hash、List、Set、ZSet（按 score 降序）、Stream（最近 50 条，任意字段名）。
+- 写操作：String 保存、Hash 新增/改名/删除/批量保存、List LSET/LPUSH/RPUSH/删除、Set 添加/改名/删除（重复校验）、ZSet 添加/改名/改分（有限数字校验）/删除、TTL（-1 → PERSIST）、重命名（目标存在则拒绝）、删除、新建 5 种类型。
+- 只读与安全：`isReadOnly`（全局或连接）在 state 层拦截所有写操作；非 UTF-8 String 拒绝文本写回；新建集合必须至少一个有效成员；保存中 `isSaving` 防重入。
+- 保存后刷新详情与元信息，同时维护 keys/tree/pinned/keyTypes/keyTtls；删除/重命名/新建会同步列表、树、置顶、选中与总数。
+- `saveRequestId` + `consumeSaveRequest()` 支持全局 ⌘S；编辑 dirty 会写入 `hasUnsavedEdits`，切换 Key 时 toast 提醒。
+
+#### 值面板 UI
+
+- `ValuePane`：最大宽度 1020dp 居中；Header → MetaGrid → 只读 banner → 编辑器 → footnote；加载骨架、错误重试、空状态。
+- `ValueHeader`：类型 pill、JSON / BINARY / 已置顶 / 即将过期 / 只读 badge；可复制长 Key；db、host:port、OBJECT ENCODING、读取时间；置顶、复制、在控制台打开、更多菜单。
+- `ValueMetaGrid`：TTL / MEMORY / ENCODING / 类型相关计数，宽内容 630dp 以上 4 列否则 2 列；TTL 进度条 amber→rose。
+- `ValueEmptyState` / `ValueLoadingState`：74dp 品牌式 glyph、快捷键提示；骨架 meta + 编辑器 loading。
+- `KeyActionsMenu`：置顶、复制 Key、在控制台打开、复制为命令（GET/HGETALL/LRANGE/SMEMBERS/ZRANGE/XRANGE）、TTL、重命名、删除。
+- `StringEditor` + `CodeEditor`：行号 gutter、JSON 高亮、Auto/JSON/TEXT/HEX、格式化、保存；HEX 只读且隐藏保存；非 UTF-8 显示 HEX 并提供复制；大值显示“已截断 + 复制完整值 + 仍然编辑”。
+- `HashEditor` / `ListEditor` / `SetEditor` / `SortedSetEditor` / `StreamEditor`：固定表头、34dp 行、行 hover 操作、筛选、空状态、只读文本模式；Hash/List/Set/ZSet 支持行保存与工具栏批量保存；ZSet score 非法时行内红色提示并拦截；Stream 只读、点击条目展开任意字段。
+- `NewKeyDialog`（560dp，5 类型卡片 + TTL + 动态字段）、`TtlDialog`、`RenameKeyDialog`、`DeleteKeyDialog`。
+- 只读、BINARY、截断、长 Key、长集合值均有明确视觉状态；长集合值提供 hover tooltip。
+- `AppButton` 禁用时整体降低透明度，`AppDialog` 增加可选宽度，`AppIconButton` 增加可选 tint；新增值面板/编辑器相关 `AppDimens` 与 `AppTypography` token。
+- 替换 `ValuePanePlaceholder.kt`；⌘S 保存、⌘F 搜索、Esc、R/N 继续生效；对话框打开时拦截工作区快捷键。
+
+### 验证
+
+| 命令 | 结果 |
+| --- | --- |
+| `./gradlew :app:jvmTest` | 128 tests，0 failures（新增 JsonHighlighter、Phase 5 编辑/只读/TTL/重命名/删除/新建/重复成员/有限分数等用例） |
+| `./gradlew ktlintCheck` | 通过 |
+| `./gradlew build` | 通过 |
+| `./gradlew :desktopApp:run` | 启动成功，进程存活 |
+
+离屏渲染（预览 fixture，临时脚本已删除）：
+
+- 深/浅主题：Hash、String(JSON)、List、Set、ZSet、Stream、空值面板、只读值面板。
+- 真实内容区宽度 802dp（1440 窗口去掉 rail/侧栏/key pane 后）与 1120dp 窗口：meta grid 自动 2 列、toolbar 自动换行、表格滚动、footer 正常；另在 802×590（720dp 窗口可用高度）检查 String/Hash/List/ZSet 不溢出。
+- TTL / 重命名 / 删除 / 新建 Key 四个 Dialog 均正确渲染；禁用按钮透明度可见。
+
+### 真实 Redis 写入联调
+
+在用户提供的测试实例（Redis 8.6.2，db0 原本为空）执行临时只读+写入集成测试，全部使用 `redis-compose:phase5:<timestamp>:` 前缀并在 finally 清理；凭据仅来自环境变量。
+
+- String：创建、读取 JSON/长度、保存、TTL 120s、PERSIST → 全部通过。
+- Hash：创建、字段改名 + 改值、删除最后一个字段（Key 自动消失）→ 通过。
+- List：创建、LPUSH、RPUSH、LSET、按值删除 → 通过。
+- Set：创建、改名、删除最后成员 → 通过。
+- ZSet：创建、改名 + 改 score、降序读回、删除 → 通过。
+- Rename：真实 RENAME、列表/置顶/选中同步；目标已存在拒绝。
+- Delete：真实 DEL、选中清空、列表移除。
+- Stream：通过测试命令 XADD 创建，读取真实 ID 与任意字段，组数为 0。
+- 非 UTF-8 String：HEX 只读，state 拒绝写回。
+- 清理后 `db0 keys` 回到测试前的 0，所有测试 Key 均不存在。
+
+### 遗留风险与边界
+
+1. **集合内的非 UTF-8 成员**：String 已正确识别 BINARY/HEX；Hash/List/Set/ZSet 的 ByteArray 成员目前只在显示层做 HEX 回退，没有逐行 binary 标记，编辑这类成员可能把 HEX 文本写回。真实联调只覆盖了非 UTF-8 String；Phase 10 可为集合成员增加 binary 标记与只读行。
+2. **List 删除语义**：网关 `LREM count=1`，删除的是第一个同值成员，不一定是指定 index；UI footer 已提示“删除同值时移除首个匹配项”。需要按 index 精确删除时应使用 LSET 哨兵 + LREM 或 Phase 10 的服务端脚本。
+3. **写操作非事务**：批量保存逐行写入；中途失败会保留已成功部分并 toast，详情不刷新，用户可重试或刷新。重命名前的“目标是否存在”检查存在 TOCTOU 竞争窗口。
+4. **大值**：默认只展示前 `truncateValueKb` KB，“仍然编辑”后会把完整文本放进 BasicTextField，超大值可能卡顿；v1 未做按需加载/分段编辑。
+5. **Stream**：Phase 5 只读；不支持 XADD、消费者组管理、分页加载更多（固定最近 50 条）。
+6. **布局取舍**：值面板的编辑器统一占用剩余高度并在内部滚动，而不是“集合自然高度 + 外层整页滚动”；String 编辑器也不强制 280dp 最小高度（在 720dp 窗口下会溢出），代码区随可用高度收缩并滚动。Meta grid 使用内容宽度 630dp 作为 4 列阈值（近似设计稿的 1320 窗口断点）而非文档里的 960dp。
+7. **Dirty 保护**：切换 Key 只有 toast 提醒，没有“放弃/保留”确认对话框；Phase 10 完善。
+8. **真实 UI 点击流**：为避免把真实 Key 名渲染进截图，真实实例验证在 WorkspaceState/gateway 层完成；桌面 UI 仍使用 fixture 离屏验收。
+9. **键盘**：⌘S 通过 saveRequest 实现；macOS 未授权自动按键，未做自动化回放。
+10. **演示/预览 fixture**：`WorkspacePreviews.kt` 随生产源码编译，仅供 `@Preview` 与离屏验收；Phase 10 可移到 tooling 源集。
+
+---
+
 ## 当前基线
 
 - 分支：`feat/rewrite-ui`；模块：`:desktopApp` + `:app`。
 - 包名：`com.czh.rediscompose`；入口：`com.czh.rediscompose.desktop.MainKt`。
 - 应用启动直接进入新外壳（顶栏 / rail / 连接侧栏 / tab / 状态栏），不再显示设计画廊。
-- `AppState` + `RedisSession` 已接管连接、tab、主题、设置与旧数据迁移；测试 105/105 通过。
-- Keys 页已接入真实 SCAN Key 浏览器（树/平铺、搜索、类型筛选、置顶、TTL/SCAN 状态）；Console / Insights / Connections / Settings 仍是占位内容。
-- 下一步 Phase 5：值检查器、6 种类型编辑器与 Key 操作；不要提前实现控制台/洞察。
-- 下一阶段前置条件：Phase 4 已完成真实只读联调；Phase 5 涉及写入，开始前请确认该测试实例可安全写入，或指定一个独立的测试 DB/实例。
+- `AppState` + `RedisSession` 已接管连接、tab、主题、设置与旧数据迁移；测试 128/128 通过。
+- Keys 页已接入真实 SCAN Key 浏览器与值面板（6 种类型查看、String/Hash/List/Set/ZSet 编辑、Stream 只读、TTL/重命名/删除/新建）；Console / Insights / Connections / Settings 仍是占位内容。
+- 下一步 Phase 6：命令控制台、历史与结果渲染；不要提前实现洞察/连接库/设置。
+- 下一阶段前置条件：Phase 5 已在测试实例完成真实读写联调，Phase 6 可直接复用同一连接；开始前需用户确认 Phase 5 验收。

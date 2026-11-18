@@ -43,6 +43,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.czh.rediscompose.design.icon.AppIcons
 import com.czh.rediscompose.design.theme.AppTheme
@@ -63,6 +64,7 @@ fun AppDialog(
     title: String,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
+    width: Dp = LocalAppDimens.current.dialogWidth,
     footer: (@Composable RowScope.() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -114,7 +116,7 @@ fun AppDialog(
         Column(
             modifier =
                 modifier
-                    .width(dimens.dialogWidth)
+                    .width(width)
                     .heightIn(max = cardMaxHeight)
                     .graphicsLayer {
                         scaleX = scale

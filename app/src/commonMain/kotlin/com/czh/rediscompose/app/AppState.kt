@@ -244,6 +244,7 @@ class AppState(
                 onToast = { message, kind -> showToast(message, kind) },
                 scope = session.scope,
                 onSettingsChange = ::updateSettings,
+                onOpenConsole = { openTab(connectionId, WorkspaceTabKind.CONSOLE) },
             )
         }
 

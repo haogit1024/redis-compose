@@ -135,14 +135,49 @@ private class PreviewKeyGateway(
 
     override suspend fun keyEncoding(key: String): String? = "embstr"
 
-    override suspend fun getString(key: String): ByteArray? = null
+    override suspend fun getString(key: String): ByteArray? =
+        when (key) {
+            "app:config:feature_flags" ->
+                """
+                {"checkout_v2":true,"one_click_pay":true,"smart_cart":false,
+                 "recommendations":{"enabled":true,"model":"ranker-v3"},
+                 "rate_limit":{"window_seconds":60,"burst":120}}
+                """.trimIndent().encodeToByteArray()
+            "cache:user:1001:settings" ->
+                """{"theme":"dark","locale":"zh-CN","timezone":"Asia/Shanghai","sidebar":{"collapsed":false,"width":258}}"""
+                    .encodeToByteArray()
+            "billing:ledger:november" -> "ledger:november:2026".encodeToByteArray()
+            else -> null
+        }
 
     override suspend fun setString(
         key: String,
         value: ByteArray,
     ) = Unit
 
-    override suspend fun getHash(key: String): List<HashFieldBytes> = emptyList()
+    override suspend fun getHash(key: String): List<HashFieldBytes> =
+        when {
+            key == "cache:user:1001:profile" ->
+                listOf(
+                    "name" to "Ada Lovelace",
+                    "email" to "ada@acme.io",
+                    "plan" to "scale",
+                    "company" to "Analytical Engines Ltd.",
+                    "seats" to "24",
+                    "region" to "ap-east-1",
+                    "mfa_enabled" to "true",
+                    "last_login" to "2026-11-18T07:37:19Z",
+                ).map { (field, value) -> HashFieldBytes(field, value.encodeToByteArray()) }
+            key.startsWith("app:session") ->
+                listOf(
+                    "user_id" to "usr_8f2a9c4d",
+                    "email" to "ada@acme.io",
+                    "ip" to "203.0.113.42",
+                    "device" to "MacBook Pro · Safari 19",
+                    "region" to "ap-east-1",
+                ).map { (field, value) -> HashFieldBytes(field, value.encodeToByteArray()) }
+            else -> emptyList()
+        }
 
     override suspend fun hashSet(
         key: String,
@@ -155,7 +190,17 @@ private class PreviewKeyGateway(
         field: String,
     ) = Unit
 
-    override suspend fun getList(key: String): List<ByteArray> = emptyList()
+    override suspend fun getList(key: String): List<ByteArray> =
+        when (key) {
+            "queue:emails" ->
+                listOf(
+                    """{"to":"ada@acme.io","template":"welcome","locale":"zh-CN"}""",
+                    """{"to":"lin@acme.io","template":"invoice_ready"}""",
+                    """{"to":"ops@acme.io","template":"daily_digest"}""",
+                ).map { it.encodeToByteArray() }
+            "queue:dead_letter" -> listOf("job-9182 failed".encodeToByteArray())
+            else -> emptyList()
+        }
 
     override suspend fun listPush(
         key: String,
@@ -174,7 +219,12 @@ private class PreviewKeyGateway(
         value: ByteArray,
     ) = Unit
 
-    override suspend fun getSet(key: String): List<ByteArray> = emptyList()
+    override suspend fun getSet(key: String): List<ByteArray> =
+        if (key == "tags:article:204") {
+            listOf("redis", "compose", "desktop", "kotlin").map { it.encodeToByteArray() }
+        } else {
+            emptyList()
+        }
 
     override suspend fun setAdd(
         key: String,
@@ -186,7 +236,21 @@ private class PreviewKeyGateway(
         value: ByteArray,
     ) = Unit
 
-    override suspend fun getSortedSet(key: String): List<SortedSetEntryBytes> = emptyList()
+    override suspend fun getSortedSet(key: String): List<SortedSetEntryBytes> =
+        when (key) {
+            "cache:search:popular" ->
+                listOf(
+                    "mechanical keyboard" to 982.0,
+                    "usb-c hub" to 871.0,
+                    "desk mat" to 644.0,
+                    "webcam 4k" to 528.0,
+                )
+            "queue:jobs:priority" ->
+                listOf("billing" to 9.0, "emails" to 5.0, "thumbnails" to 2.0)
+            "metrics:histogram:latency" ->
+                listOf("p99" to 982.0, "p95" to 644.0, "p50" to 411.0)
+            else -> emptyList()
+        }.map { (member, score) -> SortedSetEntryBytes(member.encodeToByteArray(), score) }
 
     override suspend fun sortedSetAdd(
         key: String,
@@ -202,9 +266,33 @@ private class PreviewKeyGateway(
     override suspend fun getStream(
         key: String,
         count: Int,
-    ): List<StreamEntryBytes> = emptyList()
+    ): List<StreamEntryBytes> =
+        if (key == "stream:events:audit") {
+            listOf(
+                StreamEntryBytes(
+                    id = "1731910000000-0",
+                    fields =
+                        listOf(
+                            "event" to "login".encodeToByteArray(),
+                            "actor" to "ada@acme.io".encodeToByteArray(),
+                            "ip" to "203.0.113.42".encodeToByteArray(),
+                        ),
+                ),
+                StreamEntryBytes(
+                    id = "1731910060000-0",
+                    fields =
+                        listOf(
+                            "event" to "logout".encodeToByteArray(),
+                            "actor" to "lin@acme.io".encodeToByteArray(),
+                            "ip" to "198.51.100.24".encodeToByteArray(),
+                        ),
+                ),
+            )
+        } else {
+            emptyList()
+        }
 
-    override suspend fun getStreamGroupCount(key: String): Int? = null
+    override suspend fun getStreamGroupCount(key: String): Int? = if (key == "stream:events:audit") 2 else null
 
     override suspend fun deleteKeys(keys: List<String>) = Unit
 

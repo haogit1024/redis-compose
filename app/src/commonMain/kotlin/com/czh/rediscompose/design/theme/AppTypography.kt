@@ -5,6 +5,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import com.czh.rediscompose.resources.Res
 import com.czh.rediscompose.resources.inter_medium
@@ -39,6 +40,11 @@ data class AppTypography(
     val monoMeta: TextStyle,
     val monoMicro: TextStyle,
     val monoBody: TextStyle,
+    val code: TextStyle,
+    val codeGutter: TextStyle,
+    val metaValue: TextStyle,
+    val metaLabel: TextStyle,
+    val collectionIndex: TextStyle,
     val button: TextStyle,
     val buttonSmall: TextStyle,
     val input: TextStyle,
@@ -186,6 +192,47 @@ fun rememberAppTypography(): AppTypography {
                     fontSize = 11.5.sp,
                     letterSpacing = 0.sp,
                     lineHeight = 18.sp,
+                ),
+            code =
+                TextStyle(
+                    fontFamily = monoFamily,
+                    fontWeight = FontWeight.W400,
+                    fontSize = 11.sp,
+                    letterSpacing = 0.sp,
+                    lineHeight = 21.sp,
+                ),
+            codeGutter =
+                TextStyle(
+                    fontFamily = monoFamily,
+                    fontWeight = FontWeight.W400,
+                    fontSize = 9.sp,
+                    letterSpacing = 0.sp,
+                    lineHeight = 21.sp,
+                    textAlign = TextAlign.End,
+                ),
+            metaValue =
+                TextStyle(
+                    fontFamily = monoFamily,
+                    fontWeight = FontWeight.W500,
+                    fontSize = 12.sp,
+                    letterSpacing = (-0.1).sp,
+                    lineHeight = 16.sp,
+                ),
+            metaLabel =
+                TextStyle(
+                    fontFamily = uiFamily,
+                    fontWeight = FontWeight.W600,
+                    fontSize = 8.5.sp,
+                    letterSpacing = 0.68.sp,
+                    lineHeight = 11.sp,
+                ),
+            collectionIndex =
+                TextStyle(
+                    fontFamily = monoFamily,
+                    fontWeight = FontWeight.W400,
+                    fontSize = 9.sp,
+                    letterSpacing = 0.sp,
+                    lineHeight = 12.sp,
                 ),
             button =
                 TextStyle(

@@ -48,6 +48,10 @@ import com.czh.rediscompose.design.component.horizontalResizeCursor
 import com.czh.rediscompose.design.theme.AppTheme
 import com.czh.rediscompose.design.theme.LocalAppColors
 import com.czh.rediscompose.design.theme.LocalAppDimens
+import com.czh.rediscompose.feature.workspace.dialog.DeleteKeyDialog
+import com.czh.rediscompose.feature.workspace.dialog.NewKeyDialog
+import com.czh.rediscompose.feature.workspace.dialog.RenameKeyDialog
+import com.czh.rediscompose.feature.workspace.dialog.TtlDialog
 import kotlinx.coroutines.delay
 
 /**
@@ -85,9 +89,27 @@ fun WorkspaceScreen(
         workspace.applySearch(query)
     }
 
+    val dialogVisible =
+        workspace.newKeyDialogVisible ||
+            workspace.ttlDialogKey != null ||
+            workspace.renameDialogKey != null ||
+            workspace.deleteDialogKey != null
+    LaunchedEffect(
+        workspace.newKeyDialogVisible,
+        workspace.ttlDialogKey,
+        workspace.renameDialogKey,
+        workspace.deleteDialogKey,
+    ) {
+        if (!dialogVisible) rootFocusRequester.requestFocus()
+    }
+
     val onCopyKey: (String) -> Unit = { key ->
         clipboardManager.setText(AnnotatedString(key))
         workspace.reportKeyCopied()
+    }
+    val onCopyCommand: (String) -> Unit = { command ->
+        clipboardManager.setText(AnnotatedString(command))
+        workspace.reportCommandCopied()
     }
 
     BoxWithConstraints(
@@ -99,11 +121,16 @@ fun WorkspaceScreen(
                 .focusable()
                 .onPreviewKeyEvent { event ->
                     if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                    if (dialogVisible) return@onPreviewKeyEvent false
                     val command = event.isMetaPressed || event.isCtrlPressed
                     val plain = !command && !event.isAltPressed && !event.isShiftPressed
                     when {
                         event.key == Key.F && command -> {
                             searchFocusRequester.requestFocus()
+                            true
+                        }
+                        event.key == Key.S && command -> {
+                            workspace.requestSave()
                             true
                         }
                         event.key == Key.Escape -> {
@@ -156,14 +183,20 @@ fun WorkspaceScreen(
                             .coerceIn(dimens.keyPaneMin.value, paneMax.value)
                 },
             )
-            ValuePanePlaceholder(
+            ValuePane(
                 state = workspace,
+                onCopyKey = onCopyKey,
+                onCopyCommand = onCopyCommand,
                 modifier =
                     Modifier
                         .weight(1f)
                         .fillMaxHeight(),
             )
         }
+        NewKeyDialog(state = workspace)
+        TtlDialog(state = workspace)
+        RenameKeyDialog(state = workspace)
+        DeleteKeyDialog(state = workspace)
     }
 }
 

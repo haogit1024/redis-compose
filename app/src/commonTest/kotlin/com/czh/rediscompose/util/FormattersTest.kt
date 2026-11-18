@@ -62,6 +62,16 @@ class FormattersTest {
     }
 
     @Test
+    fun `truncate utf8 never splits a code point`() {
+        assertEquals("abc", truncateUtf8("abc", 3))
+        assertEquals("ab", truncateUtf8("abc", 2))
+        assertEquals("上", truncateUtf8("上海", 3))
+        assertEquals("上", truncateUtf8("上海", 5))
+        assertEquals("🚀", truncateUtf8("🚀x", 4))
+        assertEquals("", truncateUtf8("x", 0))
+    }
+
+    @Test
     fun `duration switches between micros millis and seconds`() {
         assertEquals("900 µs", formatDurationMicros(900))
         assertEquals("1.5 ms", formatDurationMicros(1_500))

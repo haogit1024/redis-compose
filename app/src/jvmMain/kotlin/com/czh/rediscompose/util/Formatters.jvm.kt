@@ -10,3 +10,5 @@ actual fun formatEpochSeconds(seconds: Long): String =
     Instant.ofEpochSecond(seconds)
         .atZone(ZoneId.systemDefault())
         .format(TIME_FORMATTER)
+
+actual fun currentEpochSeconds(): Long = Instant.now().epochSecond

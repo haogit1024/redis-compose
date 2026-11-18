@@ -141,13 +141,21 @@ data class StreamEntry(
 )
 
 sealed interface KeyValue {
-    data class StringValue(val text: String, val isJson: Boolean) : KeyValue
+    data class StringValue(
+        val text: String,
+        val isJson: Boolean,
+        val isBinary: Boolean = false,
+        val byteLength: Long = text.encodeToByteArray().size.toLong(),
+    ) : KeyValue
     data class HashValue(val fields: List<HashField>) : KeyValue
     data class ListValue(val items: List<String>) : KeyValue
     data class SetValue(val members: List<String>) : KeyValue
     data class SortedSetValue(val entries: List<SortedSetEntry>) : KeyValue
     data class StreamValue(val entries: List<StreamEntry>, val groupCount: Int?) : KeyValue
 }
+
+- `StringValue.isBinary = true` 表示原始字节不是合法 UTF-8，此时 `text` 是 HEX 展示，UI 必须禁止文本编辑/写回。
+- `StringValue.byteLength` 是原始值字节数，用于大值截断与 VALUE SIZE 元信息。
 
 data class KeyDetail(
     val summary: KeySummary,
@@ -603,6 +611,8 @@ class WorkspaceState(
     val settings: () -> AppSettings,
     val onToast: (String, ToastKind) -> Unit,
     private val scope: CoroutineScope,
+    onSettingsChange: (AppSettings) -> Unit = {},
+    onOpenConsole: () -> Unit = {},
 ) {
     val keys = mutableStateListOf<String>()
     var isLoading by mutableStateOf(false)
@@ -616,14 +626,45 @@ class WorkspaceState(
     var selectedKey by mutableStateOf<String?>(null)
     var keyDetail by mutableStateOf<KeyDetail?>(null)
     var detailLoading by mutableStateOf(false)
+    var detailError by mutableStateOf<String?>(null)
+    var isSaving by mutableStateOf(false)
+    var hasUnsavedEdits by mutableStateOf(false)
+    var ttlDialogKey: String?          // Phase 5 dialogs
+    var renameDialogKey: String?
+    var deleteDialogKey: String?
+    var newKeyDialogVisible: Boolean
     val keyTypes = mutableStateMapOf<String, KeyType>()
+    val keyTtls = mutableStateMapOf<String, Long>()
 
     fun refresh()
     fun loadMore()
     fun applySearch(pattern: String?)
-    fun setTypeFilter(type: KeyType?)
+    fun updateTypeFilter(type: KeyType?)
     fun selectKey(key: String)
+    fun refreshSelected()
     fun togglePinned(key: String)
+
+    // Phase 5 writes (read-only checked again in state)
+    fun saveString(text: String)
+    fun saveHashField(row: EditableHashField)
+    fun saveHashFields(rows: List<EditableHashField>)
+    fun deleteHashField(row: EditableHashField)
+    fun saveListMember(index: Long, value: String)
+    fun saveListMembers(rows: List<EditableListMember>)
+    fun addListMember(value: String, head: Boolean)
+    fun deleteListMember(index: Long, value: String)
+    fun saveSetMember(row: EditableSetMember)
+    fun saveSetMembers(rows: List<EditableSetMember>)
+    fun deleteSetMember(row: EditableSetMember)
+    fun saveSortedSetEntry(row: EditableSortedSetEntry)
+    fun saveSortedSetEntries(rows: List<EditableSortedSetEntry>)
+    fun deleteSortedSetEntry(row: EditableSortedSetEntry)
+    fun updateTtl(seconds: Long)
+    fun renameKey(newName: String)
+    fun deleteSelectedKey()
+    fun createKey(draft: NewKeyDraft)
+    fun requestSave()
+    fun consumeSaveRequest(): Boolean
 }
 ```
 

@@ -87,12 +87,13 @@ internal fun KeyPaneHeader(
                 }
             }
             Box(Modifier.weight(1f))
-            AppTooltip("新建 Key（Phase 5）") {
+            AppTooltip(if (state.canWrite) "新建 Key" else "只读模式，无法新建 Key") {
                 AppIconButton(
                     icon = AppIcons.Add,
                     contentDescription = "新建 Key",
                     onClick = state::requestNewKey,
                     size = AppIconButtonSize.Small,
+                    enabled = state.canWrite,
                 )
             }
             AppTooltip("刷新 Keyspace（R）") {

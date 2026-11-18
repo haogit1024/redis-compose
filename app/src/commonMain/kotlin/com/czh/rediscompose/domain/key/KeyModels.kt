@@ -50,7 +50,12 @@ data class StreamEntry(
  * gateway; this model only carries displayable strings.
  */
 sealed interface KeyValue {
-    data class StringValue(val text: String, val isJson: Boolean) : KeyValue
+    data class StringValue(
+        val text: String,
+        val isJson: Boolean,
+        val isBinary: Boolean = false,
+        val byteLength: Long = text.encodeToByteArray().size.toLong(),
+    ) : KeyValue
 
     data class HashValue(val fields: List<HashField>) : KeyValue
 

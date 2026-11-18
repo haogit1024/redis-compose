@@ -44,6 +44,7 @@ fun AppIconButton(
     size: AppIconButtonSize = AppIconButtonSize.Medium,
     active: Boolean = false,
     enabled: Boolean = true,
+    tint: Color? = null,
 ) {
     val colors = LocalAppColors.current
     val dimens = LocalAppDimens.current
@@ -65,6 +66,7 @@ fun AppIconButton(
     val contentColor =
         when {
             !enabled -> colors.textTertiary.copy(alpha = 0.45f)
+            tint != null -> tint
             active -> colors.accent
             else -> lerp(colors.textTertiary, colors.text, hoverProgress)
         }

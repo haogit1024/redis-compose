@@ -122,7 +122,10 @@ fun AppButton(
         modifier =
             modifier
                 .height(height)
-                .graphicsLayer { translationY = pressOffset.toPx() }
+                .graphicsLayer {
+                    translationY = pressOffset.toPx()
+                    alpha = if (enabled) 1f else 0.55f
+                }
                 .clip(shape)
                 .then(
                     if (variant == AppButtonVariant.Primary) {

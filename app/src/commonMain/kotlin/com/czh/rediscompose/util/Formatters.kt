@@ -72,6 +72,44 @@ fun formatDurationMicros(micros: Long): String =
 /** Local wall-clock time for a Redis epoch-seconds value. */
 expect fun formatEpochSeconds(seconds: Long): String
 
+/** Current Unix time in seconds; used for honest "read at" labels in the value pane. */
+expect fun currentEpochSeconds(): Long
+
+/**
+ * Cuts [text] to at most [maxBytes] UTF-8 bytes without splitting a code point.
+ *
+ * Used by the value editor to show a bounded preview of large strings.
+ */
+fun truncateUtf8(
+    text: String,
+    maxBytes: Int,
+): String {
+    if (maxBytes <= 0) return ""
+    var bytes = 0
+    var index = 0
+    while (index < text.length) {
+        val codePoint =
+            if (text[index].isHighSurrogate() && index + 1 < text.length && text[index + 1].isLowSurrogate()) {
+                val high = text[index].code
+                val low = text[index + 1].code
+                0x10000 + ((high - 0xD800) shl 10) + (low - 0xDC00)
+            } else {
+                text[index].code
+            }
+        val size =
+            when {
+                codePoint < 0x80 -> 1
+                codePoint < 0x800 -> 2
+                codePoint < 0x10000 -> 3
+                else -> 4
+            }
+        if (bytes + size > maxBytes) break
+        bytes += size
+        index += if (codePoint >= 0x10000) 2 else 1
+    }
+    return text.substring(0, index)
+}
+
 private fun trimFraction(
     value: Double,
     decimals: Int,
