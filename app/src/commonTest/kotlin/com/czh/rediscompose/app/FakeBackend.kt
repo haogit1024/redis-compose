@@ -17,6 +17,12 @@ import com.czh.rediscompose.domain.repository.PasswordCipher
 import com.czh.rediscompose.domain.settings.AppSettings
 import com.czh.rediscompose.domain.settings.SettingsRepository
 
+data class RecordedScan(
+    val cursor: Long,
+    val pattern: String?,
+    val count: Int,
+)
+
 /**
  * In-memory backend for AppState tests and future feature tests.
  */
@@ -30,6 +36,19 @@ class FakeRedisGateway(
 
     var infoRaw: String = DEFAULT_INFO
     var keyspaceRaw: String = DEFAULT_KEYSPACE
+
+    var databaseSizeValue: Long = 12_480
+    var scanKeys: List<String> = emptyList()
+    var scanError: Exception? = null
+    var keyTypeByKey: Map<String, KeyType> = emptyMap()
+    var keyTtlByKey: Map<String, Long> = emptyMap()
+
+    /** Page size used by [scan]; smaller than the requested COUNT keeps tests multi-page. */
+    var scanPageSize: Int = 1_000
+
+    val scanCalls = mutableListOf<RecordedScan>()
+    val typeRequests = mutableListOf<String>()
+    val ttlRequests = mutableListOf<String>()
 
     override suspend fun ping(): String {
         pingCount += 1
@@ -47,17 +66,37 @@ class FakeRedisGateway(
         selectedDatabase = index
     }
 
-    override suspend fun databaseSize(): Long = 12_480
+    override suspend fun databaseSize(): Long = databaseSizeValue
 
     override suspend fun scan(
         cursor: Long,
         pattern: String?,
         count: Int,
-    ): ScanPage = ScanPage(cursor = 0, keys = emptyList())
+    ): ScanPage {
+        scanCalls += RecordedScan(cursor = cursor, pattern = pattern, count = count)
+        scanError?.let { throw it }
+        val matched =
+            if (pattern.isNullOrBlank()) {
+                scanKeys
+            } else {
+                scanKeys.filter { matchesGlob(it, pattern) }
+            }
+        val start = cursor.toInt().coerceIn(0, matched.size)
+        val pageSize = minOf(count.coerceAtLeast(1), scanPageSize.coerceAtLeast(1))
+        val end = (start + pageSize).coerceAtMost(matched.size)
+        val nextCursor = if (end >= matched.size) 0L else end.toLong()
+        return ScanPage(cursor = nextCursor, keys = matched.subList(start, end))
+    }
 
-    override suspend fun keyType(key: String): KeyType = KeyType.STRING
+    override suspend fun keyType(key: String): KeyType {
+        typeRequests += key
+        return keyTypeByKey[key] ?: KeyType.STRING
+    }
 
-    override suspend fun keyTtl(key: String): Long = -1
+    override suspend fun keyTtl(key: String): Long {
+        ttlRequests += key
+        return keyTtlByKey[key] ?: -1L
+    }
 
     override suspend fun keyMemoryUsage(key: String): Long? = null
 
@@ -236,4 +275,26 @@ class FakeAppContainer(
     override val connectionRepository = RecordingConnectionRepository()
     override val gatewayFactory: RedisGatewayFactory = RedisGatewayFactory { gateway }
     override val passwordCipher: PasswordCipher = IdentityPasswordCipher
+}
+
+/** Minimal Redis glob matcher (`*`, `?`) for SCAN MATCH assertions in tests. */
+internal fun matchesGlob(
+    key: String,
+    pattern: String,
+): Boolean {
+    val regex =
+        buildString {
+            append('^')
+            pattern.forEach { character ->
+                when (character) {
+                    '*' -> append(".*")
+                    '?' -> append('.')
+                    '.', '(', ')', '[', ']', '{', '}', '+', '^', '$', '|', '\\' ->
+                        append('\\').append(character)
+                    else -> append(character)
+                }
+            }
+            append('$')
+        }
+    return Regex(regex).matches(key)
 }

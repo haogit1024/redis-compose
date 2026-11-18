@@ -9,6 +9,7 @@ import com.czh.rediscompose.design.component.ToastKind
 import com.czh.rediscompose.domain.connection.ConnectionProfile
 import com.czh.rediscompose.domain.settings.AppSettings
 import com.czh.rediscompose.domain.settings.ThemeMode
+import com.czh.rediscompose.feature.workspace.WorkspaceState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -33,6 +34,8 @@ class AppState(
 
     val sessions = mutableStateMapOf<String, RedisSession>()
     val tabs = mutableStateListOf<WorkspaceTab>()
+
+    private val workspaces = mutableMapOf<String, WorkspaceState>()
 
     var activePage by mutableStateOf(AppPage.WORKSPACE)
         private set
@@ -59,6 +62,9 @@ class AppState(
     fun activeTab(): WorkspaceTab? = tabs.firstOrNull { it.id == activeTabId }
 
     fun sessionFor(connectionId: String): RedisSession? = sessions[connectionId]
+
+    /** Key browser state for a connection, created when its Keys tab opens. */
+    fun workspaceFor(connectionId: String): WorkspaceState? = workspaces[connectionId]
 
     fun setPage(page: AppPage) {
         activePage = page
@@ -98,6 +104,7 @@ class AppState(
                 ),
             )
         }
+        if (kind == WorkspaceTabKind.KEYS) ensureWorkspace(connectionId, session)
         activeTabId = tabId
         commandPaletteVisible = false
     }
@@ -112,7 +119,10 @@ class AppState(
     fun closeTab(tabId: String) {
         val index = tabs.indexOfFirst { it.id == tabId }
         if (index < 0) return
-        tabs.removeAt(index)
+        val closing = tabs.removeAt(index)
+        if (closing.kind == WorkspaceTabKind.KEYS) {
+            workspaces.remove(closing.connectionId)?.dispose()
+        }
         if (activeTabId == tabId) {
             val next = tabs.getOrNull(index) ?: tabs.getOrNull(index - 1)
             activeTabId = next?.id
@@ -132,6 +142,7 @@ class AppState(
         if (index !in 0 until RedisSession.DATABASE_COUNT) return
         scope.launch {
             runCatching { session.switchDatabase(index) }
+                .onSuccess { workspaces[connectionId]?.refresh() }
                 .onFailure { error ->
                     showToast("切换数据库失败：${error.firstLine()}", ToastKind.Danger)
                 }
@@ -159,6 +170,7 @@ class AppState(
             }
         connectJobs.remove(profile.id)?.cancel()
         sessions.remove(profile.id)?.disconnect()
+        workspaces.remove(profile.id)?.dispose()
         for (tabIndex in tabs.indices) {
             val tab = tabs[tabIndex]
             if (tab.connectionId == profile.id && tab.kind == WorkspaceTabKind.KEYS) {
@@ -171,6 +183,7 @@ class AppState(
     fun deleteConnection(connectionId: String) {
         connectJobs.remove(connectionId)?.cancel()
         sessions.remove(connectionId)?.disconnect()
+        workspaces.remove(connectionId)?.dispose()
         tabs.removeAll { it.connectionId == connectionId }
         connections = connections.filterNot { it.id == connectionId }
         if (activeConnectionId == connectionId) {
@@ -199,6 +212,8 @@ class AppState(
     fun close() {
         connectJobs.values.forEach { it.cancel() }
         connectJobs.clear()
+        workspaces.values.forEach { it.dispose() }
+        workspaces.clear()
         sessions.values.forEach { it.disconnect() }
         sessions.clear()
         toastController.clear()
@@ -217,6 +232,20 @@ class AppState(
             gateway = container.gatewayFactory.create(profile),
             appScope = scope,
         ).also { sessions[profile.id] = it }
+
+    private fun ensureWorkspace(
+        connectionId: String,
+        session: RedisSession,
+    ): WorkspaceState =
+        workspaces.getOrPut(connectionId) {
+            WorkspaceState(
+                session = session,
+                settings = { settings },
+                onToast = { message, kind -> showToast(message, kind) },
+                scope = session.scope,
+                onSettingsChange = ::updateSettings,
+            )
+        }
 
     private fun ensureConnected(session: RedisSession) {
         if (session.status == SessionStatus.CONNECTING || session.status == SessionStatus.CONNECTED) {

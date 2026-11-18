@@ -49,11 +49,13 @@ import com.czh.rediscompose.design.component.AppIconButton
 import com.czh.rediscompose.design.component.AppMenu
 import com.czh.rediscompose.design.component.AppMenuItem
 import com.czh.rediscompose.design.component.AppTooltip
+import com.czh.rediscompose.design.component.ToastKind
 import com.czh.rediscompose.design.icon.AppIcons
 import com.czh.rediscompose.design.theme.AppTheme
 import com.czh.rediscompose.design.theme.LocalAppColors
 import com.czh.rediscompose.design.theme.LocalAppDimens
 import com.czh.rediscompose.design.theme.LocalAppTypography
+import com.czh.rediscompose.feature.workspace.WorkspaceState
 import com.czh.rediscompose.util.formatCount
 
 @Composable
@@ -65,6 +67,10 @@ fun WorkspaceTabBar(
     val dimens = LocalAppDimens.current
     val activeTab = state.activeTab()
     val session = state.activeSession()
+    val activeWorkspace =
+        activeTab
+            ?.takeIf { it.kind == WorkspaceTabKind.KEYS }
+            ?.let { state.workspaceFor(it.connectionId) }
 
     Box(modifier.fillMaxWidth()) {
         Row(
@@ -121,10 +127,16 @@ fun WorkspaceTabBar(
                         AppIconButton(
                             icon = AppIcons.Refresh,
                             contentDescription = "刷新",
-                            onClick = { state.showToast("刷新将在 Phase 4 接入") },
+                            onClick = {
+                                if (activeWorkspace != null) {
+                                    activeWorkspace.refresh()
+                                } else {
+                                    state.showToast("当前页面暂不支持刷新", ToastKind.Info)
+                                }
+                            },
                         )
                     }
-                    MoreMenu(state = state)
+                    MoreMenu(state = state, activeWorkspace = activeWorkspace)
                 }
             }
         }
@@ -317,7 +329,10 @@ private fun DatabasePill(
 }
 
 @Composable
-private fun MoreMenu(state: AppState) {
+private fun MoreMenu(
+    state: AppState,
+    activeWorkspace: WorkspaceState?,
+) {
     var expanded by remember { mutableStateOf(false) }
     Box {
         AppIconButton(
@@ -333,7 +348,13 @@ private fun MoreMenu(state: AppState) {
                     AppMenuItem(
                         label = "刷新",
                         icon = AppIcons.Refresh,
-                        onClick = { state.showToast("刷新将在 Phase 4 接入") },
+                        onClick = {
+                            if (activeWorkspace != null) {
+                                activeWorkspace.refresh()
+                            } else {
+                                state.showToast("当前页面暂不支持刷新", ToastKind.Info)
+                            }
+                        },
                     ),
                     AppMenuItem(
                         label = "关闭当前标签页",

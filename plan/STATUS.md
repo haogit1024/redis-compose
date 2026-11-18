@@ -10,7 +10,7 @@
 | 1 — 设计系统 | 已验收 | 2026-11-18 | 见下文 §Phase 1 | 见“遗留风险” |
 | 2 — 领域与数据层 | 已验收 | 2026-11-18 | 见下文 §Phase 2 | 见“遗留风险” |
 | 3 — AppState 与外壳 | 已验收 | 2026-11-18 | 见下文 §Phase 3 | 见“遗留风险” |
-| 4 — Key 浏览器 | 未开始 | — | — | — |
+| 4 — Key 浏览器 | 已验收 | 2026-11-18 | 见下文 §Phase 4 | 见“遗留风险” |
 | 5 — 值编辑器 | 未开始 | — | — | — |
 | 6 — 控制台 | 未开始 | — | — | — |
 | 7 — 洞察 | 未开始 | — | — | — |
@@ -244,12 +244,109 @@
 
 ---
 
+## Phase 4 — Key 浏览器（已验收）
+
+### 完成内容
+
+#### 状态与生命周期
+
+- `feature/workspace/WorkspaceState.kt`：
+  - 真实 `SCAN cursor MATCH pattern COUNT settings.scanBatchSize` 分页加载；无搜索模式时先 `DBSIZE` 取总数；`loadedAll` 由 cursor 归零决定。
+  - SCAN 结果去重（Redis SCAN 可能重复返回）；分页失败保留已加载 Key，设置 `loadError` 并发 danger toast，`retry()` 从原 cursor 继续或重新开始。
+  - 每次扫描带 generation 编号，`refresh()`/`applySearch()` 取消旧任务并丢弃过期结果，快速输入不会出现旧结果覆盖新结果。
+  - 搜索状态 `searchInput` + `appliedPattern`：空值清除模式并全量重扫；非空原样传给 `SCAN MATCH`。
+  - 类型筛选 `typeFilter` 仅对已加载 Key 生效；类型未知的 Key 先保留（灰点），TYPE 返回后再按筛选隐藏。
+  - 置顶 `pinnedKeys` 为当前 WorkspaceState 内存态，按名称稳定排序，搜索/类型筛选时仍显示。
+  - 树状态 `tree`（`KeyTreeBuilder` + profile.keySeparator）、`expandedDirs`；首次加载自动展开深度 0 目录，用户手动收起后刷新不再强制展开；分隔符为空时退化为平铺。
+  - `toggleKeyView()` 通过 `AppState.updateSettings` 更新 `settings.keyView`（Phase 9 再决定完整持久化体验）。
+  - TYPE/TTL 预览缓存 `keyTypes`/`keyTtls`：每个 Key 只请求一次，`Semaphore(6)` 限并发，失败静默（灰点），刷新时清空。
+  - WorkspaceState 使用 session scope 下的独立 `SupervisorJob`；`dispose()` 取消 SCAN 与 TYPE/TTL 任务。关闭 Keys tab、删除连接、退出应用都会 dispose。
+
+#### 组合根与路由
+
+- `app/AppState.kt`：新增 `workspaces` 与 `workspaceFor(connectionId)`；打开 Keys tab 时创建；关闭 Keys tab / 保存或删除连接 / `close()` 时 dispose；切换 DB 成功后 `refresh()`。
+- `feature/shell/PlaceholderContent.kt`：`WorkspaceTabKind.KEYS` 路由到真实 `WorkspaceScreen`，删除 `KeysPlaceholder`；Console/Insights/Connections/Settings 占位结构未动。
+- `feature/shell/WorkspaceTabBar.kt`：顶部刷新按钮与“更多 → 刷新”调用当前 WorkspaceState.refresh()；非 Keys 页仍提示暂不支持。
+
+#### Key 面板 UI（`feature/workspace/`）
+
+- `WorkspaceScreen.kt`：左 Key 面板 + 4dp 可拖拽分隔线 + 右侧占位；面板 240–420dp，并在窗口缩小时把上限压到“值面板至少 420dp”；宽度 `rememberSaveable`。
+- `KeyListPane.kt` / `KeyPaneHeader.kt` / `KeySearchFilter.kt`：
+  - 标题 `Keys` + 真实总数（Mono 9.5sp）+ 新建/刷新/视图切换 + 只读锁提示。
+  - 30dp 搜索框（Mono、SCAN 模式 placeholder、⌘F 提示、有内容时显示清除按钮）。
+  - “全部 + 6 类型” chips，激活时使用对应类型色 12% 背景 / 24% 边框。
+- `PinnedKeyList.kt`：顶部“置顶”区展示完整 Key 名，星标可取消置顶，选中态与树/搜索结果同步；无置顶时不占用空间。
+- `KeyTree.kt` / `KeyRow.kt`：
+  - Tree/Flat 两种视图；目录优先、chevron + folder 图标 + 计数、depth × 14dp 缩进、1dp 竖向引导线。
+  - Key 行 28dp：类型点（6dp + 11% 光晕）、Mono 10.5sp 名称、TTL（8.5sp，≤60s 用 danger）、hover/选中/置顶显示星标。
+  - 选中行 accentSoft 背景 + 左侧 2dp accent 条；右键菜单仅提供“复制 Key”。
+  - 搜索/类型筛选激活时改为平铺结果列表，头部显示“N 个结果”与清除按钮。
+  - 接近底部时自动 `loadMore()`；底部提供虚线 “SCAN 加载更多 · cursor N” 行。
+  - 空 DB / 无匹配 / 首次加载 / 加载失败（含保留已加载内容的内联错误条）分别有明确状态与重试/清除操作。
+- `KeyPaneFooter.kt`：db 名、SCAN 进度条（accent→success 渐变）、`loaded / total`；全部加载完成显示“已加载全部 N 个 Key”。
+- `ValuePanePlaceholder.kt`：未选择显示品牌图标与提示；已选择显示真实 Key 名、类型 pill、`正在读取值…` 占位，明确标注值编辑器属于 Phase 5。
+- 图标全部走 `AppIcons`；新增 `AppDimens`（Key 面板/树/行/chip/scan bar）与 `AppTypography`（`monoKeyRow`、`monoMicro`、`filterChip`）token；`AppTextField` 增加可选高度参数（默认行为不变）。
+- 新增 `horizontalResizeCursor()` expect/actual（common + jvm），分隔线 hover 显示左右缩放光标。
+
+#### 键盘与操作
+
+- ⌘F / Ctrl+F 聚焦搜索；搜索框 Enter 立即应用；Esc 清空搜索 → 取消选中 → 释放焦点。
+- R 刷新（搜索框聚焦时不触发）；N toast 提示 Phase 5；右键 Key 复制 Key（写入系统剪贴板并 toast）。
+
+#### 预览
+
+- 新增 `WorkspacePreviews.kt`（预览专用 in-memory gateway + 22 个设计稿 Key），不读取用户连接文件、不连接真实 Redis。
+- `WorkspaceScreen`、`KeyListPane`、`KeyPaneHeader`、`KeySearchFilter`、`KeyTree`、`KeyRow`、`PinnedKeyList`、`KeyPaneFooter`、`ValuePanePlaceholder` 均有 `@Preview`（覆盖深/浅、空、搜索、加载、错误、只读、平铺）。
+
+### 真实 Redis 联调（只读）
+
+使用用户提供的测试实例（Redis 8.6.2，仅记录版本，不记录地址/密码）执行了一次临时只读集成测试；测试文件在完成后已删除，凭据只从环境变量读取，未写入项目或 `connections.json`。
+
+- 仅执行只读命令：`PING`、`SELECT`、`DBSIZE`、`SCAN`、`TYPE`、`TTL`、`MEMORY USAGE`、`OBJECT ENCODING`、`INFO`；没有任何写入/删除/过期操作。
+- 连接：PING ≈ 69–88 ms；会话 `CONNECTED`，RTT ≈ 11 ms；3 个非空 DB（5 / 35 / 15 Keys）。
+- SCAN：选择 35 Key 的 DB，`COUNT 10` 扫描 4 页正好覆盖 35 个 Key，cursor 归零，总耗时 ≈ 30 ms；未发现重复 Key。
+- TYPE/TTL 抽样 10 个 Key：`STRING=9`、`ZSET=1`；永久 / 有 TTL 均正确；`MEMORY USAGE` 与 `OBJECT ENCODING` 10/10 成功。
+- `SCAN MATCH`：用刚确认存在的精确 Key 作为 pattern，返回 1 条，耗时 ≈ 8 ms。
+- WorkspaceState：首屏加载 10 个 Key、`total=35`、`loadedAll=false`；连续 `loadMore()` 后 30 个；`ensurePreview` 写入 TYPE 与 TTL 缓存；精确 Key 搜索命中 1 条；清除搜索与 `refresh()` 均无错误。
+- 观察到 Redis `SCAN COUNT` 只是提示值：`COUNT 10` 的首屏实际返回 10–11 个 Key；实现没有假设每页数量固定。
+- 未用真实连接做桌面 UI 点击流/截图，避免把服务器 Key 名渲染进截图；UI 视觉仍由 fixture 离屏验收覆盖。
+
+### 验证
+
+| 命令 | 结果 |
+| --- | --- |
+| `./gradlew :app:jvmTest` | 105 tests，0 failures（新增 13 个 WorkspaceState 用例、2 个 AppState workspace 生命周期用例、1 个 compact TTL 用例） |
+| `./gradlew ktlintCheck` | 通过 |
+| `./gradlew build` | 通过 |
+| `./gradlew :desktopApp:run` | 启动成功，进程存活；未点击任何用户连接 |
+| 临时真实 Redis 只读测试（已删除） | 通过；SCAN/TYPE/TTL/MATCH/会话/WorkspaceState 均正常 |
+
+离屏渲染（ImageComposeScene + 预览 fixture，临时脚本未提交）检查了：
+
+- 1440/1120 宽度、深/浅主题；空 DB、SCAN 错误、搜索命中/无匹配、类型筛选、平铺视图、置顶 + 完整展开树。
+- 目录计数、类型点/类型色、TTL（含 ≤60s danger）、置顶星标、选中条、结果头、footer 进度与自适应省略均正常；右侧 Key 名与类型 pill 使用真实 state。
+- 侧栏与用户连接信息未出现在渲染中（使用 fixture，不读取 `connections.json`）。
+
+### 遗留风险与边界
+
+1. **真实 Redis 联调**：已在用户提供的测试实例（Redis 8.6.2）上完成只读路径联调（见上节）。尚未覆盖：10k+ Key 的真实滚动性能、UI 内真实点击流（避免截图暴露服务器 Key 名）、以及 Phase 5 的写路径。真实 SCAN cursor 与 MATCH 行为已验证。
+2. **键盘回放未自动化**：⌘F/Esc/R/N 只做了代码级检查与离屏静态渲染；macOS 未授权 osascript 自动按键。
+3. **面板宽度**：使用 `rememberSaveable`，同一 tab 内保持；关闭并重开 Keys tab 会回到 316dp（未写入 AppState/设置）。
+4. **置顶不持久化**：按计划为 WorkspaceState 内存态，关闭 Keys tab 即清空。
+5. **TYPE/TTL 失败不重试**：单 Key 预览失败会保留灰点并跳过该 Key 的后续自动重试，刷新后重新请求；这是为了避免 toast 风暴。
+6. **自动展开层级**：按文档只自动展开深度 0 目录，因此首次进入只看到一级目录，需要再展开一层才能看到 Key；与设计稿“部分二级目录默认展开”不同，属于按计划的取舍。
+7. **搜索无结果时**：直接显示“没有匹配的 Key”空状态（含清除按钮），不额外保留“0 个结果”头部。
+8. **剪贴板 API**：使用 `LocalClipboardManager`（编译有 deprecation 警告）；Compose 新的 `LocalClipboard` 是 suspend API，留 Phase 10 统一替换。
+9. **预览 fixture 在生产源码中**：`WorkspacePreviews.kt` 与 `ShellPreviews.kt` 一样只服务于 `@Preview`/离屏验收，不参与运行时路径；Phase 10 可移到 tooling 源集。
+
+---
+
 ## 当前基线
 
 - 分支：`feat/rewrite-ui`；模块：`:desktopApp` + `:app`。
 - 包名：`com.czh.rediscompose`；入口：`com.czh.rediscompose.desktop.MainKt`。
 - 应用启动直接进入新外壳（顶栏 / rail / 连接侧栏 / tab / 状态栏），不再显示设计画廊。
-- `AppState` + `RedisSession` 已接管连接、tab、主题、设置与旧数据迁移；测试 89/89 通过。
-- Keys / Console / Insights / Connections / Settings 仍是占位内容。
-- 下一步 Phase 4：实现 Key 浏览器与真实 SCAN 数据；不要提前实现值编辑器。
-- 下一阶段前置条件：建议准备一个可访问的 Redis 7 实例，用于真实连接与 SCAN 联调。
+- `AppState` + `RedisSession` 已接管连接、tab、主题、设置与旧数据迁移；测试 105/105 通过。
+- Keys 页已接入真实 SCAN Key 浏览器（树/平铺、搜索、类型筛选、置顶、TTL/SCAN 状态）；Console / Insights / Connections / Settings 仍是占位内容。
+- 下一步 Phase 5：值检查器、6 种类型编辑器与 Key 操作；不要提前实现控制台/洞察。
+- 下一阶段前置条件：Phase 4 已完成真实只读联调；Phase 5 涉及写入，开始前请确认该测试实例可安全写入，或指定一个独立的测试 DB/实例。

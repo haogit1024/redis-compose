@@ -36,6 +36,7 @@ import com.czh.rediscompose.design.component.AppButton
 import com.czh.rediscompose.design.component.AppButtonVariant
 import com.czh.rediscompose.design.component.AppCard
 import com.czh.rediscompose.design.component.AppEmptyState
+import com.czh.rediscompose.design.component.AppLoading
 import com.czh.rediscompose.design.component.ToastKind
 import com.czh.rediscompose.design.icon.AppIcons
 import com.czh.rediscompose.design.icon.BrandMark
@@ -44,6 +45,7 @@ import com.czh.rediscompose.design.theme.LocalAppColors
 import com.czh.rediscompose.design.theme.LocalAppDimens
 import com.czh.rediscompose.design.theme.LocalAppTypography
 import com.czh.rediscompose.domain.connection.ConnectionProfile
+import com.czh.rediscompose.feature.workspace.WorkspaceScreen
 
 @Composable
 fun AppPageContent(
@@ -67,7 +69,14 @@ private fun WorkspaceContent(state: AppState) {
         return
     }
     when (tab.kind) {
-        WorkspaceTabKind.KEYS -> KeysPlaceholder(state, tab)
+        WorkspaceTabKind.KEYS -> {
+            val workspace = state.workspaceFor(tab.connectionId)
+            if (workspace != null) {
+                WorkspaceScreen(workspace = workspace)
+            } else {
+                AppLoading(label = "正在准备 Key 浏览器…")
+            }
+        }
         WorkspaceTabKind.CONSOLE -> ConsolePlaceholder(state, tab)
         WorkspaceTabKind.INSIGHTS -> InsightsPlaceholder(state, tab)
     }
@@ -116,26 +125,6 @@ private fun EmptyWorkspace(state: AppState) {
                 icon = AppIcons.Connections,
             )
         }
-    }
-}
-
-@Composable
-private fun KeysPlaceholder(
-    state: AppState,
-    tab: WorkspaceTab,
-) {
-    val connection = state.connections.firstOrNull { it.id == tab.connectionId }
-    PageScaffold(
-        eyebrow = "WORKSPACE · KEYS",
-        title = connection?.name ?: "Keys",
-        description = "Phase 4 将在这里显示 SCAN 加载的 Key 树、类型筛选与搜索。当前阶段只提供外壳导航。",
-        meta = connection,
-    ) {
-        PlaceholderCard(
-            icon = AppIcons.Key,
-            title = "Key 浏览器尚未接入",
-            description = "连接已经建立，下一步会用真实 SCAN 数据填充左侧 Key 列表与右侧值面板。",
-        )
     }
 }
 

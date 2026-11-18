@@ -19,6 +19,23 @@ fun formatTtl(seconds: Long): String =
         else -> "${seconds / 86_400}d ${(seconds % 86_400) / 3_600}h"
     }
 
+/**
+ * Condensed TTL used by key rows, e.g. `42s`, `28m`, `2h`, `3d`.
+ *
+ * Redis uses -1 for keys without expiry; those return "永久". Negative values other than
+ * -1 mean the key is already gone.
+ */
+fun formatTtlCompact(seconds: Long): String =
+    when {
+        seconds == -1L -> "永久"
+        seconds < 0L -> "已过期"
+        seconds == 0L -> "0s"
+        seconds < 60L -> "${seconds}s"
+        seconds < 3_600L -> "${seconds / 60}m"
+        seconds < 86_400L -> "${seconds / 3_600}h"
+        else -> "${seconds / 86_400}d"
+    }
+
 fun formatBytes(bytes: Long?): String {
     if (bytes == null) return "—"
     if (bytes < 1_024L) return "$bytes B"

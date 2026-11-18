@@ -35,13 +35,16 @@ data class AppTypography(
     val caption: TextStyle,
     val microLabel: TextStyle,
     val monoValue: TextStyle,
+    val monoKeyRow: TextStyle,
     val monoMeta: TextStyle,
+    val monoMicro: TextStyle,
     val monoBody: TextStyle,
     val button: TextStyle,
     val buttonSmall: TextStyle,
     val input: TextStyle,
     val badge: TextStyle,
     val typeChip: TextStyle,
+    val filterChip: TextStyle,
     val kbd: TextStyle,
     val segment: TextStyle,
     val tooltip: TextStyle,
@@ -160,6 +163,22 @@ fun rememberAppTypography(): AppTypography {
                     letterSpacing = 0.sp,
                     lineHeight = 14.sp,
                 ),
+            monoMicro =
+                TextStyle(
+                    fontFamily = monoFamily,
+                    fontWeight = FontWeight.W400,
+                    fontSize = 8.5.sp,
+                    letterSpacing = 0.sp,
+                    lineHeight = 11.sp,
+                ),
+            monoKeyRow =
+                TextStyle(
+                    fontFamily = monoFamily,
+                    fontWeight = FontWeight.W400,
+                    fontSize = 10.5.sp,
+                    letterSpacing = (-0.21).sp,
+                    lineHeight = 14.sp,
+                ),
             monoBody =
                 TextStyle(
                     fontFamily = monoFamily,
@@ -206,6 +225,14 @@ fun rememberAppTypography(): AppTypography {
                     fontWeight = FontWeight(600),
                     fontSize = 9.sp,
                     letterSpacing = 0.54.sp,
+                    lineHeight = 12.sp,
+                ),
+            filterChip =
+                TextStyle(
+                    fontFamily = uiFamily,
+                    fontWeight = FontWeight(550),
+                    fontSize = 9.sp,
+                    letterSpacing = 0.18.sp,
                     lineHeight = 12.sp,
                 ),
             kbd =

@@ -70,6 +70,7 @@ fun AppTextField(
     isPassword: Boolean = false,
     mono: Boolean = false,
     minHeight: Dp? = null,
+    height: Dp? = null,
     keyboardType: KeyboardType = KeyboardType.Text,
 ) {
     val colors = LocalAppColors.current
@@ -85,7 +86,7 @@ fun AppTextField(
     )
 
     val shape = RoundedCornerShape(dimens.radiusControl)
-    val fieldHeight = if (singleLine) dimens.controlHeight else (minHeight ?: dimens.multilineMinHeight)
+    val fieldHeight = if (singleLine) (height ?: dimens.controlHeight) else (minHeight ?: dimens.multilineMinHeight)
     val borderColor =
         when {
             !enabled -> colors.border

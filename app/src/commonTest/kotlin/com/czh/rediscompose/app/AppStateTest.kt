@@ -185,6 +185,32 @@ class AppStateTest {
     }
 
     @Test
+    fun `keys tab owns a workspace that closes with the tab`() {
+        val container = FakeAppContainer(initialConnections = listOf(profile()))
+        val state = state(container)
+        state.openConnection("c1")
+
+        assertNotNull(state.workspaceFor("c1"))
+
+        state.closeTab("c1:keys")
+        assertNull(state.workspaceFor("c1"))
+        state.close()
+    }
+
+    @Test
+    fun `switching database refreshes the key browser`() {
+        val container = FakeAppContainer(initialConnections = listOf(profile()))
+        val state = state(container)
+        state.openConnection("c1")
+        val scansBefore = container.gateway.scanCalls.size
+
+        state.selectDatabase("c1", 2)
+
+        assertEquals(scansBefore + 1, container.gateway.scanCalls.size)
+        state.close()
+    }
+
+    @Test
     fun `opening an unknown tab is a no-op`() {
         val state = state(FakeAppContainer())
         state.openTab("missing", WorkspaceTabKind.CONSOLE)

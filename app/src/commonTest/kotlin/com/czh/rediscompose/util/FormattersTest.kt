@@ -26,6 +26,18 @@ class FormattersTest {
     }
 
     @Test
+    fun `compact ttl keeps one unit for key rows`() {
+        assertEquals("永久", formatTtlCompact(-1))
+        assertEquals("已过期", formatTtlCompact(-2))
+        assertEquals("0s", formatTtlCompact(0))
+        assertEquals("42s", formatTtlCompact(42))
+        assertEquals("1m", formatTtlCompact(60))
+        assertEquals("28m", formatTtlCompact(1_694))
+        assertEquals("2h", formatTtlCompact(7_200))
+        assertEquals("3d", formatTtlCompact(3 * 86_400L))
+    }
+
+    @Test
     fun `bytes fall back to an em dash`() {
         assertEquals("—", formatBytes(null))
     }
