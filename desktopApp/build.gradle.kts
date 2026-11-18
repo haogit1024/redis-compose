@@ -14,7 +14,7 @@ ktlint {
 }
 
 dependencies {
-    implementation(projects.shared)
+    implementation(projects.app)
 
     implementation(compose.desktop.currentOs)
     implementation(libs.kotlinx.coroutinesSwing)
@@ -24,11 +24,11 @@ dependencies {
 
 compose.desktop {
     application {
-        mainClass = "com.czh.redis.MainKt"
+        mainClass = "com.czh.rediscompose.desktop.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "com.czh.redis"
+            packageName = "com.czh.rediscompose"
             packageVersion = "1.0.0"
         }
     }

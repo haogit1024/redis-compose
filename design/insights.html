@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Redis Compose — Insights</title>
+    <link rel="stylesheet" href="assets/theme.css" />
+    <link rel="stylesheet" href="assets/pages.css" />
+    <script>
+      const _themeParam = new URLSearchParams(location.search).get('theme');
+      document.documentElement.dataset.theme =
+        _themeParam === 'light' || _themeParam === 'dark'
+          ? _themeParam
+          : localStorage.getItem('rc-theme') || 'dark';
+    </script>
+  </head>
+  <body>
+    <div class="app">
+      <header class="titlebar">
+        <a class="brand" href="index.html" aria-label="Redis Compose 首页">
+          <span class="brand-mark"><span class="ic" data-ic="logo"></span></span>
+          <span class="brand-word">redis<em>compose</em></span>
+          <span class="brand-ver">v0.1</span>
+        </a>
+        <div class="titlebar-sep"></div>
+        <div class="page-chip" role="button" tabindex="0">
+          <span class="ic" data-ic="database"></span>
+          <span>Production</span>
+          <span class="crumb-sep">/</span>
+          <strong>Prod Cache</strong>
+          <span class="ic" data-ic="chevron-down"></span>
+        </div>
+        <div class="titlebar-center">
+          <div class="omnibox">
+            <span class="ic" data-ic="search"></span>
+            <input data-open-palette placeholder="搜索 Key、命令或连接…" aria-label="全局搜索" />
+            <kbd>⌘K</kbd>
+          </div>
+        </div>
+        <div class="titlebar-right">
+          <span class="status-pill"><span class="dot"></span>12 ms</span>
+          <button class="btn-icon" data-theme-toggle data-tip="切换主题" aria-label="切换主题"></button>
+          <button class="btn-icon" data-tip="通知" aria-label="通知"><span class="ic" data-ic="bell"></span></button>
+          <div class="avatar" data-tip="czh@acme.io">CZ</div>
+        </div>
+      </header>
+
+      <div class="shell">
+        <nav class="rail" aria-label="主导航">
+          <a class="rail-btn" href="workspace.html" data-tip="键浏览器" aria-label="键浏览器">
+            <span class="ic" data-ic="key"></span>
+          </a>
+          <a class="rail-btn" href="console.html" data-tip="命令控制台" aria-label="命令控制台">
+            <span class="ic" data-ic="terminal"></span>
+          </a>
+          <a class="rail-btn active" href="insights.html" data-tip="服务器洞察" aria-label="服务器洞察">
+            <span class="ic" data-ic="activity"></span>
+          </a>
+          <div class="rail-sep"></div>
+          <a class="rail-btn" href="connections.html" data-tip="连接管理" aria-label="连接管理">
+            <span class="ic" data-ic="database"></span>
+          </a>
+          <a class="rail-btn" href="settings.html" data-tip="偏好设置" aria-label="偏好设置">
+            <span class="ic" data-ic="sliders"></span>
+          </a>
+          <div class="rail-spacer"></div>
+          <span class="rail-dot live-pulse" data-tip="Redis 运行正常"></span>
+          <a class="rail-btn" href="settings.html" data-tip="快捷键" aria-label="快捷键">
+            <span class="ic" data-ic="keyboard"></span>
+          </a>
+        </nav>
+
+        <aside class="sidebar">
+          <div class="sb-head">
+            <span class="sb-title">连接</span><span class="sb-count">4</span>
+            <a class="btn-icon" href="connections.html?new=1" data-tip="新建连接" aria-label="新建连接">
+              <span class="ic" data-ic="plus"></span>
+            </a>
+          </div>
+          <div class="sb-search">
+            <div class="search">
+              <span class="ic" data-ic="search"></span>
+              <input class="input" placeholder="筛选连接…" aria-label="筛选连接" />
+            </div>
+          </div>
+          <div class="sb-scroll">
+            <div class="sb-group">Production <span class="line"></span></div>
+            <div class="conn active" style="--conn-color: #918dff">
+              <div class="conn-avatar">PC</div>
+              <div class="conn-body">
+                <div class="conn-name"><span class="name">Prod Cache</span><span class="badge-env">main</span></div>
+                <div class="conn-host">redis-01.acme.io:6379</div>
+                <div class="conn-meta">
+                  <span class="live">12 ms</span><span class="sep"></span><span>7.4.2</span><span class="sep"></span
+                  ><span>24 clients</span>
+                </div>
+              </div>
+            </div>
+            <div class="db-list">
+              <div class="db-row active"><span>db0</span><span class="count">12.4k</span></div>
+              <div class="db-row"><span>db1</span><span class="count">8.2k</span></div>
+              <div class="db-row"><span>db2</span><span class="count">3.9k</span></div>
+            </div>
+            <div class="conn" style="--conn-color: #45e3be">
+              <div class="conn-avatar">SS</div>
+              <div class="conn-body">
+                <div class="conn-name"><span class="name">Session Store</span></div>
+                <div class="conn-host">127.0.0.1:6380</div>
+                <div class="conn-meta"><span class="live">8 ms</span><span class="sep"></span><span>db2</span></div>
+              </div>
+            </div>
+            <div class="sb-group">Staging <span class="line"></span></div>
+            <div class="conn" style="--conn-color: #f7c566">
+              <div class="conn-avatar">BS</div>
+              <div class="conn-body">
+                <div class="conn-name"><span class="name">Billing Staging</span></div>
+                <div class="conn-host">staging-billing.acme.io:6379</div>
+                <div class="conn-meta"><span class="live">41 ms</span><span class="sep"></span><span>7.2.5</span></div>
+              </div>
+            </div>
+            <div class="sb-group">Local <span class="line"></span></div>
+            <div class="conn" style="--conn-color: #6fb7ff">
+              <div class="conn-avatar">LS</div>
+              <div class="conn-body">
+                <div class="conn-name"><span class="name">Local Sandbox</span></div>
+                <div class="conn-host">127.0.0.1:6379</div>
+                <div class="conn-meta"><span class="live">1 ms</span><span class="sep"></span><span>7.4.2</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="sb-foot">
+            <div class="health-card">
+              <div class="health-top">Server health <span class="live"></span></div>
+              <div class="health-bar"><i style="width: 62%"></i></div>
+              <div class="health-stats">
+                <span>内存 <strong>1.24 / 2 GB</strong></span><span>62%</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <main class="main">
+          <div class="tabbar">
+            <a class="tab" href="workspace.html"><span class="ic" data-ic="key"></span><span>Prod Cache</span></a>
+            <a class="tab" href="console.html"><span class="ic" data-ic="terminal"></span><span>Console</span></a>
+            <a class="tab active" href="insights.html">
+              <span class="ic" data-ic="activity"></span><span>Insights</span>
+              <span class="tab-close" role="button" aria-label="关闭标签页"><span class="ic" data-ic="close"></span></span>
+            </a>
+            <a class="tab-add" href="connections.html" data-tip="新建标签页" aria-label="新建标签页">
+              <span class="ic" data-ic="plus"></span>
+            </a>
+            <div class="tabbar-right">
+              <button class="db-pill" data-tip="切换数据库">
+                <span class="ic" data-ic="layers"></span>全部 DB<span class="ic" data-ic="chevron-down"></span>
+              </button>
+              <span class="badge plain"><span class="ic" data-ic="shield"></span>可写</span>
+              <div class="divider"></div>
+              <button class="btn-icon" data-tip="刷新指标" aria-label="刷新指标" id="refreshInsights">
+                <span class="ic" data-ic="refresh"></span>
+              </button>
+              <button class="btn-icon" data-tip="更多" aria-label="更多"><span class="ic" data-ic="more"></span></button>
+            </div>
+          </div>
+
+          <div class="insights-scroll">
+            <div class="insights-inner">
+              <div class="insights-head">
+                <div>
+                  <div class="page-eyebrow"><span class="ic" data-ic="activity"></span>Observability</div>
+                  <h1 class="insights-title">
+                    服务器洞察
+                    <span class="live-badge"><i></i>LIVE</span>
+                  </h1>
+                  <div class="insights-sub">
+                    <span class="mono">redis-01.acme.io:6379</span> · Redis 7.4.2 · 运行 42 天 7 小时 · 最后更新
+                    <span class="mono">3s</span> 前
+                  </div>
+                </div>
+                <div class="right">
+                  <span class="refresh-note">AUTO · 5s</span>
+                  <div class="segmented" data-seg="range">
+                    <button>1H</button><button>6H</button><button class="active">24H</button><button>7D</button>
+                  </div>
+                  <button class="btn ghost sm" id="refreshBtn"><span class="ic" data-ic="refresh"></span>刷新</button>
+                </div>
+              </div>
+
+              <div class="kpi-grid">
+                <div class="kpi">
+                  <div class="kpi-label"><span class="ic" data-ic="cpu"></span>Used memory</div>
+                  <div class="kpi-value-row"><span class="kpi-value">1.24</span><span class="kpi-unit">GB / 2 GB</span></div>
+                  <div class="kpi-delta"><span class="ic" data-ic="arrow-up-right"></span>4.2% vs 昨天</div>
+                  <svg class="kpi-spark" data-spark="memory" viewBox="0 0 120 48" preserveAspectRatio="none"></svg>
+                </div>
+                <div class="kpi">
+                  <div class="kpi-label"><span class="ic" data-ic="activity"></span>Ops per second</div>
+                  <div class="kpi-value-row"><span class="kpi-value">4,820</span><span class="kpi-unit">avg</span></div>
+                  <div class="kpi-delta"><span class="ic" data-ic="arrow-up-right"></span>12.8% vs 昨天</div>
+                  <svg class="kpi-spark" data-spark="ops" viewBox="0 0 120 48" preserveAspectRatio="none"></svg>
+                </div>
+                <div class="kpi">
+                  <div class="kpi-label"><span class="ic" data-ic="percent"></span>Cache hit rate</div>
+                  <div class="kpi-value-row"><span class="kpi-value">98.7</span><span class="kpi-unit">%</span></div>
+                  <div class="kpi-delta"><span class="ic" data-ic="arrow-up-right"></span>0.4% · 健康</div>
+                  <svg class="kpi-spark" data-spark="hit" viewBox="0 0 120 48" preserveAspectRatio="none"></svg>
+                </div>
+                <div class="kpi">
+                  <div class="kpi-label"><span class="ic" data-ic="users"></span>Connected clients</div>
+                  <div class="kpi-value-row"><span class="kpi-value">24</span><span class="kpi-unit">/ 256 max</span></div>
+                  <div class="kpi-delta down"><span class="ic" data-ic="arrow-down"></span>2 个连接关闭</div>
+                  <svg class="kpi-spark" data-spark="clients" viewBox="0 0 120 48" preserveAspectRatio="none"></svg>
+                </div>
+              </div>
+
+              <div class="insight-grid">
+                <div class="chart-card">
+                  <div class="chart-head">
+                    <div>
+                      <div class="chart-title">吞吐量</div>
+                      <div class="chart-desc">COMMANDSTATS · 过去 24 小时</div>
+                    </div>
+                    <div class="right">
+                      <div class="legend">
+                        <span><i></i>命令</span>
+                        <span><i class="mint"></i>读取</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="chart-area" id="throughputChart"></div>
+                </div>
+
+                <div class="chart-card">
+                  <div class="chart-head">
+                    <div>
+                      <div class="chart-title">内存分布</div>
+                      <div class="chart-desc">MEMORY STATS · 上限 2 GB</div>
+                    </div>
+                    <div class="right">
+                      <button class="btn-icon sm" data-tip="内存分析" aria-label="内存分析">
+                        <span class="ic" data-ic="more"></span>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="donut-wrap">
+                    <div class="donut">
+                      <svg viewBox="0 0 120 120">
+                        <circle cx="60" cy="60" r="49" fill="none" stroke="var(--surface-3)" stroke-width="11" />
+                        <circle
+                          cx="60"
+                          cy="60"
+                          r="49"
+                          fill="none"
+                          stroke="var(--accent)"
+                          stroke-width="11"
+                          stroke-linecap="round"
+                          stroke-dasharray="190.9 307.9"
+                          style="filter: drop-shadow(0 0 6px var(--accent-soft))"
+                        />
+                        <circle
+                          cx="60"
+                          cy="60"
+                          r="49"
+                          fill="none"
+                          stroke="var(--amber)"
+                          stroke-width="11"
+                          stroke-dasharray="27.7 471.1"
+                          stroke-dashoffset="-193.9"
+                          opacity=".85"
+                        />
+                      </svg>
+                      <div class="donut-center"><strong>62%</strong><span>已使用</span></div>
+                    </div>
+                    <div class="metric-list">
+                      <div class="metric-line"><i></i>数据集 <span class="val">1.24 GB</span></div>
+                      <div class="metric-line"><i style="background: var(--amber)"></i>开销 <span class="val">184 MB</span></div>
+                      <div class="metric-line"><i style="background: var(--surface-4)"></i>可用 <span class="val">576 MB</span></div>
+                      <div class="metric-line" style="margin-top: 2px"><i style="background: var(--mint)"></i>碎片率 <span class="val">1.11</span></div>
+                    </div>
+                  </div>
+                  <div class="memory-foot">
+                    <div class="mini-stat"><div class="l">Peak memory</div><div class="v">1.48 GB</div></div>
+                    <div class="mini-stat"><div class="l">Evicted keys</div><div class="v">1,204</div></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="insight-bottom">
+                <div class="chart-card">
+                  <div class="chart-head">
+                    <div>
+                      <div class="chart-title">命令分布</div>
+                      <div class="chart-desc">TOP COMMANDS · 增量采样</div>
+                    </div>
+                    <div class="right">
+                      <span class="badge plain" style="font-size: 8px">24H</span>
+                    </div>
+                  </div>
+                  <div class="bar-list">
+                    <div class="bar-line">
+                      <span>HGETALL</span><span class="track"><i style="width: 92%; background: var(--type-hash)"></i></span
+                      ><span class="val">34.2%</span>
+                    </div>
+                    <div class="bar-line">
+                      <span>GET</span><span class="track"><i style="width: 71%; background: var(--type-string)"></i></span
+                      ><span class="val">26.4%</span>
+                    </div>
+                    <div class="bar-line">
+                      <span>SET</span><span class="track"><i style="width: 38%; background: var(--type-string); opacity: .55"></i></span
+                      ><span class="val">14.1%</span>
+                    </div>
+                    <div class="bar-line">
+                      <span>SCAN</span><span class="track"><i style="width: 30%; background: var(--accent)"></i></span
+                      ><span class="val">11.2%</span>
+                    </div>
+                    <div class="bar-line">
+                      <span>ZRANGE</span><span class="track"><i style="width: 22%; background: var(--type-zset)"></i></span
+                      ><span class="val">8.0%</span>
+                    </div>
+                    <div class="bar-line">
+                      <span>EXPIRE</span><span class="track"><i style="width: 16%; background: var(--type-set)"></i></span
+                      ><span class="val">6.1%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="chart-card">
+                  <div class="chart-head">
+                    <div>
+                      <div class="chart-title">键空间</div>
+                      <div class="chart-desc">INFO KEYSPACE</div>
+                    </div>
+                    <div class="right">
+                      <span class="badge plain" style="font-size: 8px">5 DB</span>
+                    </div>
+                  </div>
+                  <table class="mini-table">
+                    <thead>
+                      <tr><th>DB</th><th class="num">Keys</th><th class="num">Expires</th><th class="num">TTL 均值</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td class="strong">db0</td><td class="num">12,480</td><td class="num">3,218</td><td class="num">4.7h</td></tr>
+                      <tr><td class="strong">db1</td><td class="num">8,201</td><td class="num">1,840</td><td class="num">3.2h</td></tr>
+                      <tr><td class="strong">db2</td><td class="num">3,904</td><td class="num">602</td><td class="num">1.5h</td></tr>
+                      <tr><td class="strong">db3</td><td class="num">0</td><td class="num">0</td><td class="num">—</td></tr>
+                      <tr><td class="strong">db4</td><td class="num">0</td><td class="num">0</td><td class="num">—</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="chart-card">
+                  <div class="chart-head">
+                    <div>
+                      <div class="chart-title">健康检查</div>
+                      <div class="chart-desc">REPLICATION & PERSISTENCE</div>
+                    </div>
+                    <div class="right"><span class="dot mint live-pulse" style="width: 5px; height: 5px"></span></div>
+                  </div>
+                  <div class="health-list">
+                    <div class="health-row">
+                      <span class="ic ok" data-ic="check-circle"></span>
+                      <div><div class="t">主从复制</div><div class="d">primary · 0 replicas</div></div>
+                      <span class="r">正常</span>
+                    </div>
+                    <div class="health-row">
+                      <span class="ic ok" data-ic="check-circle"></span>
+                      <div><div class="t">RDB 快照</div><div class="d">save 900 1 · 42m ago</div></div>
+                      <span class="r">正常</span>
+                    </div>
+                    <div class="health-row">
+                      <span class="ic ok" data-ic="check-circle"></span>
+                      <div><div class="t">AOF 持久化</div><div class="d">everysec · 12 MB</div></div>
+                      <span class="r">正常</span>
+                    </div>
+                    <div class="health-row">
+                      <span class="ic warn" data-ic="alert"></span>
+                      <div><div class="t">内存水位</div><div class="d">allkeys-lru · 62%</div></div>
+                      <span class="r warn">关注</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="insight-grid equal" style="margin-top: 10px">
+                <div class="chart-card">
+                  <div class="chart-head">
+                    <div>
+                      <div class="chart-title">慢查询</div>
+                      <div class="chart-desc">SLOWLOG GET 10 · threshold 10ms</div>
+                    </div>
+                    <div class="right">
+                      <button class="btn ghost sm" data-href="console.html">打开控制台<span class="ic" data-ic="arrow-up-right"></span></button>
+                    </div>
+                  </div>
+                  <table class="mini-table">
+                    <thead><tr><th>命令</th><th>客户端</th><th class="num">耗时</th><th class="num">时间</th></tr></thead>
+                    <tbody>
+                      <tr><td class="strong">GET cache:product:8842</td><td>10.0.4.18</td><td class="num" style="color: var(--amber)">18.4 ms</td><td class="num">07:39:44</td></tr>
+                      <tr><td class="strong">HGETALL cache:user:1001:profile</td><td>10.0.4.6</td><td class="num" style="color: var(--amber)">12.0 ms</td><td class="num">07:38:22</td></tr>
+                      <tr><td class="strong">ZRANGE queue:jobs:priority</td><td>10.0.4.22</td><td class="num">10.8 ms</td><td class="num">07:36:10</td></tr>
+                      <tr><td class="strong">SCAN 0 MATCH * COUNT 1000</td><td>redis-compose</td><td class="num">10.2 ms</td><td class="num">07:34:58</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="chart-card">
+                  <div class="chart-head">
+                    <div>
+                      <div class="chart-title">客户端</div>
+                      <div class="chart-desc">CLIENT LIST · 24 connected</div>
+                    </div>
+                    <div class="right"><span class="badge mint" style="font-size: 8px">低负载</span></div>
+                  </div>
+                  <div class="client-grid">
+                    <div class="mini-stat"><div class="l">应用连接</div><div class="v">18</div></div>
+                    <div class="mini-stat"><div class="l">管理会话</div><div class="v">4</div></div>
+                    <div class="mini-stat"><div class="l">空闲</div><div class="v">2</div></div>
+                    <div class="mini-stat"><div class="l">最大连接</div><div class="v">256</div></div>
+                  </div>
+                  <div class="bar-list" style="padding-top: 4px">
+                    <div class="bar-line"><span>redis-compose</span><span class="track"><i style="width: 20%"></i></span><span class="val">1</span></div>
+                    <div class="bar-line"><span>worker-*</span><span class="track"><i style="width: 84%; background: var(--mint)"></i></span><span class="val">18</span></div>
+                    <div class="bar-line"><span>other</span><span class="track"><i style="width: 22%; background: var(--amber)"></i></span><span class="val">5</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="editor-footnote" style="justify-content: flex-end; margin-top: 12px">
+                <span class="ic" data-ic="info"></span>
+                <span>数据来自 INFO / COMMANDSTATS · 自动刷新已开启</span>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+
+      <footer class="statusbar">
+        <span class="sb-item"><span class="ok-dot"></span><strong>Connected</strong></span>
+        <span class="sb-item">127.0.0.1:6379</span>
+        <span class="sb-item">db0</span>
+        <span class="sb-item"><span class="ic" data-ic="layers"></span>12,480 keys</span>
+        <span class="sb-item"><span class="ic" data-ic="cpu"></span>1.24 GB / 2 GB</span>
+        <span class="sb-item"><span class="ic" data-ic="zap"></span>RTT 12 ms</span>
+        <span class="spacer"></span>
+        <span class="sb-chip">INFO · 3s ago</span>
+        <span class="sb-chip">Redis 7.4.2</span>
+        <span class="sb-item">Redis Compose 0.1.0</span>
+      </footer>
+    </div>
+
+    <script src="assets/app.js"></script>
+    <script src="insights.js"></script>
+  </body>
+</html>

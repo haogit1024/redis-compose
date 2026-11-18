@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Redis Compose — Design</title>
+    <link rel="stylesheet" href="assets/theme.css" />
+    <link rel="stylesheet" href="assets/pages.css" />
+    <script>
+      const _themeParam = new URLSearchParams(location.search).get('theme');
+      document.documentElement.dataset.theme =
+        _themeParam === 'light' || _themeParam === 'dark'
+          ? _themeParam
+          : localStorage.getItem('rc-theme') || 'dark';
+    </script>
+  </head>
+  <body>
+    <div class="doc">
+      <header class="doc-top">
+        <a class="brand" href="index.html" aria-label="Redis Compose 设计总览">
+          <span class="brand-mark"><span class="ic" data-ic="logo"></span></span>
+          <span class="brand-word">redis<em>compose</em></span>
+          <span class="brand-ver">design</span>
+        </a>
+        <div class="links">
+          <a href="#screens">界面</a>
+          <a href="#system">设计系统</a>
+          <a href="#themes">主题</a>
+          <a href="#principles">原则</a>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px">
+          <button class="btn-icon" data-theme-toggle data-tip="切换主题" aria-label="切换主题"></button>
+          <a class="btn primary sm" href="workspace.html"><span class="ic" data-ic="key"></span>打开工作区</a>
+        </div>
+      </header>
+
+      <div class="doc-wrap" id="top">
+        <section class="doc-hero">
+          <div class="eyebrow"><i></i>REDIS COMPOSE · DESIGN REFRESH · 2026</div>
+          <h1>安静、清晰，<br />为 Redis 而生的<em>工作台</em>。</h1>
+          <p>
+            重新设计的桌面体验：以连接为上下文，以 Key 为焦点。更少的边框、更清晰的信息层级，以及为日常运维准备的控制台与洞察视图。所有界面都可以直接用 Compose 实现。
+          </p>
+          <div class="actions">
+            <a class="btn primary" href="workspace.html">打开键浏览器<span class="ic" data-ic="arrow-up-right"></span></a>
+            <a class="btn subtle" href="#screens">浏览全部界面<span class="ic" data-ic="chevron-down"></span></a>
+          </div>
+          <div class="meta">
+            <span><strong>5</strong> 核心界面</span>
+            <span><strong>2</strong> 主题</span>
+            <span><strong>6</strong> Redis 数据类型</span>
+            <span><strong>⌘K</strong> 命令面板</span>
+            <span><strong>100%</strong> Compose 可落地</span>
+          </div>
+        </section>
+
+        <div class="hero-shot">
+          <img src="assets/shots/workspace.png" alt="键浏览器主界面预览" />
+          <div class="shot-caption">
+            <span class="dot"></span>
+            <span class="name">Workspace · Keys</span>
+            <span>prod-cache / db0 / 12,480 keys</span>
+            <div class="right">
+              <span>1440 × 900</span>
+              <a href="workspace.html">打开界面<span class="ic sm" data-ic="arrow-up-right"></span></a>
+            </div>
+          </div>
+        </div>
+
+        <section id="screens">
+          <div class="section-label">
+            <span class="n">01</span>
+            <h2>界面</h2>
+            <span class="line"></span>
+            <span class="hint">5 SCREENS</span>
+          </div>
+
+          <div class="shot-grid">
+            <a class="shot-card wide" href="workspace.html" style="grid-column: 1 / -1">
+              <div class="shot-img">
+                <img src="assets/shots/workspace-hash.png" alt="Key 值编辑器 Hash 视图" />
+              </div>
+              <div class="shot-meta">
+                <div>
+                  <div class="t">键浏览器 · 值编辑</div>
+                  <div class="d">连接、Keyspace、值编辑器同屏；JSON、Hash、List、Set、ZSet 与 Stream 共享一致的编辑语言。</div>
+                </div>
+                <span class="n">01</span>
+                <span class="arrow"><span class="ic" data-ic="arrow-up-right"></span></span>
+              </div>
+            </a>
+
+            <a class="shot-card" href="console.html">
+              <div class="shot-img">
+                <img src="assets/shots/console.png" alt="命令控制台预览" />
+              </div>
+              <div class="shot-meta">
+                <div>
+                  <div class="t">命令控制台</div>
+                  <div class="d">结果卡片、历史与收藏命令；输入即补全，⌘↵ 执行。</div>
+                </div>
+                <span class="n">02</span>
+                <span class="arrow"><span class="ic" data-ic="arrow-up-right"></span></span>
+              </div>
+            </a>
+
+            <a class="shot-card" href="insights.html">
+              <div class="shot-img">
+                <img src="assets/shots/insights.png" alt="服务器洞察预览" />
+              </div>
+              <div class="shot-meta">
+                <div>
+                  <div class="t">服务器洞察</div>
+                  <div class="d">内存、吞吐、命中率与慢查询；高信息密度，但不拥挤。</div>
+                </div>
+                <span class="n">03</span>
+                <span class="arrow"><span class="ic" data-ic="arrow-up-right"></span></span>
+              </div>
+            </a>
+
+            <a class="shot-card" href="connections.html">
+              <div class="shot-img">
+                <img src="assets/shots/connections.png" alt="连接库预览" />
+              </div>
+              <div class="shot-meta">
+                <div>
+                  <div class="t">连接库</div>
+                  <div class="d">卡片式连接管理 + 侧滑表单；TLS、SSH 与只读模式一处配置。</div>
+                </div>
+                <span class="n">04</span>
+                <span class="arrow"><span class="ic" data-ic="arrow-up-right"></span></span>
+              </div>
+            </a>
+
+            <a class="shot-card" href="settings.html">
+              <div class="shot-img">
+                <img src="assets/shots/settings.png" alt="偏好设置预览" />
+              </div>
+              <div class="shot-meta">
+                <div>
+                  <div class="t">偏好设置</div>
+                  <div class="d">主题、强调色、编辑器与安全策略；即时生效并自动保存。</div>
+                </div>
+                <span class="n">05</span>
+                <span class="arrow"><span class="ic" data-ic="arrow-up-right"></span></span>
+              </div>
+            </a>
+          </div>
+        </section>
+
+        <section id="system">
+          <div class="section-label">
+            <span class="n">02</span>
+            <h2>设计系统</h2>
+            <span class="line"></span>
+            <span class="hint">TOKENS · TYPE · COMPONENTS</span>
+          </div>
+
+          <div class="palette-grid">
+            <div class="color-card">
+              <div class="c" style="background: #07090d"></div>
+              <div class="l"><strong>Background</strong>#07090D</div>
+            </div>
+            <div class="color-card">
+              <div class="c" style="background: #0c1017"></div>
+              <div class="l"><strong>Surface</strong>#0C1017</div>
+            </div>
+            <div class="color-card">
+              <div class="c" style="background: #918dff"></div>
+              <div class="l"><strong>Accent</strong>#918DFF</div>
+            </div>
+            <div class="color-card">
+              <div class="c" style="background: #45e3be"></div>
+              <div class="l"><strong>Success</strong>#45E3BE</div>
+            </div>
+            <div class="color-card">
+              <div class="c" style="background: #f7c566"></div>
+              <div class="l"><strong>Warning</strong>#F7C566</div>
+            </div>
+            <div class="color-card">
+              <div class="c" style="background: #ff7ba9"></div>
+              <div class="l"><strong>ZSet</strong>#FF7BA9</div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1.15fr 1fr; gap: 12px; margin-top: 12px">
+            <div class="type-scale">
+              <div class="ts-row">
+                <span class="sample" style="font-size: 28px; font-weight: 650; letter-spacing: -0.04em">安静而清晰</span>
+                <span class="spec">28 / 650 / -0.04em</span>
+              </div>
+              <div class="ts-row">
+                <span class="sample" style="font-size: 18px; font-weight: 600; letter-spacing: -0.025em">服务器洞察</span>
+                <span class="spec">18 / 600 / -0.025em</span>
+              </div>
+              <div class="ts-row">
+                <span class="sample" style="font-size: 13px">连接已建立，延迟 12 ms</span>
+                <span class="spec">13 / 450 / 1.45</span>
+              </div>
+              <div class="ts-row">
+                <span class="sample mono" style="font-size: 11px; color: var(--text-2)">cache:user:1001:profile</span>
+                <span class="spec">MONO 11 / 400</span>
+              </div>
+              <div class="ts-row">
+                <span class="sample" style="font-size: 9px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3)">Connection library</span>
+                <span class="spec">LABEL 9 / 600 / 0.12em</span>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px">
+              <div class="comp-row">
+                <button class="btn primary sm"><span class="ic" data-ic="save"></span>保存</button>
+                <button class="btn subtle sm">取消</button>
+                <button class="btn ghost sm">更多</button>
+                <button class="btn danger sm"><span class="ic" data-ic="trash"></span>删除</button>
+              </div>
+              <div class="comp-row">
+                <span class="badge accent">JSON</span>
+                <span class="badge mint"><span class="ic" data-ic="check"></span>已同步</span>
+                <span class="badge amber">TTL 42s</span>
+                <span class="badge danger">即将过期</span>
+                <span class="badge plain">Redis 7.4.2</span>
+              </div>
+              <div class="comp-row">
+                <span class="type-pill" data-type="string">STRING</span>
+                <span class="type-pill" data-type="hash">HASH</span>
+                <span class="type-pill" data-type="list">LIST</span>
+                <span class="type-pill" data-type="set">SET</span>
+                <span class="type-pill" data-type="zset">ZSET</span>
+                <span class="type-pill" data-type="stream">STREAM</span>
+              </div>
+              <div class="comp-row">
+                <div class="switch on" aria-checked="true"></div>
+                <div class="segmented"><button class="active">Auto</button><button>JSON</button><button>Text</button></div>
+                <span class="keys" style="display: inline-flex; gap: 3px"><kbd>⌘</kbd><kbd>K</kbd></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="doc-note" style="margin-top: 12px">
+            <span class="ic" data-ic="info"></span>
+            <span
+              >所有预览使用同一套 token 与组件：<strong class="mono">surface / border / text / accent</strong>，8pt 间距体系，圆角
+              6–16px。浅色主题不是简单反色，而是单独校准的对比度与层级。</span
+            >
+          </div>
+        </section>
+
+        <section id="themes">
+          <div class="section-label">
+            <span class="n">03</span>
+            <h2>主题</h2>
+            <span class="line"></span>
+            <span class="hint">DARK · LIGHT</span>
+          </div>
+          <div class="theme-pair">
+            <a class="theme-preview" href="workspace.html?theme=dark">
+              <img src="assets/shots/workspace.png" alt="深色主题工作区" />
+              <div class="cap">
+                <span class="ic" data-ic="moon"></span><strong>深色</strong>默认主题 · 低亮度环境
+                <span class="right">01</span>
+              </div>
+            </a>
+            <a class="theme-preview" href="workspace.html?theme=light">
+              <img src="assets/shots/workspace-light.png" alt="浅色主题工作区" />
+              <div class="cap">
+                <span class="ic" data-ic="sun"></span><strong>浅色</strong>高亮度环境 · 同等层级
+                <span class="right">02</span>
+              </div>
+            </a>
+          </div>
+        </section>
+
+        <section id="principles">
+          <div class="section-label">
+            <span class="n">04</span>
+            <h2>设计原则</h2>
+            <span class="line"></span>
+            <span class="hint">4 PRINCIPLES</span>
+          </div>
+          <div class="doc-grid-3">
+            <div class="doc-card">
+              <div class="h"><span class="ic" data-ic="layers"></span>清晰的层级</div>
+              <p>连接 → 数据库 → Key → 值，四级信息始终可见。用留白与层级代替边框堆叠，让注意力停在内容上。</p>
+            </div>
+            <div class="doc-card">
+              <div class="h"><span class="ic" data-ic="zap"></span>速度即体验</div>
+              <p>⌘K 命令面板、⌘F 键搜索、N 新建、↑↓ 历史。所有高频动作都可以不离开键盘完成。</p>
+            </div>
+            <div class="doc-card">
+              <div class="h"><span class="ic" data-ic="shield"></span>安全默认</div>
+              <p>只读模式、危险命令确认、加密存储与值遮罩都有明确入口。风险状态用颜色与文字双重表达。</p>
+            </div>
+          </div>
+          <div class="doc-grid-3" style="margin-top: 12px">
+            <div class="doc-card">
+              <div class="h"><span class="ic" data-ic="eye"></span>一眼可读</div>
+              <p>数据类型使用固定的语义色，TTL 用倒计时与进度表达，连接状态同时用颜色和延迟数字说明。</p>
+            </div>
+            <div class="doc-card">
+              <div class="h"><span class="ic" data-ic="sparkles"></span>克制的装饰</div>
+              <p>渐变只用于品牌与主操作，动效只用于反馈。深色界面保持接近真实的黑，避免整屏发光。</p>
+            </div>
+            <div class="doc-card">
+              <div class="h"><span class="ic" data-ic="code"></span>可直接落地</div>
+              <p>所有颜色、圆角、间距、字号都能映射到 Compose Theme 与组件。无图片依赖，图标为统一线性 SVG。</p>
+            </div>
+          </div>
+        </section>
+
+        <div class="doc-footer">
+          <span>Redis Compose · Design refresh · 2026</span>
+          <div class="right">
+            <a href="workspace.html">Workspace</a>
+            <a href="console.html">Console</a>
+            <a href="insights.html">Insights</a>
+            <a href="connections.html">Connections</a>
+            <a href="settings.html">Settings</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="assets/app.js"></script>
+  </body>
+</html>

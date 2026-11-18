@@ -1,0 +1,110 @@
+package com.czh.rediscompose.design.theme
+
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import com.czh.rediscompose.domain.settings.UiDensity
+
+/**
+ * Spacing, radii, layout sizes and control metrics from `plan/reference/design-tokens.md`.
+ *
+ * Screens and components must read these through [LocalAppDimens] instead of inventing
+ * their own `dp` values.
+ */
+data class AppDimens(
+    // Spacing (4 / 8 / 12 / 16 / 20 / 24 / 32)
+    val spaceXs: Dp = 4.dp,
+    val spaceSm: Dp = 8.dp,
+    val spaceMd: Dp = 12.dp,
+    val spaceLg: Dp = 16.dp,
+    val spaceXl: Dp = 20.dp,
+    val space2Xl: Dp = 24.dp,
+    val space3Xl: Dp = 32.dp,
+    // Radii
+    val radiusXs: Dp = 6.dp,
+    val radiusSm: Dp = 8.dp,
+    val radiusMd: Dp = 10.dp,
+    val radiusLg: Dp = 14.dp,
+    val radiusXl: Dp = 16.dp,
+    val radiusControl: Dp = 8.dp,
+    val radiusControlSmall: Dp = 7.dp,
+    // Layout
+    val topBarHeight: Dp = 54.dp,
+    val railWidth: Dp = 60.dp,
+    val sidebarWidth: Dp = 258.dp,
+    val tabBarHeight: Dp = 46.dp,
+    val keyPaneWidth: Dp = 316.dp,
+    val keyPaneMin: Dp = 240.dp,
+    val keyPaneMax: Dp = 420.dp,
+    val statusBarHeight: Dp = 30.dp,
+    val settingsNavWidth: Dp = 208.dp,
+    val consoleSideWidth: Dp = 272.dp,
+    val pageMargin: Dp = 24.dp,
+    val dialogWidth: Dp = 520.dp,
+    val dialogMaxHeight: Dp = 560.dp,
+    val sheetWidth: Dp = 470.dp,
+    // Rows
+    val keyRowHeight: Dp = 28.dp,
+    val treeFolderHeight: Dp = 28.dp,
+    val listRowHeight: Dp = 34.dp,
+    val tableHeaderHeight: Dp = 28.dp,
+    // Controls
+    val controlHeight: Dp = 32.dp,
+    val controlHeightSmall: Dp = 28.dp,
+    val iconButtonSize: Dp = 30.dp,
+    val iconButtonSizeSmall: Dp = 26.dp,
+    val buttonHeight: Dp = 32.dp,
+    val buttonHeightSmall: Dp = 28.dp,
+    val buttonPadding: Dp = 12.dp,
+    val buttonPaddingSmall: Dp = 9.dp,
+    val fieldPadding: Dp = 10.dp,
+    val fieldLeadingPadding: Dp = 33.dp,
+    val fieldGlow: Dp = 3.dp,
+    val multilineMinHeight: Dp = 88.dp,
+    // Icons
+    val iconSm: Dp = 14.dp,
+    val icon: Dp = 16.dp,
+    val iconLg: Dp = 18.dp,
+    val iconXl: Dp = 22.dp,
+    val iconTextGap: Dp = 6.dp,
+    val iconButtonIcon: Dp = 15.dp,
+    // Component metrics
+    val badgeHeight: Dp = 20.dp,
+    val typeChipHeight: Dp = 20.dp,
+    val kbdHeight: Dp = 17.dp,
+    val switchWidth: Dp = 34.dp,
+    val switchHeight: Dp = 19.dp,
+    val switchThumb: Dp = 13.dp,
+    val segmentedItemHeight: Dp = 24.dp,
+    val segmentedItemHeightSmall: Dp = 22.dp,
+    val menuItemHeight: Dp = 29.dp,
+    val menuMinWidth: Dp = 168.dp,
+    val menuPadding: Dp = 5.dp,
+    val cardPadding: Dp = 14.dp,
+    val emptyIconSize: Dp = 50.dp,
+    val scrollbarWidth: Dp = 9.dp,
+    val toastBottomPadding: Dp = 16.dp,
+) {
+    companion object {
+        fun forDensity(density: UiDensity): AppDimens =
+            when (density) {
+                UiDensity.COMFORTABLE -> AppDimens()
+                UiDensity.COMPACT ->
+                    AppDimens(
+                        keyRowHeight = 26.dp,
+                        treeFolderHeight = 26.dp,
+                        listRowHeight = 30.dp,
+                        tableHeaderHeight = 26.dp,
+                        controlHeight = 30.dp,
+                        controlHeightSmall = 26.dp,
+                        iconButtonSize = 28.dp,
+                        iconButtonSizeSmall = 24.dp,
+                        buttonHeight = 28.dp,
+                        buttonHeightSmall = 26.dp,
+                        menuItemHeight = 27.dp,
+                        cardPadding = 12.dp,
+                        segmentedItemHeight = 22.dp,
+                        segmentedItemHeightSmall = 20.dp,
+                    )
+            }
+    }
+}

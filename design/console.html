@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Redis Compose — Console</title>
+    <link rel="stylesheet" href="assets/theme.css" />
+    <link rel="stylesheet" href="assets/pages.css" />
+    <script>
+      const _themeParam = new URLSearchParams(location.search).get('theme');
+      document.documentElement.dataset.theme =
+        _themeParam === 'light' || _themeParam === 'dark'
+          ? _themeParam
+          : localStorage.getItem('rc-theme') || 'dark';
+    </script>
+  </head>
+  <body>
+    <div class="app">
+      <header class="titlebar">
+        <a class="brand" href="index.html" aria-label="Redis Compose 首页">
+          <span class="brand-mark"><span class="ic" data-ic="logo"></span></span>
+          <span class="brand-word">redis<em>compose</em></span>
+          <span class="brand-ver">v0.1</span>
+        </a>
+        <div class="titlebar-sep"></div>
+        <div class="page-chip" role="button" tabindex="0">
+          <span class="ic" data-ic="database"></span>
+          <span>Production</span>
+          <span class="crumb-sep">/</span>
+          <strong>Prod Cache</strong>
+          <span class="ic" data-ic="chevron-down"></span>
+        </div>
+        <div class="titlebar-center">
+          <div class="omnibox">
+            <span class="ic" data-ic="search"></span>
+            <input data-open-palette placeholder="搜索 Key、命令或连接…" aria-label="全局搜索" />
+            <kbd>⌘K</kbd>
+          </div>
+        </div>
+        <div class="titlebar-right">
+          <span class="status-pill"><span class="dot"></span>12 ms</span>
+          <button class="btn-icon" data-theme-toggle data-tip="切换主题" aria-label="切换主题"></button>
+          <button class="btn-icon" data-tip="通知" aria-label="通知"><span class="ic" data-ic="bell"></span></button>
+          <div class="avatar" data-tip="czh@acme.io">CZ</div>
+        </div>
+      </header>
+
+      <div class="shell">
+        <nav class="rail" aria-label="主导航">
+          <a class="rail-btn" href="workspace.html" data-tip="键浏览器" aria-label="键浏览器">
+            <span class="ic" data-ic="key"></span>
+          </a>
+          <a class="rail-btn active" href="console.html" data-tip="命令控制台" aria-label="命令控制台">
+            <span class="ic" data-ic="terminal"></span>
+          </a>
+          <a class="rail-btn" href="insights.html" data-tip="服务器洞察" aria-label="服务器洞察">
+            <span class="ic" data-ic="activity"></span>
+          </a>
+          <div class="rail-sep"></div>
+          <a class="rail-btn" href="connections.html" data-tip="连接管理" aria-label="连接管理">
+            <span class="ic" data-ic="database"></span>
+          </a>
+          <a class="rail-btn" href="settings.html" data-tip="偏好设置" aria-label="偏好设置">
+            <span class="ic" data-ic="sliders"></span>
+          </a>
+          <div class="rail-spacer"></div>
+          <span class="rail-dot live-pulse" data-tip="Redis 运行正常"></span>
+          <a class="rail-btn" href="settings.html" data-tip="快捷键" aria-label="快捷键">
+            <span class="ic" data-ic="keyboard"></span>
+          </a>
+        </nav>
+
+        <aside class="sidebar">
+          <div class="sb-head">
+            <span class="sb-title">连接</span><span class="sb-count">4</span>
+            <a class="btn-icon" href="connections.html?new=1" data-tip="新建连接" aria-label="新建连接">
+              <span class="ic" data-ic="plus"></span>
+            </a>
+          </div>
+          <div class="sb-search">
+            <div class="search">
+              <span class="ic" data-ic="search"></span>
+              <input class="input" placeholder="筛选连接…" aria-label="筛选连接" />
+            </div>
+          </div>
+          <div class="sb-scroll">
+            <div class="sb-group">Production <span class="line"></span></div>
+            <div class="conn active" style="--conn-color: #918dff">
+              <div class="conn-avatar">PC</div>
+              <div class="conn-body">
+                <div class="conn-name"><span class="name">Prod Cache</span><span class="badge-env">main</span></div>
+                <div class="conn-host">redis-01.acme.io:6379</div>
+                <div class="conn-meta">
+                  <span class="live">12 ms</span><span class="sep"></span><span>7.4.2</span><span class="sep"></span
+                  ><span>24 clients</span>
+                </div>
+              </div>
+            </div>
+            <div class="db-list">
+              <div class="db-row active"><span>db0</span><span class="count">12.4k</span></div>
+              <div class="db-row"><span>db1</span><span class="count">8.2k</span></div>
+              <div class="db-row"><span>db2</span><span class="count">3.9k</span></div>
+              <div class="db-row"><span>db3</span><span class="count">0</span></div>
+            </div>
+            <div class="conn" style="--conn-color: #45e3be">
+              <div class="conn-avatar">SS</div>
+              <div class="conn-body">
+                <div class="conn-name"><span class="name">Session Store</span></div>
+                <div class="conn-host">127.0.0.1:6380</div>
+                <div class="conn-meta"><span class="live">8 ms</span><span class="sep"></span><span>db2</span></div>
+              </div>
+            </div>
+            <div class="sb-group">Staging <span class="line"></span></div>
+            <div class="conn" style="--conn-color: #f7c566">
+              <div class="conn-avatar">BS</div>
+              <div class="conn-body">
+                <div class="conn-name"><span class="name">Billing Staging</span></div>
+                <div class="conn-host">staging-billing.acme.io:6379</div>
+                <div class="conn-meta">
+                  <span class="live">41 ms</span><span class="sep"></span><span>7.2.5</span>
+                </div>
+              </div>
+            </div>
+            <div class="sb-group">Local <span class="line"></span></div>
+            <div class="conn" style="--conn-color: #6fb7ff">
+              <div class="conn-avatar">LS</div>
+              <div class="conn-body">
+                <div class="conn-name"><span class="name">Local Sandbox</span></div>
+                <div class="conn-host">127.0.0.1:6379</div>
+                <div class="conn-meta"><span class="live">1 ms</span><span class="sep"></span><span>7.4.2</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="sb-foot">
+            <div class="health-card">
+              <div class="health-top">Server health <span class="live"></span></div>
+              <div class="health-bar"><i style="width: 62%"></i></div>
+              <div class="health-stats">
+                <span>内存 <strong>1.24 / 2 GB</strong></span><span>62%</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <main class="main">
+          <div class="tabbar">
+            <a class="tab" href="workspace.html"><span class="ic" data-ic="key"></span><span>Prod Cache</span></a>
+            <a class="tab active" href="console.html">
+              <span class="ic" data-ic="terminal"></span><span>Console</span>
+              <span class="tab-close" role="button" aria-label="关闭标签页"><span class="ic" data-ic="close"></span></span>
+            </a>
+            <a class="tab" href="insights.html"><span class="ic" data-ic="activity"></span><span>Insights</span></a>
+            <a class="tab-add" href="connections.html" data-tip="新建标签页" aria-label="新建标签页">
+              <span class="ic" data-ic="plus"></span>
+            </a>
+            <div class="tabbar-right">
+              <button class="db-pill" data-tip="切换数据库">
+                <span class="ic" data-ic="layers"></span>db0<span class="ic" data-ic="chevron-down"></span>
+              </button>
+              <span class="badge plain"><span class="ic" data-ic="shield"></span>可写</span>
+              <div class="divider"></div>
+              <button class="btn-icon" data-tip="清空历史" aria-label="清空历史" id="clearTop">
+                <span class="ic" data-ic="trash"></span>
+              </button>
+              <button class="btn-icon" data-tip="更多" aria-label="更多"><span class="ic" data-ic="more"></span></button>
+            </div>
+          </div>
+
+          <div class="console-layout">
+            <section class="console-main">
+              <div class="console-head">
+                <span class="console-title"><span class="ic" data-ic="terminal"></span>Command console</span>
+                <span class="console-sub">redis-01.acme.io:6379 / db0</span>
+                <div class="right">
+                  <span class="badge mint"><span class="ic" data-ic="zap"></span>RTT 12 ms</span>
+                  <button class="btn ghost sm" id="exportLog"><span class="ic" data-ic="download"></span>导出</button>
+                  <button class="btn-icon" data-tip="命令帮助" aria-label="命令帮助"><span class="ic" data-ic="book"></span></button>
+                </div>
+              </div>
+
+              <div class="terminal" id="terminal">
+                <div class="term-bar">
+                  <div class="term-lights"><i></i><i></i><i></i></div>
+                  <span class="term-name">redis-cli — <strong>prod-cache</strong></span>
+                  <span class="badge" style="height: 17px; font-size: 8px; margin-left: 3px">db0</span>
+                  <div class="right">
+                    <button class="btn-icon" data-tip="复制全部" aria-label="复制全部" id="copyLog">
+                      <span class="ic" data-ic="copy"></span>
+                    </button>
+                    <button class="btn-icon" data-tip="清空会话" aria-label="清空会话" id="clearLog">
+                      <span class="ic" data-ic="trash"></span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="term-body" id="termBody">
+                  <div class="t-dim">Redis Compose shell · connected to redis-01.acme.io:6379 (7.4.2) · type HELP for commands</div>
+
+                  <div class="t-cmd">
+                    <span class="t-time">07:41:12</span>
+                    <span class="t-prompt">redis@prod-cache<span class="host">:6379[0]&gt;</span></span>
+                    <span class="t-input">HGETALL cache:user:1001:profile</span>
+                  </div>
+                  <div class="t-result">
+                    <div class="r-head"><strong>HGETALL</strong><span>8 fields</span><span>·</span><span>0.42 ms</span></div>
+                    <div class="r-body">
+                      <span class="r-key">name</span><span class="r-val">"Ada Lovelace"</span>
+                      <span class="r-key">email</span><span class="r-val">"ada@acme.io"</span>
+                      <span class="r-key">plan</span><span class="r-val">"scale"</span>
+                      <span class="r-key">company</span><span class="r-val">"Analytical Engines Ltd."</span>
+                      <span class="r-key">seats</span><span class="r-val">"24"</span>
+                      <span class="r-key">region</span><span class="r-val">"ap-east-1"</span>
+                      <span class="r-key">mfa_enabled</span><span class="r-val">"true"</span>
+                      <span class="r-key">last_login</span><span class="r-val">"2026-11-18T07:37:19Z"</span>
+                    </div>
+                  </div>
+
+                  <div class="t-cmd">
+                    <span class="t-time">07:41:18</span>
+                    <span class="t-prompt">redis@prod-cache<span class="host">:6379[0]&gt;</span></span>
+                    <span class="t-input">TTL cache:user:1001:profile</span>
+                  </div>
+                  <div class="t-out t-ok">(integer) 3271</div>
+
+                  <div class="t-cmd">
+                    <span class="t-time">07:41:24</span>
+                    <span class="t-prompt">redis@prod-cache<span class="host">:6379[0]&gt;</span></span>
+                    <span class="t-input">SCAN 0 MATCH queue:* COUNT 100</span>
+                  </div>
+                  <div class="t-out">1) <span class="t-dim">"17"</span></div>
+                  <div class="t-out">2) 1) <span class="t-ok">"queue:emails"</span></div>
+                  <div class="t-out" style="padding-left: 4ch">2) <span class="t-ok">"queue:jobs:priority"</span></div>
+                  <div class="t-out" style="padding-left: 4ch">3) <span class="t-ok">"queue:dead_letter"</span></div>
+
+                  <div class="t-cmd">
+                    <span class="t-time">07:41:31</span>
+                    <span class="t-prompt">redis@prod-cache<span class="host">:6379[0]&gt;</span></span>
+                    <span class="t-input">MEMORY USAGE cache:user:1001:profile SAMPLES 5</span>
+                  </div>
+                  <div class="t-out t-ok">(integer) 1432</div>
+
+                  <div class="t-cmd">
+                    <span class="t-time">07:41:36</span>
+                    <span class="t-prompt">redis@prod-cache<span class="host">:6379[0]&gt;</span></span>
+                    <span class="t-input">OBJECT ENCODING cache:user:1001:profile</span>
+                  </div>
+                  <div class="t-out t-ok">"listpack"</div>
+
+                  <div class="t-cmd">
+                    <span class="t-time">07:41:38</span>
+                    <span class="t-prompt">redis@prod-cache<span class="host">:6379[0]&gt;</span></span>
+                    <span class="t-input"><span class="cursor-blink"> </span></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="quick-cmds">
+                <span class="quick-label">常用</span>
+                <button class="cmd-chip" data-cmd="INFO memory">INFO memory</button>
+                <button class="cmd-chip" data-cmd="DBSIZE">DBSIZE</button>
+                <button class="cmd-chip" data-cmd="SLOWLOG GET 10">SLOWLOG GET 10</button>
+                <button class="cmd-chip" data-cmd="SCAN 0 COUNT 100">SCAN 0 COUNT 100</button>
+                <button class="cmd-chip" data-cmd="MEMORY DOCTOR">MEMORY DOCTOR</button>
+              </div>
+
+              <div class="term-composer">
+                <div class="suggestions" id="suggestions" hidden></div>
+                <span class="prompt">redis@prod-cache<span class="host">:6379[0]&gt;</span></span>
+                <input id="consoleInput" placeholder="输入 Redis 命令，Enter 执行，↑↓ 浏览历史" autocomplete="off" spellcheck="false" />
+                <span class="hint">⌘↵ 执行</span>
+                <button class="btn primary sm" id="runCmd"><span class="ic" data-ic="corner-down-left"></span>运行</button>
+              </div>
+            </section>
+
+            <aside class="console-side">
+              <div class="side-head">
+                历史记录 <span class="badge" style="height: 16px; font-size: 8px">12</span>
+                <div class="right">
+                  <button class="btn-icon" data-tip="清除历史" aria-label="清除历史"><span class="ic" data-ic="trash"></span></button>
+                </div>
+              </div>
+              <div id="historyList">
+                <div class="hist-item" data-cmd="HGETALL cache:user:1001:profile">
+                  <span class="h-time">07:41</span>
+                  <div class="h-body">
+                    <div class="h-cmd">HGETALL cache:user:1001:profile</div>
+                    <div class="h-meta"><span class="ok">0.42 ms</span><span>8 fields</span></div>
+                  </div>
+                </div>
+                <div class="hist-item" data-cmd="TTL cache:user:1001:profile">
+                  <span class="h-time">07:41</span>
+                  <div class="h-body">
+                    <div class="h-cmd">TTL cache:user:1001:profile</div>
+                    <div class="h-meta"><span class="ok">0.18 ms</span><span>integer</span></div>
+                  </div>
+                </div>
+                <div class="hist-item" data-cmd="SCAN 0 MATCH queue:* COUNT 100">
+                  <span class="h-time">07:41</span>
+                  <div class="h-body">
+                    <div class="h-cmd">SCAN 0 MATCH queue:* COUNT 100</div>
+                    <div class="h-meta"><span class="ok">1.08 ms</span><span>3 keys</span></div>
+                  </div>
+                </div>
+                <div class="hist-item" data-cmd="MEMORY USAGE cache:user:1001:profile SAMPLES 5">
+                  <span class="h-time">07:41</span>
+                  <div class="h-body">
+                    <div class="h-cmd">MEMORY USAGE cache:user:1001:profile</div>
+                    <div class="h-meta"><span class="ok">0.21 ms</span><span>1.4 KB</span></div>
+                  </div>
+                </div>
+                <div class="hist-item" data-cmd="OBJECT ENCODING cache:user:1001:profile">
+                  <span class="h-time">07:41</span>
+                  <div class="h-body">
+                    <div class="h-cmd">OBJECT ENCODING cache:user…</div>
+                    <div class="h-meta"><span class="ok">0.16 ms</span><span>listpack</span></div>
+                  </div>
+                </div>
+                <div class="hist-item" data-cmd="INFO keyspace">
+                  <span class="h-time">07:40</span>
+                  <div class="h-body">
+                    <div class="h-cmd">INFO keyspace</div>
+                    <div class="h-meta"><span class="ok">0.31 ms</span><span>16 dbs</span></div>
+                  </div>
+                </div>
+                <div class="hist-item" data-cmd="SLOWLOG GET 10">
+                  <span class="h-time">07:39</span>
+                  <div class="h-body">
+                    <div class="h-cmd">SLOWLOG GET 10</div>
+                    <div class="h-meta"><span class="ok">0.55 ms</span><span>4 entries</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="side-head" style="margin-top: 14px">
+                收藏的命令 <div class="right"><button class="btn-icon" data-tip="新增收藏" aria-label="新增收藏"><span class="ic" data-ic="plus"></span></button></div>
+              </div>
+              <div class="saved-cmd" data-cmd="INFO memory | grep used_memory_peak">
+                <div class="s-cmd">INFO memory | grep used_memory_peak</div>
+                <div class="s-desc">检查内存峰值</div>
+              </div>
+              <div class="saved-cmd" data-cmd="redis-cli --bigkeys">
+                <div class="s-cmd">redis-cli --bigkeys</div>
+                <div class="s-desc">扫描大 Key</div>
+              </div>
+              <div class="saved-cmd" data-cmd="SLOWLOG GET 10">
+                <div class="s-cmd">SLOWLOG GET 10</div>
+                <div class="s-desc">最近慢查询</div>
+              </div>
+              <div class="saved-cmd" data-cmd="INFO keyspace">
+                <div class="s-cmd">INFO keyspace</div>
+                <div class="s-desc">各 DB Key 数量</div>
+              </div>
+
+              <div class="tip-card">
+                <strong><span class="ic" data-ic="sparkles"></span>控制台提示</strong>
+                使用 <kbd>↑</kbd> <kbd>↓</kbd> 浏览历史，<kbd>⌘K</kbd> 打开命令面板。输入命令时会自动补全参数。
+              </div>
+            </aside>
+          </div>
+        </main>
+      </div>
+
+      <footer class="statusbar">
+        <span class="sb-item"><span class="ok-dot"></span><strong>Connected</strong></span>
+        <span class="sb-item">127.0.0.1:6379</span>
+        <span class="sb-item">db0</span>
+        <span class="sb-item"><span class="ic" data-ic="layers"></span>12,480 keys</span>
+        <span class="sb-item"><span class="ic" data-ic="zap"></span>RTT 12 ms</span>
+        <span class="spacer"></span>
+        <span class="sb-chip">UTF-8</span>
+        <span class="sb-chip">Redis 7.4.2</span>
+        <span class="sb-item">Redis Compose 0.1.0</span>
+      </footer>
+    </div>
+
+    <script src="assets/app.js"></script>
+    <script src="console.js"></script>
+  </body>
+</html>

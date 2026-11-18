@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Redis Compose — Connections</title>
+    <link rel="stylesheet" href="assets/theme.css" />
+    <link rel="stylesheet" href="assets/pages.css" />
+    <script>
+      const _themeParam = new URLSearchParams(location.search).get('theme');
+      document.documentElement.dataset.theme =
+        _themeParam === 'light' || _themeParam === 'dark'
+          ? _themeParam
+          : localStorage.getItem('rc-theme') || 'dark';
+    </script>
+  </head>
+  <body>
+    <div class="app">
+      <header class="titlebar">
+        <a class="brand" href="index.html" aria-label="Redis Compose 首页">
+          <span class="brand-mark"><span class="ic" data-ic="logo"></span></span>
+          <span class="brand-word">redis<em>compose</em></span>
+          <span class="brand-ver">v0.1</span>
+        </a>
+        <div class="titlebar-sep"></div>
+        <div class="page-chip" role="button" tabindex="0">
+          <span class="ic" data-ic="database"></span>
+          <span>Workspace</span>
+          <span class="crumb-sep">/</span>
+          <strong>连接库</strong>
+          <span class="ic" data-ic="chevron-down"></span>
+        </div>
+        <div class="titlebar-center">
+          <div class="omnibox">
+            <span class="ic" data-ic="search"></span>
+            <input data-open-palette placeholder="搜索 Key、命令或连接…" aria-label="全局搜索" />
+            <kbd>⌘K</kbd>
+          </div>
+        </div>
+        <div class="titlebar-right">
+          <span class="status-pill"><span class="dot"></span>5 online</span>
+          <button class="btn-icon" data-theme-toggle data-tip="切换主题" aria-label="切换主题"></button>
+          <button class="btn-icon" data-tip="通知" aria-label="通知"><span class="ic" data-ic="bell"></span></button>
+          <div class="avatar" data-tip="czh@acme.io">CZ</div>
+        </div>
+      </header>
+
+      <div class="shell">
+        <nav class="rail" aria-label="主导航">
+          <a class="rail-btn" href="workspace.html" data-tip="键浏览器" aria-label="键浏览器">
+            <span class="ic" data-ic="key"></span>
+          </a>
+          <a class="rail-btn" href="console.html" data-tip="命令控制台" aria-label="命令控制台">
+            <span class="ic" data-ic="terminal"></span>
+          </a>
+          <a class="rail-btn" href="insights.html" data-tip="服务器洞察" aria-label="服务器洞察">
+            <span class="ic" data-ic="activity"></span>
+          </a>
+          <div class="rail-sep"></div>
+          <a class="rail-btn active" href="connections.html" data-tip="连接管理" aria-label="连接管理">
+            <span class="ic" data-ic="database"></span>
+          </a>
+          <a class="rail-btn" href="settings.html" data-tip="偏好设置" aria-label="偏好设置">
+            <span class="ic" data-ic="sliders"></span>
+          </a>
+          <div class="rail-spacer"></div>
+          <span class="rail-dot live-pulse" data-tip="5 个连接在线"></span>
+          <a class="rail-btn" href="settings.html" data-tip="快捷键" aria-label="快捷键">
+            <span class="ic" data-ic="keyboard"></span>
+          </a>
+        </nav>
+
+        <main class="main">
+          <div class="connections-page">
+            <div class="connections-inner">
+              <div class="connections-head">
+                <div>
+                  <div class="page-eyebrow"><span class="ic" data-ic="database"></span>Connection library</div>
+                  <h1 class="page-title">连接库 <span class="badge mint" style="height: 19px; font-size: 8.5px"><span class="ic" data-ic="wifi"></span>5 在线</span></h1>
+                  <p class="page-desc">集中管理开发、预发与生产环境的 Redis 实例。支持 TLS、SSH 隧道与只读模式。</p>
+                </div>
+                <div class="page-head-actions">
+                  <button class="btn subtle" id="importBtn"><span class="ic" data-ic="upload"></span>导入配置</button>
+                  <button class="btn primary" data-open-sheet><span class="ic" data-ic="plus"></span>新建连接</button>
+                </div>
+              </div>
+
+              <div class="conn-toolbar">
+                <div class="search">
+                  <span class="ic" data-ic="search"></span>
+                  <input class="input" id="connSearch" placeholder="搜索名称、Host 或分组…" aria-label="搜索连接" />
+                </div>
+                <div class="env-tabs" id="envTabs">
+                  <button class="active" data-env="all">全部</button>
+                  <button data-env="production">Production</button>
+                  <button data-env="staging">Staging</button>
+                  <button data-env="local">Local</button>
+                  <button data-env="ops">Analytics</button>
+                </div>
+                <div class="right">
+                  <span id="connCount">6 个连接</span>
+                  <div class="segmented" data-seg="view" id="viewToggle">
+                    <button class="active" data-view="grid" data-tip="网格视图" aria-label="网格视图">
+                      <span class="ic" data-ic="grid"></span>
+                    </button>
+                    <button data-view="list" data-tip="列表视图" aria-label="列表视图">
+                      <span class="ic" data-ic="list"></span>
+                    </button>
+                  </div>
+                  <button class="btn ghost sm" data-tip="按最近使用排序">
+                    <span class="ic" data-ic="sort"></span>最近使用
+                  </button>
+                </div>
+              </div>
+
+              <div class="conn-grid" id="connGrid">
+                <article class="conn-card" data-href="workspace.html" data-env="production" data-name="Prod Cache redis-01.acme.io" style="--conn-color: #918dff">
+                  <div class="top">
+                    <div class="conn-logo">PC</div>
+                    <div class="ident">
+                      <div class="name">Prod Cache <span class="badge-env">main</span></div>
+                      <div class="host">redis-01.acme.io:6379</div>
+                    </div>
+                    <span class="state live"><i></i>12 ms</span>
+                    <button class="btn-icon sm" data-card-menu data-tip="更多" aria-label="更多">
+                      <span class="ic" data-ic="more"></span>
+                    </button>
+                  </div>
+                  <div class="tags">
+                    <span class="badge plain"><span class="ic" data-ic="shield"></span>TLS</span>
+                    <span class="badge plain">Redis 7.4.2</span>
+                    <span class="badge plain">16 DB</span>
+                  </div>
+                  <div class="stats">
+                    <span><span class="ic" data-ic="layers"></span>24,585 keys</span>
+                    <span><span class="ic" data-ic="users"></span>24 clients</span>
+                    <span class="right">刚刚使用</span>
+                  </div>
+                </article>
+
+                <article class="conn-card" data-href="workspace.html" data-env="production" data-name="Session Store 127.0.0.1" style="--conn-color: #45e3be">
+                  <div class="top">
+                    <div class="conn-logo">SS</div>
+                    <div class="ident">
+                      <div class="name">Session Store</div>
+                      <div class="host">127.0.0.1:6380</div>
+                    </div>
+                    <span class="state live"><i></i>8 ms</span>
+                    <button class="btn-icon sm" data-card-menu data-tip="更多" aria-label="更多">
+                      <span class="ic" data-ic="more"></span>
+                    </button>
+                  </div>
+                  <div class="tags">
+                    <span class="badge plain"><span class="ic" data-ic="git-branch"></span>SSH 隧道</span>
+                    <span class="badge plain">Redis 7.4.2</span>
+                    <span class="badge plain">db2</span>
+                  </div>
+                  <div class="stats">
+                    <span><span class="ic" data-ic="layers"></span>8,201 keys</span>
+                    <span><span class="ic" data-ic="users"></span>12 clients</span>
+                    <span class="right">4 分钟前</span>
+                  </div>
+                </article>
+
+                <article class="conn-card" data-href="insights.html" data-env="ops" data-name="Analytics Replica redis-analytics" style="--conn-color: #6fb7ff">
+                  <div class="top">
+                    <div class="conn-logo">AR</div>
+                    <div class="ident">
+                      <div class="name">Analytics Replica</div>
+                      <div class="host">redis-analytics.acme.io:6379</div>
+                    </div>
+                    <span class="state live"><i></i>18 ms</span>
+                    <button class="btn-icon sm" data-card-menu data-tip="更多" aria-label="更多">
+                      <span class="ic" data-ic="more"></span>
+                    </button>
+                  </div>
+                  <div class="tags">
+                    <span class="badge plain"><span class="ic" data-ic="eye"></span>只读</span>
+                    <span class="badge plain">Redis 7.4.2</span>
+                    <span class="badge plain">replica</span>
+                  </div>
+                  <div class="stats">
+                    <span><span class="ic" data-ic="layers"></span>184,920 keys</span>
+                    <span><span class="ic" data-ic="activity"></span>lag 0s</span>
+                    <span class="right">11 分钟前</span>
+                  </div>
+                </article>
+
+                <article class="conn-card" data-href="workspace.html" data-env="staging" data-name="Billing Staging staging-billing" style="--conn-color: #f7c566">
+                  <div class="top">
+                    <div class="conn-logo">BS</div>
+                    <div class="ident">
+                      <div class="name">Billing Staging</div>
+                      <div class="host">staging-billing.acme.io:6379</div>
+                    </div>
+                    <span class="state live"><i></i>41 ms</span>
+                    <button class="btn-icon sm" data-card-menu data-tip="更多" aria-label="更多">
+                      <span class="ic" data-ic="more"></span>
+                    </button>
+                  </div>
+                  <div class="tags">
+                    <span class="badge plain"><span class="ic" data-ic="shield"></span>TLS</span>
+                    <span class="badge plain">Redis 7.2.5</span>
+                    <span class="badge amber">预发环境</span>
+                  </div>
+                  <div class="stats">
+                    <span><span class="ic" data-ic="layers"></span>1,204 keys</span>
+                    <span><span class="ic" data-ic="users"></span>3 clients</span>
+                    <span class="right">1 小时前</span>
+                  </div>
+                </article>
+
+                <article class="conn-card" data-href="workspace.html" data-env="local" data-name="Local Sandbox 127.0.0.1" style="--conn-color: #b49bff">
+                  <div class="top">
+                    <div class="conn-logo">LS</div>
+                    <div class="ident">
+                      <div class="name">Local Sandbox</div>
+                      <div class="host">127.0.0.1:6379</div>
+                    </div>
+                    <span class="state live"><i></i>1 ms</span>
+                    <button class="btn-icon sm" data-card-menu data-tip="更多" aria-label="更多">
+                      <span class="ic" data-ic="more"></span>
+                    </button>
+                  </div>
+                  <div class="tags">
+                    <span class="badge plain"><span class="ic" data-ic="globe"></span>Local</span>
+                    <span class="badge plain">Redis 7.4.2</span>
+                    <span class="badge plain">无密码</span>
+                  </div>
+                  <div class="stats">
+                    <span><span class="ic" data-ic="layers"></span>128 keys</span>
+                    <span><span class="ic" data-ic="clock"></span>1 天前</span>
+                    <span class="right">昨天</span>
+                  </div>
+                </article>
+
+                <article class="conn-card" data-env="staging" data-name="Legacy Cache legacy" style="--conn-color: #ff7ba9">
+                  <div class="top">
+                    <div class="conn-logo">LC</div>
+                    <div class="ident">
+                      <div class="name">Legacy Cache</div>
+                      <div class="host">legacy-cache.internal:6380</div>
+                    </div>
+                    <span class="state err"><i></i>超时</span>
+                    <button class="btn-icon sm" data-card-menu data-tip="更多" aria-label="更多">
+                      <span class="ic" data-ic="more"></span>
+                    </button>
+                  </div>
+                  <div class="tags">
+                    <span class="badge plain">Redis 5.0.14</span>
+                    <span class="badge danger">连接失败</span>
+                  </div>
+                  <div class="stats">
+                    <span><span class="ic" data-ic="alert"></span>connection refused</span>
+                    <span class="right">2 天前</span>
+                  </div>
+                </article>
+
+                <article class="conn-card new" data-open-sheet>
+                  <div class="plus"><span class="ic" data-ic="plus"></span></div>
+                  <div class="new-copy">
+                    <div class="t">新建连接</div>
+                    <div class="d">连接 Redis、Sentinel 或 Cluster</div>
+                  </div>
+                  <div class="new-meta">
+                    <span class="badge plain">TLS</span>
+                    <span class="badge plain">SSH</span>
+                    <span class="badge plain">Sentinel</span>
+                    <span class="badge plain">Cluster</span>
+                    <span class="new-shortcut"><kbd>⇧</kbd><kbd>N</kbd></span>
+                  </div>
+                </article>
+              </div>
+
+              <div class="card recent-card">
+                <div class="card-head">
+                  <div>
+                    <div class="card-title">最近活动</div>
+                    <div class="card-desc">当前工作区的连接与配置事件</div>
+                  </div>
+                  <div class="right">
+                    <button class="btn ghost sm">查看全部<span class="ic" data-ic="arrow-up-right"></span></button>
+                  </div>
+                </div>
+                <table class="table">
+                  <thead>
+                    <tr><th>事件</th><th>连接</th><th>来源</th><th class="num">时间</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><span class="badge mint" style="font-size: 8px">CONNECTED</span></td>
+                      <td class="strong">Prod Cache</td>
+                      <td class="mono">czh@acme.io · Redis Compose</td>
+                      <td class="num">2 分钟前</td>
+                    </tr>
+                    <tr>
+                      <td><span class="badge accent" style="font-size: 8px">KEY EXPORT</span></td>
+                      <td class="strong">Prod Cache</td>
+                      <td class="mono">czh@acme.io · cache:user:*</td>
+                      <td class="num">18 分钟前</td>
+                    </tr>
+                    <tr>
+                      <td><span class="badge" style="font-size: 8px">SETTINGS</span></td>
+                      <td class="strong">全局</td>
+                      <td class="mono">czh@acme.io · 开启只读确认</td>
+                      <td class="num">1 小时前</td>
+                    </tr>
+                    <tr>
+                      <td><span class="badge" style="font-size: 8px">DISCONNECTED</span></td>
+                      <td class="strong">Session Store</td>
+                      <td class="mono">idle timeout · 30m</td>
+                      <td class="num">3 小时前</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+
+      <footer class="statusbar">
+        <span class="sb-item"><span class="ok-dot"></span><strong>5 online</strong></span>
+        <span class="sb-item">6 connections</span>
+        <span class="sb-item" style="color: var(--danger)"><span class="dot danger"></span>1 error</span>
+        <span class="spacer"></span>
+        <span class="sb-chip">本地配置 · ~/.redis-compose</span>
+        <span class="sb-chip">AES-256 加密</span>
+        <span class="sb-item">Redis Compose 0.1.0</span>
+      </footer>
+    </div>
+
+    <!-- ============================================================ new connection sheet -->
+    <div class="sheet-backdrop" id="connSheet" hidden>
+      <div class="sheet" role="dialog" aria-modal="true" aria-label="新建连接">
+        <div class="sheet-head">
+          <div class="conn-logo" style="--conn-color: var(--accent)">NC</div>
+          <div>
+            <div class="sheet-title">新建连接</div>
+            <div class="sheet-sub">配置 Redis 实例、TLS 与 SSH 隧道</div>
+          </div>
+          <button class="btn-icon" data-close-sheet aria-label="关闭"><span class="ic" data-ic="close"></span></button>
+        </div>
+        <div class="sheet-tabs" id="sheetTabs">
+          <button class="active" data-sheet-tab="basic">基础</button>
+          <button data-sheet-tab="tls">TLS</button>
+          <button data-sheet-tab="ssh">SSH 隧道</button>
+          <button data-sheet-tab="advanced">高级</button>
+        </div>
+        <div class="sheet-body">
+          <div class="sheet-panel" data-panel="basic">
+            <div class="field">
+              <label>连接名称 <span class="req">*</span></label>
+              <input class="input" id="newConnName" placeholder="例如 Production Cache" />
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Host <span class="req">*</span></label>
+                <input class="input mono" id="newConnHost" placeholder="127.0.0.1" value="127.0.0.1" />
+              </div>
+              <div class="field" style="flex: 0 0 100px">
+                <label>Port</label>
+                <input class="input mono" value="6379" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>用户名（Redis 6+ ACL）</label>
+                <input class="input" placeholder="default" />
+              </div>
+              <div class="field">
+                <label>密码</label>
+                <input class="input" type="password" placeholder="••••••••" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>环境</label>
+                <select class="select" style="width: 100%; height: 33px">
+                  <option>Production</option>
+                  <option>Staging</option>
+                  <option>Local</option>
+                  <option>Analytics</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>默认 DB</label>
+                <select class="select" style="width: 100%; height: 33px"><option>db0</option><option>db1</option><option>db2</option></select>
+              </div>
+            </div>
+            <div class="field">
+              <label>颜色标签</label>
+              <div class="conn-color-row">
+                <span class="swatch active" style="background: #918dff"></span>
+                <span class="swatch" style="background: #45e3be"></span>
+                <span class="swatch" style="background: #f7c566"></span>
+                <span class="swatch" style="background: #6fb7ff"></span>
+                <span class="swatch" style="background: #ff7ba9"></span>
+                <span class="swatch" style="background: #b49bff"></span>
+              </div>
+            </div>
+            <div class="set-row" style="padding: 9px 0; border: none">
+              <div class="info">
+                <div class="label">只读模式</div>
+                <div class="hint">连接后拦截 SET / DEL / FLUSHDB 等写命令</div>
+              </div>
+              <div class="control"><div class="switch" aria-checked="false"></div></div>
+            </div>
+          </div>
+
+          <div class="sheet-panel" data-panel="tls" hidden>
+            <div class="set-row" style="padding: 8px 0; border: none">
+              <div class="info">
+                <div class="label">启用 TLS</div>
+                <div class="hint">使用 TLS 1.2+ 加密客户端与 Redis 之间的流量</div>
+              </div>
+              <div class="control"><div class="switch on" aria-checked="true"></div></div>
+            </div>
+            <div class="field">
+              <label>CA 证书路径</label>
+              <input class="input mono" placeholder="/etc/ssl/certs/redis-ca.pem" />
+              <div class="field-hint">支持 PEM 格式，可留空使用系统信任链</div>
+            </div>
+            <div class="field">
+              <label>客户端证书路径</label>
+              <input class="input mono" placeholder="~/.redis-compose/certs/client.pem" />
+            </div>
+            <div class="field">
+              <label>客户端私钥路径</label>
+              <input class="input mono" placeholder="~/.redis-compose/certs/client-key.pem" />
+            </div>
+            <div class="field">
+              <label>校验模式</label>
+              <select class="select" style="width: 100%; height: 33px">
+                <option>严格校验（推荐）</option>
+                <option>允许自签名证书</option>
+                <option>不校验</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="sheet-panel" data-panel="ssh" hidden>
+            <div class="set-row" style="padding: 8px 0; border: none">
+              <div class="info">
+                <div class="label">启用 SSH 隧道</div>
+                <div class="hint">通过跳板机安全访问内网 Redis</div>
+              </div>
+              <div class="control"><div class="switch" aria-checked="false"></div></div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>SSH Host</label>
+                <input class="input mono" placeholder="bastion.acme.io" />
+              </div>
+              <div class="field" style="flex: 0 0 100px">
+                <label>Port</label>
+                <input class="input mono" value="22" />
+              </div>
+            </div>
+            <div class="field">
+              <label>用户名</label>
+              <input class="input" placeholder="deploy" />
+            </div>
+            <div class="field">
+              <label>认证方式</label>
+              <div class="segmented" style="width: 100%">
+                <button class="active" style="flex: 1; justify-content: center">私钥</button>
+                <button style="flex: 1; justify-content: center">密码</button>
+              </div>
+            </div>
+            <div class="field">
+              <label>私钥路径</label>
+              <input class="input mono" placeholder="~/.ssh/id_ed25519" />
+            </div>
+          </div>
+
+          <div class="sheet-panel" data-panel="advanced" hidden>
+            <div class="field-row">
+              <div class="field">
+                <label>连接超时（ms）</label>
+                <input class="input mono" value="5000" />
+              </div>
+              <div class="field">
+                <label>读取超时（ms）</label>
+                <input class="input mono" value="5000" />
+              </div>
+            </div>
+            <div class="field">
+              <label>Key 命名空间分隔符</label>
+              <input class="input mono" value=":" />
+            </div>
+            <div class="field">
+              <label>客户端名称</label>
+              <input class="input mono" value="redis-compose" />
+            </div>
+            <div class="set-row" style="padding: 9px 0; border: none">
+              <div class="info">
+                <div class="label">Sentinel / Cluster</div>
+                <div class="hint">连接集群模式或通过 Sentinel 发现主节点</div>
+              </div>
+              <div class="control"><div class="switch" aria-checked="false"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="sheet-foot">
+          <span class="test-result" id="testResult" hidden>✓ 连接成功 · 12 ms</span>
+          <span class="spacer"></span>
+          <button class="btn ghost" data-close-sheet>取消</button>
+          <button class="btn subtle" id="testConn"><span class="ic" data-ic="wifi"></span>测试连接</button>
+          <button class="btn primary" id="saveConn"><span class="ic" data-ic="check"></span>保存连接</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="assets/app.js"></script>
+    <script src="connections.js"></script>
+  </body>
+</html>

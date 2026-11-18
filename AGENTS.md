@@ -30,16 +30,18 @@
 ```
 redis-compose/
 ├── desktopApp/           # 桌面应用入口模块
-│   └── src/main/kotlin/com/czh/redis/
-│       └── main.kt       # 桌面应用主函数
-├── shared/               # 共享代码模块
+│   └── src/main/kotlin/com/czh/rediscompose/desktop/
+│       └── Main.kt       # 桌面应用主函数
+├── app/                  # KMP 应用模块（由原 shared 重命名）
 │   └── src/
 │       ├── commonMain/   # 跨平台共享代码
-│       │   ├── kotlin/   # Kotlin 源代码
+│       │   ├── kotlin/com/czh/rediscompose/  # Kotlin 源代码
 │       │   └── composeResources/  # 资源文件
 │       ├── commonTest/   # 跨平台测试代码
 │       ├── jvmMain/      # JVM 平台特定代码
 │       └── jvmTest/      # JVM 平台测试代码
+├── design/               # HTML 设计参考（不参与构建）
+├── plan/                 # 分阶段实施计划
 ├── gradle/               # Gradle 配置
 │   ├── wrapper/          # Gradle Wrapper
 │   └── libs.versions.toml # 依赖版本目录
@@ -51,7 +53,7 @@ redis-compose/
 | 模块 | 职责 | 说明 |
 |------|------|------|
 | `desktopApp` | 桌面应用入口 | 包含主函数、桌面特定配置、打包配置 |
-| `shared` | 共享 UI 和逻辑 | 包含 Compose 组件、业务逻辑、跨平台资源 |
+| `app` | 共享 UI 和逻辑 | 包名 `com.czh.rediscompose`，包含 Compose 组件、业务逻辑、跨平台资源 |
 
 ---
 
@@ -83,8 +85,11 @@ redis-compose/
 # 运行所有测试
 ./gradlew test
 
+# 代码风格检查
+./gradlew ktlintCheck
+
 # 仅运行 JVM 测试
-./gradlew :shared:jvmTest
+./gradlew :app:jvmTest
 ```
 
 ### IDE 配置
@@ -107,6 +112,7 @@ redis-compose/
 | Compose Runtime | `org.jetbrains.compose.runtime:runtime` | Compose 运行时 |
 | Compose Foundation | `org.jetbrains.compose.foundation:foundation` | 基础 UI 组件 |
 | Compose Material3 | `org.jetbrains.compose.material3:material3` | Material Design 3 组件 |
+| Compose Material Icons Extended | `org.jetbrains.compose.material:material-icons-extended` | Outlined 图标（经 `AppIcons` 映射） |
 | Compose UI | `org.jetbrains.compose.ui:ui` | UI 核心功能 |
 | Compose Resources | `org.jetbrains.compose.components:components-resources` | 资源管理 |
 | Compose UI Tooling Preview | `org.jetbrains.compose.ui:ui-tooling-preview` | 预览支持 |
@@ -173,8 +179,9 @@ fun MyComponentPreview() {
 
 ### 资源管理
 
-- 资源文件放在 `shared/src/commonMain/composeResources/`
-- 使用 `Res` 对象访问资源（如 `Res.drawable.compose_multiplatform`）
+- 资源文件放在 `app/src/commonMain/composeResources/`
+- 字体放在 `app/src/commonMain/composeResources/font/`（Inter / JetBrains Mono）
+- 使用 `Res` 对象访问资源（如 `Res.font.inter_regular`）
 
 ---
 
@@ -186,9 +193,9 @@ fun MyComponentPreview() {
 
 | 平台 | 目录 | 说明 |
 |------|------|------|
-| Android | `shared/src/androidMain/` | Android 平台特定代码 |
-| iOS | `shared/src/iosMain/` | iOS 平台特定代码 |
-| Web | `shared/src/jsMain/` | Web 平台特定代码 |
+| Android | `app/src/androidMain/` | Android 平台特定代码 |
+| iOS | `app/src/iosMain/` | iOS 平台特定代码 |
+| Web | `app/src/jsMain/` | Web 平台特定代码 |
 
 ### 架构演进
 

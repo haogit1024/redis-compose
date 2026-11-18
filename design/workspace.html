@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Redis Compose — Keys</title>
+    <link rel="stylesheet" href="assets/theme.css" />
+    <link rel="stylesheet" href="assets/pages.css" />
+    <script>
+      const _themeParam = new URLSearchParams(location.search).get('theme');
+      document.documentElement.dataset.theme =
+        _themeParam === 'light' || _themeParam === 'dark'
+          ? _themeParam
+          : localStorage.getItem('rc-theme') || 'dark';
+    </script>
+  </head>
+  <body>
+    <div class="app">
+      <!-- ============================================================ titlebar -->
+      <header class="titlebar">
+        <a class="brand" href="index.html" aria-label="Redis Compose 首页">
+          <span class="brand-mark"><span class="ic" data-ic="logo"></span></span>
+          <span class="brand-word">redis<em>compose</em></span>
+          <span class="brand-ver">v0.1</span>
+        </a>
+        <div class="titlebar-sep"></div>
+        <div class="page-chip" role="button" tabindex="0">
+          <span class="ic" data-ic="database"></span>
+          <span>Production</span>
+          <span class="crumb-sep">/</span>
+          <strong>Prod Cache</strong>
+          <span class="ic" data-ic="chevron-down"></span>
+        </div>
+        <div class="titlebar-center">
+          <div class="omnibox">
+            <span class="ic" data-ic="search"></span>
+            <input data-open-palette placeholder="搜索 Key、命令或连接…" aria-label="全局搜索" />
+            <kbd>⌘K</kbd>
+          </div>
+        </div>
+        <div class="titlebar-right">
+          <span class="status-pill"><span class="dot"></span>12 ms</span>
+          <button class="btn-icon" data-theme-toggle data-tip="切换主题" aria-label="切换主题"></button>
+          <button class="btn-icon" data-tip="通知" aria-label="通知"><span class="ic" data-ic="bell"></span></button>
+          <div class="avatar" data-tip="czh@acme.io">CZ</div>
+        </div>
+      </header>
+
+      <div class="shell">
+        <!-- ============================================================== rail -->
+        <nav class="rail" aria-label="主导航">
+          <a class="rail-btn active" href="workspace.html" data-tip="键浏览器" aria-label="键浏览器">
+            <span class="ic" data-ic="key"></span>
+          </a>
+          <a class="rail-btn" href="console.html" data-tip="命令控制台" aria-label="命令控制台">
+            <span class="ic" data-ic="terminal"></span>
+          </a>
+          <a class="rail-btn" href="insights.html" data-tip="服务器洞察" aria-label="服务器洞察">
+            <span class="ic" data-ic="activity"></span>
+          </a>
+          <div class="rail-sep"></div>
+          <a class="rail-btn" href="connections.html" data-tip="连接管理" aria-label="连接管理">
+            <span class="ic" data-ic="database"></span>
+          </a>
+          <a class="rail-btn" href="settings.html" data-tip="偏好设置" aria-label="偏好设置">
+            <span class="ic" data-ic="sliders"></span>
+          </a>
+          <div class="rail-spacer"></div>
+          <span class="rail-dot live-pulse" data-tip="Redis 运行正常"></span>
+          <a class="rail-btn" href="settings.html" data-tip="快捷键" aria-label="快捷键">
+            <span class="ic" data-ic="keyboard"></span>
+          </a>
+        </nav>
+
+        <!-- =========================================================== sidebar -->
+        <aside class="sidebar">
+          <div class="sb-head">
+            <span class="sb-title">连接</span>
+            <span class="sb-count">4</span>
+            <a class="btn-icon" href="connections.html?new=1" data-tip="新建连接" aria-label="新建连接">
+              <span class="ic" data-ic="plus"></span>
+            </a>
+          </div>
+          <div class="sb-search">
+            <div class="search">
+              <span class="ic" data-ic="search"></span>
+              <input class="input" id="connFilter" placeholder="筛选连接…" aria-label="筛选连接" />
+            </div>
+          </div>
+          <div class="sb-scroll">
+            <div class="sb-group">Production <span class="line"></span></div>
+
+            <div class="conn active" style="--conn-color: #918dff">
+              <div class="conn-avatar">PC</div>
+              <div class="conn-body">
+                <div class="conn-name"><span class="name">Prod Cache</span><span class="badge-env">main</span></div>
+                <div class="conn-host">redis-01.acme.io:6379</div>
+                <div class="conn-meta">
+                  <span class="live">12 ms</span><span class="sep"></span><span>7.4.2</span><span class="sep"></span
+                  ><span>24 clients</span>
+                </div>
+              </div>
+            </div>
+            <div class="db-list">
+              <div class="db-row active"><span>db0</span><span class="count">12.4k</span></div>
+              <div class="db-row"><span>db1</span><span class="count">8.2k</span></div>
+              <div class="db-row"><span>db2</span><span class="count">3.9k</span></div>
+              <div class="db-row"><span>db3</span><span class="count">0</span></div>
+              <div class="db-row"><span>db4</span><span class="count">0</span></div>
+            </div>
+
+            <div class="conn" style="--conn-color: #45e3be">
+              <div class="conn-avatar">SS</div>
+              <div class="conn-body">
+                <div class="conn-name"><span class="name">Session Store</span></div>
+                <div class="conn-host">127.0.0.1:6380</div>
+                <div class="conn-meta">
+                  <span class="live">8 ms</span><span class="sep"></span><span>db2</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="sb-group">Staging <span class="line"></span></div>
+            <div class="conn" style="--conn-color: #f7c566">
+              <div class="conn-avatar">BS</div>
+              <div class="conn-body">
+                <div class="conn-name"><span class="name">Billing Staging</span></div>
+                <div class="conn-host">staging-billing.acme.io:6379</div>
+                <div class="conn-meta">
+                  <span class="live">41 ms</span><span class="sep"></span><span>7.2.5</span><span class="sep"></span
+                  ><span>3 clients</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="sb-group">Local <span class="line"></span></div>
+            <div class="conn" style="--conn-color: #6fb7ff">
+              <div class="conn-avatar">LS</div>
+              <div class="conn-body">
+                <div class="conn-name"><span class="name">Local Sandbox</span></div>
+                <div class="conn-host">127.0.0.1:6379</div>
+                <div class="conn-meta">
+                  <span class="live">1 ms</span><span class="sep"></span><span>7.4.2</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sb-foot">
+            <div class="health-card">
+              <div class="health-top">Server health <span class="live"></span></div>
+              <div class="health-bar"><i style="width: 62%"></i></div>
+              <div class="health-stats">
+                <span>内存 <strong>1.24 / 2 GB</strong></span>
+                <span>62%</span>
+              </div>
+              <div class="sb-util">
+                <a class="btn ghost sm" href="insights.html" style="flex: 1; justify-content: flex-start; padding: 0 6px">
+                  <span class="ic" data-ic="activity"></span>洞察
+                </a>
+                <a class="btn ghost sm" href="console.html" style="flex: 1; justify-content: flex-start; padding: 0 6px">
+                  <span class="ic" data-ic="terminal"></span>控制台
+                </a>
+                <a class="btn-icon sm" href="settings.html" data-tip="设置">
+                  <span class="ic" data-ic="sliders"></span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- ============================================================== main -->
+        <main class="main">
+          <div class="tabbar">
+            <a class="tab active" href="workspace.html">
+              <span class="ic" data-ic="key"></span>
+              <span>Prod Cache</span>
+              <span class="tab-close" role="button" aria-label="关闭标签页"><span class="ic" data-ic="close"></span></span>
+            </a>
+            <a class="tab" href="workspace.html">
+              <span class="ic" data-ic="key"></span>
+              <span>Session Store</span>
+            </a>
+            <a class="tab" href="console.html">
+              <span class="ic" data-ic="terminal"></span>
+              <span>Console</span>
+            </a>
+            <a class="tab-add" href="connections.html" data-tip="新建标签页" aria-label="新建标签页">
+              <span class="ic" data-ic="plus"></span>
+            </a>
+
+            <div class="tabbar-right">
+              <button class="db-pill" data-tip="切换数据库">
+                <span class="ic" data-ic="layers"></span>db0<span class="ic" data-ic="chevron-down"></span>
+              </button>
+              <span class="badge plain" data-tip="当前连接允许写入">
+                <span class="ic" data-ic="shield"></span>可写
+              </span>
+              <div class="divider"></div>
+              <button class="btn-icon" data-action="refresh" data-tip="刷新 Keyspace" aria-label="刷新">
+                <span class="ic" data-ic="refresh"></span>
+              </button>
+              <button class="btn-icon" data-tip="更多操作" aria-label="更多操作">
+                <span class="ic" data-ic="more"></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="work">
+            <!-- ================================================= key browser -->
+            <section class="keys-pane" aria-label="Key 列表">
+              <div class="pane-head">
+                <div class="pane-title-row">
+                  <span class="pane-title">Keys</span>
+                  <span class="pane-count">12,480</span>
+                  <div class="actions">
+                    <button class="btn-icon" data-action="new-key" data-tip="新建 Key" aria-label="新建 Key">
+                      <span class="ic" data-ic="plus"></span>
+                    </button>
+                    <button class="btn-icon" data-action="refresh" data-tip="刷新" aria-label="刷新">
+                      <span class="ic" data-ic="refresh"></span>
+                    </button>
+                    <button class="btn-icon" data-tip="视图：树形" aria-label="切换视图">
+                      <span class="ic" data-ic="list"></span>
+                    </button>
+                  </div>
+                </div>
+                <div class="search">
+                  <span class="ic" data-ic="search"></span>
+                  <input
+                    id="keySearch"
+                    class="input mono"
+                    placeholder="匹配模式   user:*   ·  ⌘F"
+                    aria-label="搜索 Key"
+                    autocomplete="off"
+                    spellcheck="false"
+                  />
+                </div>
+                <div class="filter-chips" id="typeFilter">
+                  <button class="chip active" data-type-filter="all">全部</button>
+                  <button class="chip" data-type-filter="string">String</button>
+                  <button class="chip" data-type-filter="hash">Hash</button>
+                  <button class="chip" data-type-filter="list">List</button>
+                  <button class="chip" data-type-filter="set">Set</button>
+                  <button class="chip" data-type-filter="zset">ZSet</button>
+                  <button class="chip" data-type-filter="stream">Stream</button>
+                </div>
+              </div>
+
+              <div class="tree-scroll" id="keyTree">
+                <div id="treeStatic">
+                  <div class="tree-section">
+                    <span class="ic" data-ic="star"></span>置顶<span class="line"></span>
+                  </div>
+                  <div id="pinnedList"></div>
+
+                  <div class="tree-section">键空间<span class="line"></span><span>db0</span></div>
+
+                  <div class="folder open">
+                    <div class="folder-label">
+                      <span class="ic chev" data-ic="chevron-right"></span>
+                      <span class="ic" data-ic="folder-open"></span>
+                      <span class="folder-name">app</span><span class="folder-count">4</span>
+                    </div>
+                    <div class="folder-children">
+                      <div class="key-row" data-key="app:config:feature_flags" data-type="string">
+                        <i class="type-dot"></i><span class="key-name">config:feature_flags</span>
+                      </div>
+                      <div class="key-row" data-key="app:config:rate_limits" data-type="string">
+                        <i class="type-dot"></i><span class="key-name">config:rate_limits</span>
+                      </div>
+                      <div class="folder open">
+                        <div class="folder-label">
+                          <span class="ic chev" data-ic="chevron-right"></span>
+                          <span class="ic" data-ic="folder-open"></span>
+                          <span class="folder-name">session</span><span class="folder-count">2</span>
+                        </div>
+                        <div class="folder-children">
+                          <div class="key-row" data-key="app:session:8f2a9c" data-type="hash">
+                            <i class="type-dot"></i><span class="key-name">8f2a9c</span
+                            ><span class="key-ttl">28m</span>
+                          </div>
+                          <div class="key-row" data-key="app:session:1c9de4" data-type="hash">
+                            <i class="type-dot"></i><span class="key-name">1c9de4</span
+                            ><span class="key-ttl">2h</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="folder open">
+                    <div class="folder-label">
+                      <span class="ic chev" data-ic="chevron-right"></span>
+                      <span class="ic" data-ic="folder-open"></span>
+                      <span class="folder-name">cache</span><span class="folder-count">5</span>
+                    </div>
+                    <div class="folder-children">
+                      <div class="folder open">
+                        <div class="folder-label">
+                          <span class="ic chev" data-ic="chevron-right"></span>
+                          <span class="ic" data-ic="folder-open"></span>
+                          <span class="folder-name">user</span><span class="folder-count">3</span>
+                        </div>
+                        <div class="folder-children">
+                          <div class="key-row" data-key="cache:user:1001:profile" data-type="hash">
+                            <i class="type-dot"></i><span class="key-name">1001:profile</span>
+                          </div>
+                          <div class="key-row" data-key="cache:user:1001:settings" data-type="string">
+                            <i class="type-dot"></i><span class="key-name">1001:settings</span>
+                          </div>
+                          <div class="key-row" data-key="cache:user:2048:profile" data-type="hash">
+                            <i class="type-dot"></i><span class="key-name">2048:profile</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="folder">
+                        <div class="folder-label">
+                          <span class="ic chev" data-ic="chevron-right"></span>
+                          <span class="ic" data-ic="folder"></span>
+                          <span class="folder-name">product</span><span class="folder-count">2</span>
+                        </div>
+                        <div class="folder-children">
+                          <div class="key-row" data-key="cache:product:8842" data-type="string">
+                            <i class="type-dot"></i><span class="key-name">8842</span>
+                          </div>
+                          <div class="key-row" data-key="cache:product:9103" data-type="string">
+                            <i class="type-dot"></i><span class="key-name">9103</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="key-row" data-key="cache:search:popular" data-type="zset">
+                        <i class="type-dot"></i><span class="key-name">search:popular</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="folder open">
+                    <div class="folder-label">
+                      <span class="ic chev" data-ic="chevron-right"></span>
+                      <span class="ic" data-ic="folder-open"></span>
+                      <span class="folder-name">queue</span><span class="folder-count">3</span>
+                    </div>
+                    <div class="folder-children">
+                      <div class="key-row" data-key="queue:emails" data-type="list">
+                        <i class="type-dot"></i><span class="key-name">emails</span
+                        ><span class="key-ttl">1.2k</span>
+                      </div>
+                      <div class="key-row" data-key="queue:jobs:priority" data-type="zset">
+                        <i class="type-dot"></i><span class="key-name">jobs:priority</span>
+                      </div>
+                      <div class="key-row" data-key="queue:dead_letter" data-type="list">
+                        <i class="type-dot"></i><span class="key-name">dead_letter</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="folder">
+                    <div class="folder-label">
+                      <span class="ic chev" data-ic="chevron-right"></span>
+                      <span class="ic" data-ic="folder"></span>
+                      <span class="folder-name">billing</span><span class="folder-count">2</span>
+                    </div>
+                    <div class="folder-children">
+                      <div class="key-row" data-key="billing:invoice:INV-2026-1187" data-type="hash">
+                        <i class="type-dot"></i><span class="key-name">invoice:INV-2026-1187</span>
+                      </div>
+                      <div class="key-row" data-key="billing:ledger:november" data-type="string">
+                        <i class="type-dot"></i><span class="key-name">ledger:november</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="folder">
+                    <div class="folder-label">
+                      <span class="ic chev" data-ic="chevron-right"></span>
+                      <span class="ic" data-ic="folder"></span>
+                      <span class="folder-name">metrics</span><span class="folder-count">2</span>
+                    </div>
+                    <div class="folder-children">
+                      <div class="key-row" data-key="metrics:daily:2026-11-17" data-type="hash">
+                        <i class="type-dot"></i><span class="key-name">daily:2026-11-17</span>
+                      </div>
+                      <div class="key-row" data-key="metrics:histogram:latency" data-type="zset">
+                        <i class="type-dot"></i><span class="key-name">histogram:latency</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="folder">
+                    <div class="folder-label">
+                      <span class="ic chev" data-ic="chevron-right"></span>
+                      <span class="ic" data-ic="folder"></span>
+                      <span class="folder-name">stream</span><span class="folder-count">1</span>
+                    </div>
+                    <div class="folder-children">
+                      <div class="key-row" data-key="stream:events:audit" data-type="stream">
+                        <i class="type-dot"></i><span class="key-name">events:audit</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="folder">
+                    <div class="folder-label">
+                      <span class="ic chev" data-ic="chevron-right"></span>
+                      <span class="ic" data-ic="folder"></span>
+                      <span class="folder-name">tags</span><span class="folder-count">1</span>
+                    </div>
+                    <div class="folder-children">
+                      <div class="key-row" data-key="tags:article:204" data-type="set">
+                        <i class="type-dot"></i><span class="key-name">article:204</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="folder">
+                    <div class="folder-label">
+                      <span class="ic chev" data-ic="chevron-right"></span>
+                      <span class="ic" data-ic="folder"></span>
+                      <span class="folder-name">locks</span><span class="folder-count">1</span>
+                    </div>
+                    <div class="folder-children">
+                      <div class="key-row" data-key="locks:checkout:order-9182" data-type="string">
+                        <i class="type-dot"></i><span class="key-name">checkout:order-9182</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="folder">
+                    <div class="folder-label">
+                      <span class="ic chev" data-ic="chevron-right"></span>
+                      <span class="ic" data-ic="folder"></span>
+                      <span class="folder-name">temp</span><span class="folder-count">1</span>
+                    </div>
+                    <div class="folder-children">
+                      <div class="key-row" data-key="temp:otp:13800001111" data-type="string">
+                        <i class="type-dot"></i><span class="key-name">otp:13800001111</span
+                        ><span class="key-ttl">42s</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="folder">
+                    <div class="folder-label">
+                      <span class="ic chev" data-ic="chevron-right"></span>
+                      <span class="ic" data-ic="folder"></span>
+                      <span class="folder-name">feature</span><span class="folder-count">1</span>
+                    </div>
+                    <div class="folder-children">
+                      <div class="key-row" data-key="feature:rollout:checkout_v2" data-type="string">
+                        <i class="type-dot"></i><span class="key-name">rollout:checkout_v2</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="tree-more">
+                    <span class="ic" data-ic="chevron-down"></span>SCAN 加载更多 · cursor 0
+                  </div>
+                </div>
+
+                <div id="searchResults" hidden></div>
+              </div>
+
+              <div class="pane-foot">
+                <span class="ic" data-ic="layers"></span>
+                <span>db0</span>
+                <span class="scan-bar"><i></i></span>
+                <span>12,480 / 12,480</span>
+              </div>
+            </section>
+
+            <!-- ================================================= value editor -->
+            <section class="value-pane" id="valuePane" aria-label="Key 详情"></section>
+          </div>
+        </main>
+      </div>
+
+      <!-- ========================================================== statusbar -->
+      <footer class="statusbar">
+        <span class="sb-item"><span class="ok-dot"></span><strong>Connected</strong></span>
+        <span class="sb-item">127.0.0.1:6379</span>
+        <span class="sb-item">db0</span>
+        <span class="sb-item"><span class="ic" data-ic="layers"></span>12,480 keys</span>
+        <span class="sb-item"><span class="ic" data-ic="cpu"></span>1.24 GB / 2 GB</span>
+        <span class="sb-item"><span class="ic" data-ic="users"></span>24 clients</span>
+        <span class="sb-item"><span class="ic" data-ic="zap"></span>RTT 12 ms</span>
+        <span class="spacer"></span>
+        <span class="sb-chip">UTF-8</span>
+        <span class="sb-chip">Redis 7.4.2</span>
+        <span class="sb-item">Redis Compose 0.1.0</span>
+      </footer>
+    </div>
+
+    <script src="assets/app.js"></script>
+    <script src="workspace.js"></script>
+  </body>
+</html>

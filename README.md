@@ -1,30 +1,29 @@
-This is a Kotlin Multiplatform project targeting Desktop (JVM).
+# redis-compose
 
-* [/shared](./shared/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-    - [commonMain](./shared/src/commonMain/kotlin) is for code that’s common for all targets.
-    - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-      For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-      the [iosMain](./shared/src/iosMain/kotlin) folder would be the right place for such calls.
-      Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./shared/src/jvmMain/kotlin)
-      folder is the appropriate location.
+A Kotlin Multiplatform / Compose Desktop workspace for Redis, built with a custom design system.
 
-### Running the apps
+这是 Redis Compose 的重写版本。项目按分阶段计划推进，Phase 0（结构重置）与 Phase 1（设计系统）已完成，当前应用启动到临时组件画廊；下一步是 Phase 2（领域与数据层）。
 
-Use the run configurations provided by the run widget in your IDE's toolbar. You can also use these commands and
-options:
+## 模块
 
-- Desktop app:
-    - Hot reload: `./gradlew :desktopApp:hotRun --auto`
-    - Standard run: `./gradlew :desktopApp:run`
+| 模块 | 说明 |
+| --- | --- |
+| `desktopApp` | 桌面应用入口（`com.czh.rediscompose.desktop.MainKt`） |
+| `app` | 共享 UI 与逻辑（包名 `com.czh.rediscompose`） |
 
-### Running tests
+`design/` 是 HTML 设计参考，`plan/` 是分阶段实施计划与验收记录（`plan/STATUS.md`）。两者都不参与打包。
 
-Use the run button in your IDE's editor gutter, or run tests using Gradle tasks:
+## 命令
 
-- Desktop tests: `./gradlew :shared:jvmTest`
+```bash
+./gradlew build
+./gradlew ktlintCheck
+./gradlew :app:jvmTest
+./gradlew :desktopApp:run
+./gradlew :desktopApp:hotRun --auto
+```
 
----
+## 参考
 
-Learn more
-about [Kotlin Multiplatform](https://www.jetbrains.com.cn/en-us/help/kotlin-multiplatform-dev/get-started.html)…
+- 计划入口：`plan/README.md`
+- 设计总览：`design/index.html`
