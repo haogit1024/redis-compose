@@ -72,8 +72,8 @@ class ConnectionValidationTest {
     }
 
     @Test
-    fun `ssh password auth does not require a private key`() {
-        val profile =
+    fun `ssh password auth requires a password and no private key`() {
+        val missingPassword =
             profile().copy(
                 ssh =
                     SshConfig(
@@ -83,7 +83,37 @@ class ConnectionValidationTest {
                         authMethod = SshAuthMethod.PASSWORD,
                     ),
             )
-        assertTrue(validateConnection(profile).isValid)
+        assertTrue(validateConnection(missingPassword).errors.containsKey(ConnectionField.SSH_PASSWORD))
+
+        val withPassword =
+            missingPassword.copy(ssh = missingPassword.ssh.copy(password = "secret"))
+        assertTrue(validateConnection(withPassword).isValid)
+    }
+
+    @Test
+    fun `tls client certificate and key must be provided together`() {
+        val onlyCertificate =
+            profile().copy(
+                tls = TlsConfig(enabled = true, clientCertPath = "/etc/client.pem"),
+            )
+        val errors = validateConnection(onlyCertificate).errors
+        assertEquals("请选择客户端私钥", errors[ConnectionField.TLS_KEY])
+
+        val onlyKey =
+            profile().copy(
+                tls = TlsConfig(enabled = true, clientKeyPath = "/etc/client-key.pem"),
+            )
+        assertEquals("请选择客户端证书", validateConnection(onlyKey).errors[ConnectionField.TLS_CERT])
+    }
+
+    @Test
+    fun `connect and read timeouts must be positive`() {
+        val errors =
+            validateConnection(
+                profile().copy(connectTimeoutMillis = 0, readTimeoutMillis = -1),
+            ).errors
+        assertTrue(errors.containsKey(ConnectionField.CONNECT_TIMEOUT))
+        assertTrue(errors.containsKey(ConnectionField.READ_TIMEOUT))
     }
 
     @Test

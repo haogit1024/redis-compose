@@ -1,7 +1,6 @@
 package com.czh.rediscompose.feature.shell
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,15 +10,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.czh.rediscompose.app.AppPage
@@ -28,15 +23,14 @@ import com.czh.rediscompose.app.WorkspaceTabKind
 import com.czh.rediscompose.design.component.AppButton
 import com.czh.rediscompose.design.component.AppButtonVariant
 import com.czh.rediscompose.design.component.AppCard
-import com.czh.rediscompose.design.component.AppEmptyState
 import com.czh.rediscompose.design.component.AppLoading
-import com.czh.rediscompose.design.component.ToastKind
 import com.czh.rediscompose.design.icon.AppIcons
 import com.czh.rediscompose.design.icon.BrandMark
 import com.czh.rediscompose.design.theme.AppTheme
 import com.czh.rediscompose.design.theme.LocalAppColors
 import com.czh.rediscompose.design.theme.LocalAppDimens
 import com.czh.rediscompose.design.theme.LocalAppTypography
+import com.czh.rediscompose.feature.connections.ConnectionsScreen
 import com.czh.rediscompose.feature.console.ConsoleScreen
 import com.czh.rediscompose.feature.insights.InsightsScreen
 import com.czh.rediscompose.feature.workspace.WorkspaceScreen
@@ -49,7 +43,7 @@ fun AppPageContent(
     Box(modifier.fillMaxSize().background(LocalAppColors.current.background)) {
         when (state.activePage) {
             AppPage.WORKSPACE -> WorkspaceContent(state)
-            AppPage.CONNECTIONS -> ConnectionsPlaceholder(state)
+            AppPage.CONNECTIONS -> ConnectionsScreen(state = state.connectionLibrary)
             AppPage.SETTINGS -> SettingsPlaceholder(state)
         }
     }
@@ -134,89 +128,6 @@ private fun EmptyWorkspace(state: AppState) {
                 modifier = Modifier.padding(top = dimens.spaceXl),
                 variant = AppButtonVariant.Primary,
                 icon = AppIcons.Connections,
-            )
-        }
-    }
-}
-
-@Composable
-private fun ConnectionsPlaceholder(state: AppState) {
-    val colors = LocalAppColors.current
-    val dimensions = LocalAppDimens.current
-    val typography = LocalAppTypography.current
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(
-                    start = dimensions.pageMargin,
-                    end = dimensions.pageMargin,
-                    top = dimensions.space2Xl,
-                    bottom = dimensions.space3Xl,
-                ),
-    ) {
-        PageHeading(
-            eyebrow = "CONNECTIONS",
-            title = "连接库",
-            description = "集中管理 Redis 连接。当前阶段先提供空状态与导航，完整表单将在 Phase 8 实现。",
-        )
-        if (state.connections.isEmpty()) {
-            AppCard(modifier = Modifier.padding(top = dimensions.spaceXl), contentPadding = 0.dp) {
-                AppEmptyState(
-                    icon = AppIcons.Connections,
-                    title = "添加你的第一个 Redis 连接",
-                    description = "连接信息会保存在 ~/.redis-compose/connections.json。",
-                    action = {
-                        AppButton(
-                            text = "添加你的第一个 Redis 连接",
-                            onClick = {
-                                state.showToast("新建连接表单将在 Phase 8 提供", ToastKind.Info)
-                            },
-                            variant = AppButtonVariant.Primary,
-                            icon = AppIcons.Add,
-                        )
-                    },
-                )
-            }
-        } else {
-            AppCard(
-                modifier = Modifier.padding(top = dimensions.spaceXl),
-                title = "已有连接",
-                description = "${state.connections.size} 个连接",
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(dimensions.spaceSm)) {
-                    state.connections.forEach { connection ->
-                        Row(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(dimensions.radiusXs))
-                                    .clickable { state.openConnection(connection.id) }
-                                    .pointerHoverIcon(PointerIcon.Hand)
-                                    .padding(vertical = dimensions.spaceXs),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = connection.name,
-                                style = typography.bodyStrong,
-                                color = colors.text,
-                                modifier = Modifier.weight(1f),
-                            )
-                            Text(
-                                text = "${connection.host}:${connection.port}",
-                                style = typography.monoMeta,
-                                color = colors.textTertiary,
-                            )
-                        }
-                    }
-                }
-            }
-            Text(
-                text = "从左侧连接列表或命令面板打开连接；完整的增删改表单将在 Phase 8 提供。",
-                style = typography.caption,
-                color = colors.textTertiary,
-                modifier = Modifier.padding(top = dimensions.spaceMd),
             )
         }
     }

@@ -2,6 +2,7 @@
 androidx-lifecycle = "2.11.0-beta01"
 composeMultiplatform = "1.11.1"
 jedis = "5.2.0"
+jsch = "2.28.8"
 junit = "4.13.2"
 kotlin = "2.4.0"
 kotlinx-coroutines = "1.11.0"
@@ -28,6 +29,7 @@ compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-previ
 kotlinx-coroutinesSwing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 jedis = { module = "redis.clients:jedis", version.ref = "jedis" }
+jsch = { module = "com.github.mwiede:jsch", version.ref = "jsch" }
 
 [plugins]
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }

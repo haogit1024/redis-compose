@@ -105,8 +105,8 @@ redis-compose/
 | 4 | [`04-workspace-keys.md`](04-workspace-keys.md) | Key 浏览器：树、搜索、筛选、置顶、空/错状态 | 3 | 已验收 |
 | 5 | [`05-workspace-values.md`](05-workspace-values.md) | 值检查器、6 种类型编辑器、Key 操作 | 4 | 已验收 |
 | 6 | [`06-console.md`](06-console.md) | 命令控制台、历史、补全、结果渲染 | 3, 5 | 已验收 |
-| 7 | [`07-insights.md`](07-insights.md) | 实时指标、图表、慢查询、健康检查 | 3 | 未开始 |
-| 8 | [`08-connections.md`](08-connections.md) | 连接库、筛选、新建/编辑侧滑、测试连接 | 3 | 未开始 |
+| 7 | [`07-insights.md`](07-insights.md) | 实时指标、图表、慢查询、健康检查 | 3 | 已验收 |
+| 8 | [`08-connections.md`](08-connections.md) | 连接库、筛选、新建/编辑侧滑、测试连接 | 3 | 已验收 |
 | 9 | [`09-settings-palette.md`](09-settings-palette.md) | 设置页、主题/强调色/密度、命令面板扩展、全局快捷键 | 5, 8 | 未开始 |
 | 10 | [`10-polish-release.md`](10-polish-release.md) | 全量打磨、测试、性能、删除遗留、文档 | 全部 | 未开始 |
 

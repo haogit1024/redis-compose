@@ -5,16 +5,24 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.czh.rediscompose.data.redis.InfoParser
 import com.czh.rediscompose.design.component.ToastKind
 import com.czh.rediscompose.domain.connection.ConnectionProfile
+import com.czh.rediscompose.domain.connection.ConnectionTestResult
 import com.czh.rediscompose.domain.settings.AppSettings
 import com.czh.rediscompose.domain.settings.ThemeMode
+import com.czh.rediscompose.feature.connections.ConnectionRuntime
+import com.czh.rediscompose.feature.connections.ConnectionsState
 import com.czh.rediscompose.feature.console.ConsoleState
 import com.czh.rediscompose.feature.insights.InsightsState
 import com.czh.rediscompose.feature.workspace.WorkspaceState
+import com.czh.rediscompose.util.currentEpochMillis
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlin.random.Random
+import kotlin.time.TimeSource
 
 /**
  * Global app state: settings, connections, sessions, workspace tabs and toasts.
@@ -40,6 +48,23 @@ class AppState(
     private val workspaces = mutableMapOf<String, WorkspaceState>()
     private val consoles = mutableMapOf<String, ConsoleState>()
     private val insights = mutableMapOf<String, InsightsState>()
+
+    private val connectionLibraryDelegate =
+        lazy {
+            ConnectionsState(
+                connections = { connections },
+                runtimeFor = ::connectionRuntime,
+                onOpen = ::openConnection,
+                onSave = ::saveConnection,
+                onDelete = ::deleteConnection,
+                onDuplicate = ::duplicateConnection,
+                onTest = ::testConnection,
+                onToast = { message, kind -> showToast(message, kind) },
+                scope = scope,
+            )
+        }
+
+    val connectionLibrary: ConnectionsState by connectionLibraryDelegate
 
     var activePage by mutableStateOf(AppPage.WORKSPACE)
         private set
@@ -98,6 +123,18 @@ class AppState(
         kind: WorkspaceTabKind,
     ) {
         val profile = connections.firstOrNull { it.id == connectionId } ?: return
+        val openedAt = currentEpochMillis()
+        if (profile.lastOpenedAtEpochMillis != openedAt) {
+            connections =
+                connections.map { connection ->
+                    if (connection.id == connectionId) {
+                        connection.copy(lastOpenedAtEpochMillis = openedAt)
+                    } else {
+                        connection
+                    }
+                }
+            persistConnections()
+        }
         val session = ensureSession(profile)
         ensureConnected(session)
 
@@ -182,27 +219,14 @@ class AppState(
             } else {
                 connections + profile
             }
-        connectJobs.remove(profile.id)?.cancel()
-        sessions.remove(profile.id)?.disconnect()
-        workspaces.remove(profile.id)?.dispose()
-        consoles.remove(profile.id)?.dispose()
-        insights.remove(profile.id)?.dispose()
-        for (tabIndex in tabs.indices) {
-            val tab = tabs[tabIndex]
-            if (tab.connectionId == profile.id && tab.kind == WorkspaceTabKind.KEYS) {
-                tabs[tabIndex] = tab.copy(title = profile.name)
-            }
-        }
+        // Connection-critical fields may have changed, so the old session and its tabs
+        // must not keep using the previous gateway.
+        disposeConnectionRuntime(profile.id)
         persistConnections()
     }
 
     fun deleteConnection(connectionId: String) {
-        connectJobs.remove(connectionId)?.cancel()
-        sessions.remove(connectionId)?.disconnect()
-        workspaces.remove(connectionId)?.dispose()
-        consoles.remove(connectionId)?.dispose()
-        insights.remove(connectionId)?.dispose()
-        tabs.removeAll { it.connectionId == connectionId }
+        disposeConnectionRuntime(connectionId)
         connections = connections.filterNot { it.id == connectionId }
         if (activeConnectionId == connectionId) {
             activeConnectionId = tabs.firstOrNull { it.id == activeTabId }?.connectionId
@@ -213,6 +237,51 @@ class AppState(
             tabs.lastOrNull()?.let { activeConnectionId = it.connectionId }
         }
         persistConnections()
+    }
+
+    /** Profile for the "复制连接" action; the caller opens the sheet with this draft. */
+    fun duplicateConnection(connectionId: String): ConnectionProfile? {
+        val source = connections.firstOrNull { it.id == connectionId } ?: return null
+        val now = currentEpochMillis()
+        return source.copy(
+            id = "conn-$now-copy-${Random.nextInt(1_000, 10_000)}",
+            name = "${source.name} 副本",
+            lastOpenedAtEpochMillis = null,
+            createdAtEpochMillis = now,
+            updatedAtEpochMillis = now,
+        )
+    }
+
+    /** Opens a throwaway gateway for the sheet's "测试连接" action; always closes it. */
+    suspend fun testConnection(profile: ConnectionProfile): ConnectionTestResult {
+        val gateway = container.gatewayFactory.create(profile)
+        val started = TimeSource.Monotonic.markNow()
+        return try {
+            gateway.ping()
+            val latency = started.elapsedNow().inWholeMilliseconds
+            val version =
+                try {
+                    InfoParser.snapshot(gateway.info()).version
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    null
+                }
+            ConnectionTestResult(
+                success = true,
+                latencyMillis = latency,
+                version = version,
+            )
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            ConnectionTestResult(
+                success = false,
+                errorMessage = error.firstLine(),
+            )
+        } finally {
+            runCatching { gateway.close() }
+        }
     }
 
     fun showToast(
@@ -236,9 +305,39 @@ class AppState(
         consoles.clear()
         insights.values.forEach { it.dispose() }
         insights.clear()
+        if (connectionLibraryDelegate.isInitialized()) connectionLibrary.dispose()
         sessions.values.forEach { it.disconnect() }
         sessions.clear()
         toastController.clear()
+    }
+
+    private fun disposeConnectionRuntime(connectionId: String) {
+        connectJobs.remove(connectionId)?.cancel()
+        sessions.remove(connectionId)?.disconnect()
+        workspaces.remove(connectionId)?.dispose()
+        consoles.remove(connectionId)?.dispose()
+        insights.remove(connectionId)?.dispose()
+        tabs.removeAll { it.connectionId == connectionId }
+        if (activeTabId != null && tabs.none { it.id == activeTabId }) {
+            activeTabId = tabs.lastOrNull()?.id
+            activeConnectionId = tabs.lastOrNull()?.connectionId
+        }
+        if (activeConnectionId == connectionId) {
+            activeConnectionId = tabs.firstOrNull { it.id == activeTabId }?.connectionId
+        }
+    }
+
+    private fun connectionRuntime(connectionId: String): ConnectionRuntime {
+        val session = sessions[connectionId] ?: return ConnectionRuntime()
+        return ConnectionRuntime(
+            status = session.status,
+            latencyMillis = session.latencyMillis,
+            errorMessage = session.errorMessage,
+            version = session.summary?.version,
+            totalKeys = session.summary?.totalKeys,
+            connectedClients = session.summary?.connectedClients,
+            databaseCount = session.databases.size.takeIf { it > 0 },
+        )
     }
 
     private fun persistConnections() {

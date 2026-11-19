@@ -14,7 +14,7 @@
 | 5 — 值编辑器 | 已验收 | 2026-11-18 | 见下文 §Phase 5 | 见“遗留风险” |
 | 6 — 控制台 | 已验收 | 2026-11-19 | 见下文 §Phase 6 | 见“遗留风险” |
 | 7 — 洞察 | 已验收 | 2026-11-19 | 见下文 §Phase 7 | 见“遗留风险” |
-| 8 — 连接库 | 未开始 | — | — | — |
+| 8 — 连接库 | 已验收 | 2026-11-19 | 见下文 §Phase 8 | 见“遗留风险” |
 | 9 — 设置 + 命令面板 | 未开始 | — | — | — |
 | 10 — 打磨与发布 | 未开始 | — | — | — |
 
@@ -570,8 +570,133 @@
 8. **时钟差**：RDB “最近保存 N 前”使用本机当前时间减服务端 `rdb_last_save_time`；客户端与服务端时钟偏差会影响显示。
 9. **键空间空库**：Redis 的 `INFO keyspace` 不列出空 DB；全部 DB 为空时没有 keyspace section，页面显示空状态，而不是 16 行 0。
 10. **剪贴板**：慢查询复制仍使用 `LocalClipboardManager`（与 Phase 4–6 相同的 deprecation warning），Phase 10 统一替换。
-11. **保存连接后的状态**：`saveConnection` 会 dispose insights state，但保留已打开的 Insights tab（与 Keys/Console 现有行为一致）；Phase 8 的连接表单保存后需要重新创建 feature state。
+11. **保存连接后的状态**：`saveConnection` 会 dispose insights state，但保留已打开的 Insights tab（与 Keys/Console 现有行为一致）；Phase 8 已改为保存时关闭旧会话与相关 tabs（见 §Phase 8）。
 12. **预览 fixture 随生产源集编译**：`InsightsPreviews.kt` 仅服务 `@Preview`/离屏验收，不参与运行时；Phase 10 可移到 tooling 源集。
+
+---
+
+## Phase 8 — 连接库与连接表单（已验收）
+
+### 完成内容
+
+#### 连接库页面
+
+- `feature/connections/`：`ConnectionsScreen`、`ConnectionsState`、`ConnectionsHeader`、`ConnectionCard`、`AddConnectionRow`、`RecentConnectionsTable`、`ConnectionSheet`、`ConnectionDraft`、`ConnectionCardMenu`。
+- 页头：`CONNECTION LIBRARY`、连接库、真实在线数 / 连接总数、描述、禁用并带 tooltip 的“导入配置”、新建连接。
+- 工具栏：本地实时搜索（名称 / Host / 分组）、环境 tabs（全部 / Production / Staging / Local / Analytics / Other）、连接计数、网格/列表切换、最近使用/名称排序。
+- 网格：内容宽度 ≥1150dp 三列、≥850dp 两列、其余一列；新增连接行始终跨整行；列表模式单列。
+- 连接卡：顶部 2dp 颜色渐变线、颜色缩写块、环境 badge、host:port、真实状态 pill（已连接 + 延迟 / 连接中 / 失败 / 未连接）、TLS / SSH / 只读 / Redis 版本 / DB 数 / 默认 db 标签、keys / clients / 最近使用统计；错误卡显示错误首行。
+- 卡片菜单：打开工作区、编辑、复制连接、测试连接、删除。卡片点击进入 Workspace。
+- 最近连接表：只用真实 `lastOpenedAtEpochMillis`，最多 6 条；空时显示“还没有连接记录”。
+- 空状态：无连接时大空状态 + 新建连接；筛选无结果时“没有匹配的连接”+ 清除筛选。
+- 删除连接：确认对话框，级联关闭 session / tabs / feature state，持久化后更新 activeConnection。
+
+#### 连接表单（侧滑）
+
+- `AppSheet` 增加可选 `headerLeading` 与 `footerLeading`，保持既有调用兼容。
+- 470dp 全高侧滑；头部颜色块 + 标题 + 副标题 + 关闭；tabs 基础 / TLS / SSH 隧道 / 高级；打开时焦点落到连接名称。
+- 基础：名称、Host、Port、ACL 用户名、密码（可显示/隐藏）、环境、默认 DB、Key 分隔符、分组、6 种颜色、只读开关。
+- TLS：启用开关、CA 路径、客户端证书/私钥路径、校验模式（严格 / 允许自签名 / 不校验），非严格模式 amber 警告。
+- SSH：启用开关、Host/Port、用户名、私钥/密码认证、路径或密码字段；明确提示 v1 不校验 known_hosts。
+- 高级：连接/读取超时、Key 分隔符、禁用的 Sentinel / Cluster 行（明确“后续版本提供”，没有假开关）。
+- 校验：字段下方红字 + 顶部错误汇总；端口/DB/超时非数字单独提示；TLS 证书与私钥必须成对；SSH 密码认证必须填写密码。
+- 测试连接：使用当前未保存的 draft 构造临时 profile，经 `gatewayFactory` 真实 ping，成功后读取 INFO 版本；成功/失败显示在 footer，失败不关闭 sheet，临时 gateway 始终关闭。
+- 保存：新建生成 id；编辑保留 id / createdAt / lastOpened 并更新 updatedAt；复制使用 `AppState.duplicateConnection` 的新 id 和“副本”名称；失败保持 sheet 打开。
+- 未保存修改关闭确认按计划留到 Phase 10。
+
+#### AppState / 持久化
+
+- `AppState` 新增 `connectionLibrary`、`duplicateConnection()`、`suspend testConnection()`，并把 `runtimeFor` 映射为卡片所需的连接状态/延迟/版本/Key/客户端/DB 信息。
+- `openTab` 会更新 `lastOpenedAtEpochMillis` 并持久化；最近连接与排序使用真实打开时间。
+- `saveConnection` 会先关闭该连接的旧 session / tabs / Workspace / Console / Insights，避免编辑后继续使用旧 gateway；新连接直接加入列表。
+- `deleteConnection` 统一走同一套运行时清理。
+- `close()` 会 `dispose()` 连接库 state。
+- `PlaceholderContent` 的 `CONNECTIONS` 分支改为完整 `ConnectionsScreen`，删除占位列表。
+- `ConnectionField` 增加 `SSH_PASSWORD / CONNECT_TIMEOUT / READ_TIMEOUT`；`validateConnection` 覆盖新增字段与 TLS 证书成对规则。
+- 新增 `ConnectionTestResult` 领域类型，供表单和 AppState 共用。
+
+#### TLS / SSH 运行时（8B）
+
+- 新增依赖 `com.github.mwiede:jsch:2.28.8`（记录于 `gradle/libs.versions.toml`）。
+- `data/jedis/SshTunnel.kt`：
+  - JSch session + `setPortForwardingL(0, targetHost, targetPort)`，Jedis 连接 `127.0.0.1:本地端口`。
+  - 支持私钥（`~` 展开、可选 passphrase 使用 SSH 密码字段）与密码认证。
+  - `close()` 释放端口转发与 session；通常由 Jedis gateway 的 `closeInternal()` 调用。
+  - `StrictHostKeyChecking=no`，UI 明确标注；错误映射为“SSH 隧道连接失败：…”。
+- `data/jedis/TlsContextFactory.kt`：
+  - 严格模式 + 无 CA：系统信任链。
+  - 自定义 CA：PEM → KeyStore → TrustManager。
+  - ALLOW_SELF_SIGNED / NONE：trust-all；NONE 额外关闭主机名校验。
+  - 客户端证书：证书链 + 未加密 PKCS#8 / RSA PKCS#1 私钥 → KeyManager；加密私钥与无法识别格式明确报错，不降级明文。
+- `JedisRedisGateway`：按 profile 选择直连 / TLS / SSH 隧道；SSH + TLS 时按原始 Redis host 做主机名校验；任何失败都关闭临时隧道/客户端。
+- `JedisGatewayFactory` 无需改动，测试连接和正式连接共用同一 factory。
+
+#### 预览与测试
+
+- `ConnectionsPreviews.kt`：固定连接 fixture、真实感 runtime、空状态、列表、删除确认、四个 sheet tab、测试成功/失败；不读取用户连接文件、不联网。
+- 新增 33 个用例（详见验证），覆盖 draft 转换/校验、筛选/排序/最近连接、保存/删除/复制/测试、AppState 生命周期、TLS/SSH 失败路径。
+
+### 与设计稿 / 计划的有意差异
+
+| 设计稿 / 计划 | 实现 |
+| --- | --- |
+| 导入配置按钮 | 禁用 + tooltip “暂不支持”，不做假功能 |
+| 新建卡展示 Sentinel / Cluster | 只展示真实支持的 TLS / SSH；Sentinel / Cluster 在高级 tab 显示禁用行 |
+| 配置变更关闭 sheet 时确认 | 按计划留到 Phase 10 |
+| 文件选择器“浏览”按钮 | 未实现，路径手动填写（支持 `~`） |
+| SSH agent / known_hosts | 未实现；v1 `StrictHostKeyChecking=no`，UI 与 STATUS 明示 |
+| 加密客户端私钥 / EC SEC1 | 明确拒绝并提示转换为未加密 PKCS#8 / RSA PEM |
+| 连接卡审计活动 | 用真实最近连接表替代，不伪造事件 |
+| 列表模式紧凑横排 | 列表为单列完整卡片，与设计 CSS 的 `.conn-grid.list` 一致 |
+| 编辑连接后保留 tab | 保存编辑会关闭旧会话与相关 tabs，避免继续使用旧 gateway |
+
+### 验证
+
+| 命令 | 结果 |
+| --- | --- |
+| `./gradlew :app:jvmTest` | 216 tests，0 failures（Phase 7 基线 183 + 33 个新用例） |
+| `./gradlew ktlintCheck` | 通过 |
+| `./gradlew build` | 通过 |
+| `./gradlew :desktopApp:run` | 启动成功，进程存活；未点击用户真实连接 |
+
+新增/更新测试：
+
+- `ConnectionDraftTest`（7）：必填字段、trim/转换、数字错误、编辑保留 id/createdAt/lastOpened、复制模式、TLS/SSH 字段、fallback id。
+- `ConnectionsStateTest`（11）：搜索/环境/排序、最近 6 条、新建/编辑/复制 draft、校验拦截、新建/编辑保存、测试成功/失败、已有连接测试 toast、删除确认、卡片打开回调。
+- `AppStateTest`（5）：保存后级联关闭运行时、复制连接、测试连接成功/失败与 gateway 关闭、打开连接更新最近时间并持久化。
+- `ConnectionValidationTest`（+2）：SSH 密码必填（改写既有用例）、TLS 证书/私钥成对、超时必须为正。
+- `TlsContextFactoryTest`（5）：系统信任链、非严格 trust-all、证书成对、CA 缺失、客户端证书缺失错误。
+- `SshTunnelTest`（3）：未启用、私钥缺失、私钥文件不存在；均不打开外部 socket。
+
+离屏渲染（临时 `ImageComposeScene`，验收后删除临时测试与 `jvmTest` 的 `compose.desktop.currentOs` 依赖）：
+
+- 1380×816（1440 窗口、连接页隐藏侧栏）、1060×636（1120 窗口）、900×636 窄内容宽度；深/浅主题，长页。
+- 3 列 / 2 列网格、列表、空状态、删除确认、四个 sheet tab、测试成功与失败 footer。
+- 检查了卡片顶部渐变、状态 pill、标签、错误文案、最近连接表、sheet 滚动与 footer 按钮不溢出。
+
+### 真实 SSH / TLS / Redis 联调边界
+
+本阶段没有使用真实远端 Redis、SSH 跳板机或 TLS 服务端：
+
+- 未读取/打印用户 `~/.redis-compose/connections.json`，未点击任何真实连接。
+- SSH 只做单测覆盖“未启用 / 私钥缺失 / 私钥文件不存在”等失败路径；未验证真实主机密钥、真实 sshd 端口转发与关闭释放。
+- TLS 只验证 trust-all / 自定义 CA / 客户端证书的配置构建与错误路径；未对真实 Redis TLS 服务端做握手。
+- 连接测试/正式连接共用 `JedisGatewayFactory`，代码路径一致，但真实网络路径需要用户本地环境验证。
+- 依赖 `jsch` 仅用于 JVM，未把 JSch 类型泄漏到 feature/domain。
+
+### 遗留风险与边界
+
+1. **SSH 主机密钥不校验**：v1 使用 `StrictHostKeyChecking=no`，存在中间人风险；UI 已提示，Phase 10 应支持 known_hosts / 用户确认。
+2. **SSH 私钥格式**：JSch 支持 RSA/OpenSSH/Ed25519 等常见格式；加密私钥使用“私钥口令（可选）”字段，未实现 agent 认证、多跳跳板与 ProxyJump。
+3. **TLS 客户端私钥**：只支持未加密 PKCS#8 与 RSA PKCS#1；EC SEC1、加密私钥、PKCS#12 未支持，会明确报错并拒绝连接。
+4. **SSH + TLS 主机名**：通过原始配置 host 做主机名校验；如果证书 SAN 只包含内网名而配置写的是 IP，仍会失败，这是严格校验的预期行为。
+5. **真实联调缺失**：没有真实 SSH/TLS 环境，端口转发、认证失败、证书链、连接关闭后的端口释放未在真实网络验证。
+6. **编辑连接关闭 tabs**：保存编辑会断开旧会话并关闭该连接所有 tab，用户需要重新打开；这是为了避免复用旧 gateway 的有意取舍。
+7. **最近连接写入频率**：每次打开 tab 都更新 `lastOpenedAt` 并写文件；文件很小，但频繁切换会有多次磁盘写入，Phase 10 可 debounce。
+8. **表单草稿为内存明文**：密码只保存在当前 sheet state 中，保存由 repository 加密落盘；关闭后从内存释放。未实现剪贴板/日志脱敏检查。
+9. **文件选择器未实现**：CA / 证书 / 私钥路径需要手动输入，支持 `~`；Windows 反斜杠路径已由 `Paths` 处理，但未在 Windows 实机验证。
+10. **导入/导出、Sentinel/Cluster、SSH agent、未保存确认**：均按非目标未实现。
+11. **预览 fixture 随生产源集编译**：`ConnectionsPreviews.kt` 仅用于 `@Preview`/离屏验收；Phase 10 可移到 tooling 源集。
 
 ---
 
@@ -580,6 +705,6 @@
 - 分支：`feat/rewrite-ui`；模块：`:desktopApp` + `:app`。
 - 包名：`com.czh.rediscompose`；入口：`com.czh.rediscompose.desktop.MainKt`。
 - 应用启动直接进入新外壳（顶栏 / rail / 连接侧栏 / tab / 状态栏），不再显示设计画廊。
-- `AppState` + `RedisSession` 已接管连接、tab、主题、设置与旧数据迁移；测试 183/183 通过。
-- Keys 页、Console 页、Insights 页均已接入真实网关；Connections / Settings 仍是占位内容。
-- 下一步 Phase 8：连接库与连接表单；不要提前实现设置页，也不要在本阶段继续扩展洞察功能。
+- `AppState` + `RedisSession` 已接管连接、tab、主题、设置与旧数据迁移；测试 216/216 通过。
+- Keys / Console / Insights / Connections 均已接入真实网关与状态；Settings 仍是占位内容。
+- 下一步 Phase 9：设置页、主题/强调色/密度持久化、命令面板扩展与全局快捷键；不要提前实现发布打包或删除 Phase 8 的 TLS/SSH 能力。

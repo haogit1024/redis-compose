@@ -30,6 +30,7 @@ kotlin {
         }
         jvmMain.dependencies {
             implementation(libs.jedis)
+            implementation(libs.jsch)
             implementation(libs.kotlinx.coroutinesSwing)
         }
         commonTest.dependencies {

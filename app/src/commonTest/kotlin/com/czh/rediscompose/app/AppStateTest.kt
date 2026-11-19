@@ -7,8 +7,10 @@ import com.czh.rediscompose.domain.settings.AppSettings
 import com.czh.rediscompose.domain.settings.ThemeMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -225,6 +227,85 @@ class AppStateTest {
 
         state.closeTab("c1:insights")
         assertNull(state.insightsFor("c1"))
+        state.close()
+    }
+
+    @Test
+    fun `saving a connection persists and closes its runtime tabs`() {
+        val container = FakeAppContainer(initialConnections = listOf(profile()))
+        val state = state(container)
+        state.openConnection("c1")
+        val updated = state.connections.single().copy(name = "Renamed", host = "redis.local")
+
+        state.saveConnection(updated)
+
+        assertEquals("Renamed", state.connections.single().name)
+        assertEquals(updated, container.connectionRepository.saved?.single())
+        assertNull(state.sessionFor("c1"))
+        assertTrue(state.tabs.isEmpty())
+        state.close()
+    }
+
+    @Test
+    fun `duplicate connection gets a new id and copy name`() {
+        val source = profile()
+        val container = FakeAppContainer(initialConnections = listOf(source))
+        val state = state(container)
+
+        val duplicate = assertNotNull(state.duplicateConnection("c1"))
+
+        assertTrue(duplicate.id != source.id)
+        assertEquals("Local 副本", duplicate.name)
+        assertNull(duplicate.lastOpenedAtEpochMillis)
+        assertTrue(duplicate.createdAtEpochMillis > 0)
+        assertNull(state.duplicateConnection("missing"))
+        state.close()
+    }
+
+    @Test
+    fun `testing a connection reports latency and version then closes the gateway`() {
+        val container = FakeAppContainer(initialConnections = listOf(profile()))
+        val state = state(container)
+        container.gateway.connected = true
+
+        val result =
+            runBlocking {
+                state.testConnection(container.initialConnections.single())
+            }
+
+        assertTrue(result.success)
+        assertNotNull(result.latencyMillis)
+        assertEquals("7.4.2", result.version)
+        assertFalse(container.gateway.connected)
+        state.close()
+    }
+
+    @Test
+    fun `testing a connection surfaces the first error line`() {
+        val container = FakeAppContainer(initialConnections = listOf(profile()))
+        container.gateway.pingError = RedisException("Connection refused\nstack")
+        val state = state(container)
+
+        val result =
+            runBlocking {
+                state.testConnection(container.initialConnections.single())
+            }
+
+        assertFalse(result.success)
+        assertTrue(result.errorMessage.orEmpty().contains("Connection refused"))
+        state.close()
+    }
+
+    @Test
+    fun `opening a connection updates the recent timestamp and persists it`() {
+        val container = FakeAppContainer(initialConnections = listOf(profile()))
+        val state = state(container)
+
+        state.openConnection("c1")
+
+        val opened = assertNotNull(state.connections.single().lastOpenedAtEpochMillis)
+        assertTrue(opened > 0)
+        assertEquals(state.connections, container.connectionRepository.saved)
         state.close()
     }
 

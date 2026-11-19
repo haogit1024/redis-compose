@@ -90,10 +90,26 @@ data class ConnectionProfile(
 )
 ```
 
+```kotlin
+data class ConnectionTestResult(
+    val success: Boolean,
+    val latencyMillis: Long? = null,
+    val version: String? = null,
+    val errorMessage: String? = null,
+)
+```
+
+`ConnectionTestResult` 只包含表单“测试连接”需要的结果；临时 gateway 在 `AppState` 内创建并始终关闭。
+
 ### 2.1 校验
 
 ```kotlin
-enum class ConnectionField { NAME, HOST, PORT, USERNAME, PASSWORD, DATABASE, TLS_CA, TLS_CERT, TLS_KEY, SSH_HOST, SSH_PORT, SSH_USER, SSH_KEY }
+enum class ConnectionField {
+    NAME, HOST, PORT, USERNAME, PASSWORD, DATABASE,
+    TLS_CA, TLS_CERT, TLS_KEY,
+    SSH_HOST, SSH_PORT, SSH_USER, SSH_KEY, SSH_PASSWORD,
+    CONNECT_TIMEOUT, READ_TIMEOUT,
+}
 
 data class ConnectionValidation(val errors: Map<ConnectionField, String>) {
     val isValid: Boolean get() = errors.isEmpty()
@@ -535,6 +551,9 @@ class AppState(
     fun updateSettings(settings: AppSettings)
     fun saveConnection(profile: ConnectionProfile)
     fun deleteConnection(connectionId: String)
+    fun duplicateConnection(connectionId: String): ConnectionProfile?
+    suspend fun testConnection(profile: ConnectionProfile): ConnectionTestResult
+    val connectionLibrary: ConnectionsState
     fun showToast(message: String, kind: ToastKind, detail: String? = null)
     fun dismissToast(id: Long)
 }
@@ -738,16 +757,47 @@ class InsightsState(
 - `samples` 仅保留本次会话最多 1 小时（720 条）；关闭 tab 时 `dispose()` 丢弃。
 - `setRange`/`setAutoRefresh` 因 JVM setter 签名冲突改名为 `selectRange`/`updateAutoRefresh`。
 
-**Connections/Settings** 的草稿状态可以直接放在 screen 内 `remember`，但保存/删除/应用必须走 `AppState`。连接表单使用：
+**ConnectionsState（Phase 8）**
 
 ```kotlin
-data class ConnectionDraft(
-    val originalId: String?,
-    val name: String = "",
-    val host: String = "127.0.0.1",
-    // ... 与 ConnectionProfile 对齐
-)
+class ConnectionsState(
+    private val connections: () -> List<ConnectionProfile>,
+    private val runtimeFor: (String) -> ConnectionRuntime,
+    private val onOpen: (String) -> Unit,
+    private val onSave: (ConnectionProfile) -> Unit,
+    private val onDelete: (String) -> Unit,
+    private val onDuplicate: (String) -> ConnectionProfile?,
+    private val onTest: suspend (ConnectionProfile) -> ConnectionTestResult,
+    private val onToast: (String, ToastKind) -> Unit,
+    scope: CoroutineScope,
+) {
+    var search: String
+    var environmentFilter: ConnectionEnvironment?
+    var sort: ConnectionSort          // RECENT / NAME
+    var view: ConnectionView          // GRID / LIST
+    var draft: ConnectionDraft?
+    var sheetTab: ConnectionSheetTab
+    var validationErrors: Map<ConnectionField, String>
+    var testResult: ConnectionTestResult?
+    var isTesting: Boolean
+    var deleteTarget: ConnectionProfile?
+
+    fun openNew()
+    fun openEdit(connectionId: String)
+    fun openDuplicate(connectionId: String)
+    fun save()
+    fun testDraft()
+    fun testExisting(connectionId: String)
+    fun requestDelete(connectionId: String)
+    fun confirmDelete()
+    fun dispose()
+}
 ```
+
+- `ConnectionDraft` 是表单的可编辑副本，数字字段在编辑期间保持字符串；`toProfile()` 与 `validate()` 负责转换和字段错误。
+- 保存/删除/复制/测试都通过 `AppState` 的回调执行；feature 不直接创建 gateway 或写文件。
+- `ConnectionRuntime` 只包含卡片可见的运行时事实（状态、延迟、错误、版本、Key 数、客户端数、DB 数），不暴露密码。
+- Settings 页仍按 Phase 9 实现，不在本阶段使用 draft。
 
 ---
 

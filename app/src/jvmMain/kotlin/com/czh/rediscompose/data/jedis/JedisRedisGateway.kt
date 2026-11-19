@@ -11,7 +11,6 @@ import com.czh.rediscompose.data.redis.SortedSetEntryBytes
 import com.czh.rediscompose.data.redis.StreamEntryBytes
 import com.czh.rediscompose.data.redis.StreamParser
 import com.czh.rediscompose.data.redis.ValueCodec
-import com.czh.rediscompose.data.storage.expandUserPath
 import com.czh.rediscompose.domain.command.ClientConnection
 import com.czh.rediscompose.domain.command.CommandStat
 import com.czh.rediscompose.domain.command.RedisReply
@@ -32,22 +31,15 @@ import redis.clients.jedis.exceptions.JedisConnectionException
 import redis.clients.jedis.exceptions.JedisDataException
 import redis.clients.jedis.exceptions.JedisException
 import redis.clients.jedis.params.ScanParams
-import java.nio.file.Files
-import java.security.KeyStore
-import java.security.SecureRandom
-import java.security.cert.CertificateFactory
 import javax.net.ssl.HostnameVerifier
-import javax.net.ssl.SSLContext
-import javax.net.ssl.TrustManager
-import javax.net.ssl.TrustManagerFactory
-import javax.net.ssl.X509TrustManager
+import javax.net.ssl.HttpsURLConnection
 
 /**
  * Jedis-backed gateway.
  *
  * A single [Jedis] connection is created lazily and all calls are serialized through a
- * mutex on [Dispatchers.IO]. SSH is intentionally not tunneled in Phase 2 and fails with
- * a clear message instead of connecting directly.
+ * mutex on [Dispatchers.IO]. SSH uses a local [SshTunnel], and TLS can use a custom CA
+ * and client certificate through [TlsContextFactory].
  */
 class JedisRedisGateway(
     private val profile: ConnectionProfile,
@@ -56,6 +48,9 @@ class JedisRedisGateway(
 
     @Volatile
     private var jedis: Jedis? = null
+
+    @Volatile
+    private var sshTunnel: SshTunnel? = null
 
     override suspend fun ping(): String = call { it.ping() }
 
@@ -319,32 +314,39 @@ class JedisRedisGateway(
         }
 
     private fun ensureClient(): Jedis {
-        if (profile.ssh.enabled) {
-            throw RedisException("SSH 隧道尚未启用，将在 Phase 8 支持")
-        }
         jedis?.let { existing ->
             if (existing.isConnected) return existing
-            runCatching { existing.close() }
-            jedis = null
+            closeInternal()
         }
-        val client = Jedis(profile.host, profile.port, buildClientConfig())
+        val tunnel =
+            if (profile.ssh.enabled) {
+                SshTunnel(profile.ssh, profile.host, profile.port).also { it.start() }
+            } else {
+                null
+            }
+        val targetHost = tunnel?.localHost ?: profile.host
+        val targetPort = tunnel?.localPort ?: profile.port
+        val client =
+            try {
+                Jedis(targetHost, targetPort, buildClientConfig(throughSshTunnel = tunnel != null))
+            } catch (error: Exception) {
+                tunnel?.close()
+                throw if (error is RedisException) error else RedisException("连接失败：${error.firstLine()}", error)
+            }
         return try {
             client.connect()
             if (profile.defaultDatabase != 0) client.select(profile.defaultDatabase)
             jedis = client
+            sshTunnel = tunnel
             client
         } catch (error: Exception) {
             runCatching { client.close() }
+            tunnel?.close()
             throw if (error is RedisException) error else RedisException("连接失败：${error.firstLine()}", error)
         }
     }
 
-    private fun buildClientConfig(): JedisClientConfig {
-        if (profile.tls.enabled &&
-            (profile.tls.clientCertPath.isNotBlank() || profile.tls.clientKeyPath.isNotBlank())
-        ) {
-            throw RedisException("客户端证书认证将在 Phase 8 支持")
-        }
+    private fun buildClientConfig(throughSshTunnel: Boolean): JedisClientConfig {
         val builder =
             DefaultJedisClientConfig.builder()
                 .connectionTimeoutMillis(profile.connectTimeoutMillis)
@@ -354,68 +356,29 @@ class JedisRedisGateway(
         if (profile.password.isNotEmpty()) builder.password(profile.password)
         if (profile.tls.enabled) {
             builder.ssl(true)
-            val verifyMode = profile.tls.verifyMode
-            val socketFactory =
-                when {
-                    profile.tls.caPath.isNotBlank() -> sslContextForCa(profile.tls.caPath).socketFactory
-                    verifyMode != TlsVerifyMode.STRICT -> trustAllSslContext().socketFactory
-                    else -> null
-                }
-            if (socketFactory != null) builder.sslSocketFactory(socketFactory)
-            if (verifyMode == TlsVerifyMode.NONE) {
-                builder.hostnameVerifier(HostnameVerifier { _, _ -> true })
+            TlsContextFactory.socketFactory(profile.tls)?.let(builder::sslSocketFactory)
+            when {
+                profile.tls.verifyMode == TlsVerifyMode.NONE ->
+                    builder.hostnameVerifier(HostnameVerifier { _, _ -> true })
+                // The tunnel connects to 127.0.0.1, so verify the peer against the configured
+                // Redis host instead of the local forwarding address.
+                throughSshTunnel ->
+                    builder.hostnameVerifier(
+                        HostnameVerifier { _, session ->
+                            HttpsURLConnection.getDefaultHostnameVerifier().verify(profile.host, session)
+                        },
+                    )
             }
         }
         return builder.build()
-    }
-
-    private fun sslContextForCa(caPath: String): SSLContext {
-        val context =
-            runCatching {
-                val certificates =
-                    Files.newInputStream(expandUserPath(caPath)).use { stream ->
-                        CertificateFactory.getInstance("X.509").generateCertificates(stream)
-                    }
-                if (certificates.isEmpty()) error("empty certificate file")
-                val keyStore = KeyStore.getInstance(KeyStore.getDefaultType()).apply { load(null, null) }
-                certificates.forEachIndexed { index, certificate ->
-                    keyStore.setCertificateEntry("ca-$index", certificate)
-                }
-                val factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
-                factory.init(keyStore)
-                SSLContext.getInstance("TLS").apply {
-                    init(null, factory.trustManagers, SecureRandom())
-                }
-            }.getOrElse { error ->
-                throw RedisException("无法读取自定义 CA 证书：${error.firstLine()}", error)
-            }
-        return context
-    }
-
-    private fun trustAllSslContext(): SSLContext {
-        val trustManager =
-            object : X509TrustManager {
-                override fun checkClientTrusted(
-                    chain: Array<out java.security.cert.X509Certificate>?,
-                    authType: String?,
-                ) = Unit
-
-                override fun checkServerTrusted(
-                    chain: Array<out java.security.cert.X509Certificate>?,
-                    authType: String?,
-                ) = Unit
-
-                override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> = emptyArray()
-            }
-        return SSLContext.getInstance("TLS").apply {
-            init(null, arrayOf<TrustManager>(trustManager), SecureRandom())
-        }
     }
 
     private fun closeInternal() {
         synchronized(this) {
             runCatching { jedis?.close() }
             jedis = null
+            runCatching { sshTunnel?.close() }
+            sshTunnel = null
         }
     }
 

@@ -58,7 +58,9 @@ fun AppSheet(
     title: String,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
+    headerLeading: (@Composable () -> Unit)? = null,
     tabs: (@Composable () -> Unit)? = null,
+    footerLeading: (@Composable () -> Unit)? = null,
     footer: (@Composable RowScope.() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -134,6 +136,7 @@ fun AppSheet(
                 verticalAlignment = Alignment.Top,
                 horizontalArrangement = Arrangement.spacedBy(dimens.spaceMd),
             ) {
+                if (headerLeading != null) headerLeading()
                 Column(Modifier.weight(1f)) {
                     Text(
                         text = title,
@@ -197,6 +200,7 @@ fun AppSheet(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(dimens.spaceSm),
                 ) {
+                    if (footerLeading != null) footerLeading()
                     Spacer(Modifier.weight(1f))
                     footer()
                 }
