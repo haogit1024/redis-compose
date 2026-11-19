@@ -43,6 +43,7 @@ import com.czh.rediscompose.design.theme.AppTheme
 import com.czh.rediscompose.design.theme.LocalAppColors
 import com.czh.rediscompose.design.theme.LocalAppDimens
 import com.czh.rediscompose.design.theme.LocalAppTypography
+import com.czh.rediscompose.util.ShortcutLabels
 
 private data class SavedCommand(
     val command: String,
@@ -293,7 +294,7 @@ private fun TipCard() {
             color = colors.textTertiary,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(dimens.spaceXs)) {
-            AppKbd("⌘K")
+            AppKbd(ShortcutLabels.commandKey("K"))
             Text(
                 text = "命令面板",
                 style = typography.terminalSmall,

@@ -34,7 +34,7 @@ fun RedisComposeApp(container: AppContainer) {
             ThemeMode.DARK -> true
             ThemeMode.LIGHT -> false
         }
-    AppTheme(dark = dark, accent = state.settings.accent) {
+    AppTheme(dark = dark, accent = state.settings.accent, density = state.settings.density) {
         DisposableEffect(state) {
             onDispose { state.close() }
         }

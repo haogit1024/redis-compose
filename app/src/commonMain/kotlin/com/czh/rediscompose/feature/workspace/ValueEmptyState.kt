@@ -25,6 +25,7 @@ import com.czh.rediscompose.design.theme.AppTheme
 import com.czh.rediscompose.design.theme.LocalAppColors
 import com.czh.rediscompose.design.theme.LocalAppDimens
 import com.czh.rediscompose.design.theme.LocalAppTypography
+import com.czh.rediscompose.util.ShortcutLabels
 
 /** Right pane when no key is selected. */
 @Composable
@@ -81,7 +82,7 @@ internal fun ValueEmptyState(modifier: Modifier = Modifier) {
                 horizontalArrangement = Arrangement.spacedBy(dimens.spaceLg),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                ShortcutHint(keys = "⌘F", label = "搜索 Key")
+                ShortcutHint(keys = ShortcutLabels.commandKey("F"), label = "搜索 Key")
                 ShortcutHint(keys = "R", label = "刷新")
             }
         }

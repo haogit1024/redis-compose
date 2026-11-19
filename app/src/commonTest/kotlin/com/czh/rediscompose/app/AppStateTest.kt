@@ -34,6 +34,7 @@ class AppStateTest {
             scope = CoroutineScope(Dispatchers.Unconfined),
             initialSettings = container.initialSettings,
             initialConnections = connections,
+            settingsSaveDebounceMillis = 0,
         )
 
     @Test
@@ -123,6 +124,25 @@ class AppStateTest {
 
         assertEquals(updated, state.settings)
         assertEquals(updated, container.settingsRepository.saved)
+        state.close()
+    }
+
+    @Test
+    fun `clearing local cache drops recent commands and console history`() {
+        val container = FakeAppContainer(initialConnections = listOf(profile()))
+        container.gateway.executeReply = com.czh.rediscompose.domain.command.RedisReply.Simple("PONG")
+        val state = state(container)
+        state.updateSettings(AppSettings(recentCommands = listOf("PING")))
+        state.openTab("c1", WorkspaceTabKind.CONSOLE)
+        val console = assertNotNull(state.consoleFor("c1"))
+        console.execute("PING")
+        assertTrue(console.history.isNotEmpty())
+
+        state.clearLocalCache()
+
+        assertEquals(emptyList(), state.settings.recentCommands)
+        assertTrue(console.history.isEmpty())
+        assertTrue(state.toasts.any { it.message.contains("本地缓存") })
         state.close()
     }
 

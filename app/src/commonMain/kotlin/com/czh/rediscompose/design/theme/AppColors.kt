@@ -60,6 +60,8 @@ data class AppColors(
     val jsonBoolean: Color,
     val jsonPunctuation: Color,
     val scrim: Color,
+    /** Inner dot on the selected accent swatch (design uses translucent white in both themes). */
+    val swatchDot: Color,
 ) {
     companion object {
         fun forTheme(
@@ -119,6 +121,7 @@ data class AppColors(
                 jsonBoolean = Color(0xFFC9A3FF),
                 jsonPunctuation = Color(0xFF6C7890),
                 scrim = Color(0xFF04060A).copy(alpha = 0.56f),
+                swatchDot = Color.White.copy(alpha = 0.85f),
             )
         }
 
@@ -174,6 +177,7 @@ data class AppColors(
                 jsonBoolean = Color(0xFF6D45C4),
                 jsonPunctuation = Color(0xFF8891A4),
                 scrim = Color(0xFF04060A).copy(alpha = 0.46f),
+                swatchDot = Color.White.copy(alpha = 0.85f),
             )
         }
 

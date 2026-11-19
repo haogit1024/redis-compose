@@ -15,11 +15,14 @@ import com.czh.rediscompose.feature.connections.ConnectionRuntime
 import com.czh.rediscompose.feature.connections.ConnectionsState
 import com.czh.rediscompose.feature.console.ConsoleState
 import com.czh.rediscompose.feature.insights.InsightsState
+import com.czh.rediscompose.feature.settings.SettingsSection
 import com.czh.rediscompose.feature.workspace.WorkspaceState
 import com.czh.rediscompose.util.currentEpochMillis
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 import kotlin.time.TimeSource
@@ -35,6 +38,7 @@ class AppState(
     private val scope: CoroutineScope,
     initialSettings: AppSettings,
     initialConnections: List<ConnectionProfile>,
+    private val settingsSaveDebounceMillis: Long = SETTINGS_SAVE_DEBOUNCE_MILLIS,
 ) {
     var settings by mutableStateOf(initialSettings)
         private set
@@ -44,6 +48,16 @@ class AppState(
 
     val sessions = mutableStateMapOf<String, RedisSession>()
     val tabs = mutableStateListOf<WorkspaceTab>()
+
+    var settingsSaveStatus by mutableStateOf(SettingsSaveStatus.SAVED)
+        private set
+
+    var lastSettingsSavedAtEpochMillis by mutableStateOf<Long?>(null)
+        private set
+
+    private var settingsSaveJob: Job? = null
+    private var autoRefreshJob: Job? = null
+    private var appActive = true
 
     private val workspaces = mutableMapOf<String, WorkspaceState>()
     private val consoles = mutableMapOf<String, ConsoleState>()
@@ -61,6 +75,7 @@ class AppState(
                 onTest = ::testConnection,
                 onToast = { message, kind -> showToast(message, kind) },
                 scope = scope,
+                settings = { settings },
             )
         }
 
@@ -78,10 +93,18 @@ class AppState(
     var commandPaletteVisible by mutableStateOf(false)
         private set
 
+    var requestedSettingsSection by mutableStateOf<SettingsSection?>(null)
+        private set
+
     private val toastController = ToastController(scope)
     private val connectJobs = mutableMapOf<String, Job>()
 
     val toasts: List<ToastMessage> get() = toastController.toasts
+
+    init {
+        container.connectionRepository.setEncryptPasswords(initialSettings.encryptPasswords)
+        restartAutoRefresh()
+    }
 
     val activeConnection: ConnectionProfile?
         get() = connections.firstOrNull { it.id == activeConnectionId }
@@ -89,6 +112,25 @@ class AppState(
     fun activeSession(): RedisSession? = activeConnectionId?.let { sessions[it] }
 
     fun activeTab(): WorkspaceTab? = tabs.firstOrNull { it.id == activeTabId }
+
+    /** Keyspace state of the active tab, or null when the active tab is not a Keys tab. */
+    fun activeWorkspace(): WorkspaceState? = activeTab()?.takeIf { it.kind == WorkspaceTabKind.KEYS }?.let { workspaceFor(it.connectionId) }
+
+    /** Console state of the active tab, or null when the active tab is not a console tab. */
+    fun activeConsole(): ConsoleState? = activeTab()?.takeIf { it.kind == WorkspaceTabKind.CONSOLE }?.let { consoleFor(it.connectionId) }
+
+    /** True while a modal (dialog/sheet/palette) should own the keyboard over global shortcuts. */
+    val hasBlockingOverlay: Boolean
+        get() {
+            if (commandPaletteVisible) return true
+            if (connectionLibrary.draft != null) return true
+            if (activeConsole()?.pendingDangerous != null) return true
+            val workspace = activeWorkspace() ?: return false
+            return workspace.newKeyDialogVisible ||
+                workspace.ttlDialogKey != null ||
+                workspace.renameDialogKey != null ||
+                workspace.deleteDialogKey != null
+        }
 
     fun sessionFor(connectionId: String): RedisSession? = sessions[connectionId]
 
@@ -104,6 +146,23 @@ class AppState(
     fun setPage(page: AppPage) {
         activePage = page
         commandPaletteVisible = false
+    }
+
+    /** Opens settings, optionally scrolling to a section (rail shortcut / ⌘, entry). */
+    fun openSettings(section: SettingsSection? = null) {
+        requestedSettingsSection = section
+        setPage(AppPage.SETTINGS)
+    }
+
+    fun consumeSettingsSectionRequest() {
+        requestedSettingsSection = null
+    }
+
+    /** Window focus drives the optional summary polling loop. */
+    fun setAppActive(active: Boolean) {
+        if (appActive == active) return
+        appActive = active
+        restartAutoRefresh()
     }
 
     fun setPaletteVisible(visible: Boolean) {
@@ -201,14 +260,29 @@ class AppState(
     }
 
     fun updateSettings(settings: AppSettings) {
+        val previous = this.settings
+        if (previous == settings) return
         this.settings = settings
-        scope.launch {
-            container.settingsRepository.save(settings)
+        if (previous.encryptPasswords != settings.encryptPasswords) {
+            container.connectionRepository.setEncryptPasswords(settings.encryptPasswords)
         }
+        if (previous.autoRefreshSeconds != settings.autoRefreshSeconds) {
+            restartAutoRefresh()
+        }
+        scheduleSettingsSave(settings)
     }
 
     fun updateTheme(theme: ThemeMode) {
         updateSettings(settings.copy(theme = theme))
+    }
+
+    /** Clears local-only history, filters and metric samples; connections and settings stay. */
+    fun clearLocalCache() {
+        consoles.values.forEach { it.clearCache() }
+        workspaces.values.forEach { it.clearFilters() }
+        insights.values.forEach { it.clearSamples() }
+        updateSettings(settings.copy(recentCommands = emptyList()))
+        showToast("本地缓存已清除", ToastKind.Success)
     }
 
     fun saveConnection(profile: ConnectionProfile) {
@@ -297,6 +371,10 @@ class AppState(
     }
 
     fun close() {
+        settingsSaveJob?.cancel()
+        settingsSaveJob = null
+        autoRefreshJob?.cancel()
+        autoRefreshJob = null
         connectJobs.values.forEach { it.cancel() }
         connectJobs.clear()
         workspaces.values.forEach { it.dispose() }
@@ -345,6 +423,52 @@ class AppState(
         scope.launch {
             container.connectionRepository.save(snapshot)
         }
+    }
+
+    private fun scheduleSettingsSave(snapshot: AppSettings) {
+        settingsSaveJob?.cancel()
+        settingsSaveStatus = SettingsSaveStatus.SAVING
+        settingsSaveJob =
+            scope.launch {
+                try {
+                    if (settingsSaveDebounceMillis > 0) delay(settingsSaveDebounceMillis)
+                    container.settingsRepository.save(snapshot)
+                    lastSettingsSavedAtEpochMillis = currentEpochMillis()
+                    if (settings == snapshot) settingsSaveStatus = SettingsSaveStatus.SAVED
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    if (settings == snapshot) settingsSaveStatus = SettingsSaveStatus.FAILED
+                    showToast("保存设置失败：${error.firstLine()}", ToastKind.Danger)
+                }
+            }
+    }
+
+    /**
+     * Keeps the sidebar/status summary fresh without touching the key list.
+     *
+     * The loop only exists while the setting is enabled and skips sessions that are not
+     * connected, so an idle app with no connections performs no polling.
+     */
+    private fun restartAutoRefresh() {
+        autoRefreshJob?.cancel()
+        autoRefreshJob = null
+        val seconds = settings.autoRefreshSeconds
+        if (!appActive || seconds <= 0) return
+        autoRefreshJob =
+            scope.launch {
+                while (isActive) {
+                    delay(seconds * 1_000L)
+                    sessions.values
+                        .filter { it.isConnected }
+                        .forEach { session ->
+                            runCatching {
+                                session.refreshSummary()
+                                session.refreshDatabases()
+                            }
+                        }
+                }
+            }
     }
 
     private fun ensureSession(profile: ConnectionProfile): RedisSession =
@@ -434,5 +558,6 @@ class AppState(
 
     private companion object {
         const val RECENT_COMMAND_LIMIT = 20
+        const val SETTINGS_SAVE_DEBOUNCE_MILLIS = 300L
     }
 }

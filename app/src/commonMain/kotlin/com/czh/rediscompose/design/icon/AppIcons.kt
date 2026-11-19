@@ -5,6 +5,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Bolt
+import androidx.compose.material.icons.outlined.BrightnessAuto
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CheckCircleOutline
@@ -43,6 +44,7 @@ import androidx.compose.material.icons.outlined.Percent
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Search
@@ -84,6 +86,8 @@ object AppIcons {
     val Refresh: ImageVector = Icons.Outlined.Refresh
     val ThemeDark: ImageVector = Icons.Outlined.DarkMode
     val ThemeLight: ImageVector = Icons.Outlined.LightMode
+    val ThemeSystem: ImageVector = Icons.Outlined.BrightnessAuto
+    val Remove: ImageVector = Icons.Outlined.Remove
     val Key: ImageVector = Icons.Outlined.VpnKey
     val Console: ImageVector = Icons.Outlined.Terminal
     val Insights: ImageVector = Icons.Outlined.ShowChart

@@ -20,15 +20,21 @@ import java.nio.file.Files
  * Reads/writes the legacy bare-array `connections.json` format.
  *
  * Passwords are encrypted on save and decrypted on load; plaintext values from older
- * files pass through unchanged.
- *
- * TODO(phase-9): honor `AppSettings.encryptPasswords = false` (currently always encrypts).
+ * files pass through unchanged. [setEncryptPasswords] only affects the next save so
+ * toggling the setting never rewrites the file behind the user's back.
  */
 class JsonConnectionRepository(
     private val paths: FilePaths = FilePaths(),
     private val cipher: PasswordCipher,
     private val json: Json = storageJson,
 ) : ConnectionRepository {
+    @Volatile
+    private var encryptPasswords: Boolean = true
+
+    override fun setEncryptPasswords(encryptPasswords: Boolean) {
+        this.encryptPasswords = encryptPasswords
+    }
+
     override suspend fun load(): List<ConnectionProfile> =
         withContext(Dispatchers.IO) {
             runCatching {
@@ -45,7 +51,7 @@ class JsonConnectionRepository(
     override suspend fun save(connections: List<ConnectionProfile>) {
         withContext(Dispatchers.IO) {
             runCatching {
-                val stored = connections.map { it.encrypted() }
+                val stored = connections.map { it.stored() }
                 writeAtomically(paths.connections, json.encodeToString(stored))
             }.onFailure { error ->
                 println("[redis-compose] failed to write connections: ${error.firstLine()}")
@@ -64,6 +70,8 @@ class JsonConnectionRepository(
             password = cipher.encrypt(password),
             ssh = ssh.copy(password = cipher.encrypt(ssh.password)),
         )
+
+    private fun ConnectionProfile.stored(): ConnectionProfile = if (encryptPasswords) encrypted() else this
 
     private fun Throwable.firstLine(): String = message?.lineSequence()?.firstOrNull() ?: this::class.simpleName.orEmpty()
 

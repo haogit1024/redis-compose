@@ -135,6 +135,15 @@ class InsightsState(
         onToast("已复制慢查询命令", ToastKind.Success)
     }
 
+    /** Danger-zone action: drops sampled series and slow-log/client snapshots. */
+    fun clearSamples() {
+        samples.clear()
+        slowLog = emptyList()
+        clients = emptyList()
+        commandStats = emptyList()
+        lastUpdatedEpochMillis = null
+    }
+
     fun dispose() {
         stop()
         refreshJob?.cancel()

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
@@ -34,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key
@@ -41,11 +43,14 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.czh.rediscompose.app.AppPage
 import com.czh.rediscompose.app.AppState
+import com.czh.rediscompose.app.SessionStatus
 import com.czh.rediscompose.app.WorkspaceTabKind
 import com.czh.rediscompose.design.component.AppKbd
 import com.czh.rediscompose.design.component.AppVerticalScrollbar
@@ -54,6 +59,9 @@ import com.czh.rediscompose.design.theme.AppTheme
 import com.czh.rediscompose.design.theme.LocalAppColors
 import com.czh.rediscompose.design.theme.LocalAppDimens
 import com.czh.rediscompose.design.theme.LocalAppTypography
+import com.czh.rediscompose.design.theme.trackTextInputFocus
+import com.czh.rediscompose.domain.settings.ThemeMode
+import com.czh.rediscompose.util.ShortcutLabels
 
 private data class PaletteEntry(
     val label: String,
@@ -61,6 +69,7 @@ private data class PaletteEntry(
     val group: String,
     val meta: String? = null,
     val enabled: Boolean = true,
+    val dotColor: Color? = null,
     val action: () -> Unit,
 )
 
@@ -68,99 +77,164 @@ private data class PaletteEntry(
 fun CommandPalette(
     visible: Boolean,
     state: AppState,
+    dark: Boolean,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (!visible) return
-    CommandPaletteContent(state = state, onDismiss = onDismiss, modifier = modifier)
+    CommandPaletteContent(state = state, dark = dark, onDismiss = onDismiss, modifier = modifier)
 }
 
 @Composable
 private fun CommandPaletteContent(
     state: AppState,
+    dark: Boolean,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalAppColors.current
     val dimens = LocalAppDimens.current
     val typography = LocalAppTypography.current
+    val clipboard = LocalClipboardManager.current
     var query by remember { mutableStateOf("") }
     var selectedIndex by remember { mutableStateOf(0) }
     val focusRequester = remember { FocusRequester() }
     val scrollState = rememberScrollState()
     val activeConnection = state.activeConnection
+    val workspace = state.activeWorkspace()
+    val selectedKey = workspace?.selectedKey
 
     val entries =
-        remember(state.connections, activeConnection?.id) {
-            buildList {
+        buildList {
+            add(PaletteEntry("工作区", AppIcons.Key, "页面", "Workspace") { state.setPage(AppPage.WORKSPACE) })
+            add(
+                PaletteEntry(
+                    label = "命令控制台",
+                    icon = AppIcons.Console,
+                    group = "页面",
+                    meta = if (activeConnection == null) "需要连接" else "Console",
+                    enabled = activeConnection != null,
+                ) { activeConnection?.let { state.openTab(it.id, WorkspaceTabKind.CONSOLE) } },
+            )
+            add(
+                PaletteEntry(
+                    label = "服务器洞察",
+                    icon = AppIcons.Insights,
+                    group = "页面",
+                    meta = if (activeConnection == null) "需要连接" else "Insights",
+                    enabled = activeConnection != null,
+                ) { activeConnection?.let { state.openTab(it.id, WorkspaceTabKind.INSIGHTS) } },
+            )
+            add(PaletteEntry("连接库", AppIcons.Connections, "页面", "Connections") { state.setPage(AppPage.CONNECTIONS) })
+            add(PaletteEntry("设置", AppIcons.Settings, "页面", "Settings") { state.openSettings() })
+
+            add(
+                PaletteEntry(
+                    label = "新建 Key",
+                    icon = AppIcons.Add,
+                    group = "操作",
+                    meta = if (activeConnection == null) "需要连接" else "N",
+                    enabled = activeConnection != null,
+                ) {
+                    val connectionId = activeConnection?.id ?: return@PaletteEntry
+                    if (workspace == null) state.openTab(connectionId, WorkspaceTabKind.KEYS)
+                    state.workspaceFor(connectionId)?.requestNewKey()
+                },
+            )
+            add(
+                PaletteEntry(
+                    label = "新建连接",
+                    icon = AppIcons.AddCircle,
+                    group = "操作",
+                    meta = "Connections",
+                ) {
+                    state.setPage(AppPage.CONNECTIONS)
+                    state.connectionLibrary.openNew()
+                },
+            )
+            add(
+                PaletteEntry(
+                    label = "刷新当前 Keyspace",
+                    icon = AppIcons.Refresh,
+                    group = "操作",
+                    meta = if (workspace == null) "需要 Keys 标签页" else "R",
+                    enabled = workspace != null,
+                ) { workspace?.refresh() },
+            )
+            add(
+                PaletteEntry(
+                    label = "切换深/浅主题",
+                    icon = if (dark) AppIcons.ThemeLight else AppIcons.ThemeDark,
+                    group = "操作",
+                    meta = if (dark) "当前深色" else "当前浅色",
+                ) {
+                    state.updateTheme(if (dark) ThemeMode.LIGHT else ThemeMode.DARK)
+                },
+            )
+            add(
+                PaletteEntry(
+                    label = "复制当前 Key",
+                    icon = AppIcons.Copy,
+                    group = "操作",
+                    meta = selectedKey ?: "未选择 Key",
+                    enabled = selectedKey != null,
+                ) {
+                    val key = selectedKey ?: return@PaletteEntry
+                    clipboard.setText(AnnotatedString(key))
+                    state.activeWorkspace()?.reportKeyCopied()
+                },
+            )
+            if (state.activePage != AppPage.SETTINGS) {
                 add(
                     PaletteEntry(
-                        label = "工作区",
-                        icon = AppIcons.Key,
-                        group = "页面",
-                        meta = "Workspace",
-                    ) { state.setPage(AppPage.WORKSPACE) },
-                )
-                add(
-                    PaletteEntry(
-                        label = "命令控制台",
-                        icon = AppIcons.Console,
-                        group = "页面",
-                        meta = if (activeConnection == null) "需要连接" else "Console",
-                        enabled = activeConnection != null,
-                    ) {
-                        activeConnection?.let { state.openTab(it.id, WorkspaceTabKind.CONSOLE) }
-                    },
-                )
-                add(
-                    PaletteEntry(
-                        label = "服务器洞察",
-                        icon = AppIcons.Insights,
-                        group = "页面",
-                        meta = if (activeConnection == null) "需要连接" else "Insights",
-                        enabled = activeConnection != null,
-                    ) {
-                        activeConnection?.let { state.openTab(it.id, WorkspaceTabKind.INSIGHTS) }
-                    },
-                )
-                add(
-                    PaletteEntry(
-                        label = "连接库",
-                        icon = AppIcons.Connections,
-                        group = "页面",
-                        meta = "Connections",
-                    ) { state.setPage(AppPage.CONNECTIONS) },
-                )
-                add(
-                    PaletteEntry(
-                        label = "设置",
+                        label = "打开设置",
                         icon = AppIcons.Settings,
-                        group = "页面",
-                        meta = "Settings",
-                    ) { state.setPage(AppPage.SETTINGS) },
+                        group = "操作",
+                        meta = ShortcutLabels.commandKey(","),
+                    ) { state.openSettings() },
                 )
-                state.connections.forEach { connection ->
+            }
+
+            state.connections.forEach { connection ->
+                val status = state.sessionFor(connection.id)?.status
+                add(
+                    PaletteEntry(
+                        label = connection.name,
+                        icon = AppIcons.Database,
+                        group = "连接",
+                        meta = "${connection.host}:${connection.port} · ${status.label()}",
+                        dotColor = status?.let { sessionStatusColor(it, colors) },
+                    ) { state.openConnection(connection.id) },
+                )
+            }
+
+            state.settings.recentCommands
+                .takeLast(RECENT_COMMAND_COUNT)
+                .asReversed()
+                .forEach { command ->
                     add(
                         PaletteEntry(
-                            label = connection.name,
-                            icon = AppIcons.Database,
-                            group = "连接",
-                            meta = "${connection.host}:${connection.port}",
-                        ) { state.openConnection(connection.id) },
+                            label = command,
+                            icon = AppIcons.History,
+                            group = "最近命令",
+                            meta = if (activeConnection == null) "需要连接" else "填入控制台",
+                            enabled = activeConnection != null,
+                        ) {
+                            val connectionId = activeConnection?.id ?: return@PaletteEntry
+                            state.openTab(connectionId, WorkspaceTabKind.CONSOLE)
+                            state.consoleFor(connectionId)?.fillCommand(command)
+                        },
                     )
                 }
-            }
         }
 
     val filtered =
-        remember(entries, query) {
-            if (query.isBlank()) {
-                entries
-            } else {
-                entries.filter {
-                    it.label.contains(query, ignoreCase = true) ||
-                        it.meta?.contains(query, ignoreCase = true) == true
-                }
+        if (query.isBlank()) {
+            entries
+        } else {
+            entries.filter {
+                it.label.contains(query, ignoreCase = true) ||
+                    it.meta?.contains(query, ignoreCase = true) == true
             }
         }
     val safeIndex = selectedIndex.coerceIn(0, (filtered.size - 1).coerceAtLeast(0))
@@ -209,7 +283,7 @@ private fun CommandPaletteContent(
                 },
         contentAlignment = Alignment.TopCenter,
     ) {
-        val shape = RoundedCornerShape(dimens.radiusXl)
+        val shape = RoundedCornerShape(dimens.paletteRadius)
         Column(
             modifier =
                 Modifier
@@ -246,16 +320,17 @@ private fun CommandPaletteContent(
                     modifier =
                         Modifier
                             .weight(1f)
-                            .focusRequester(focusRequester),
+                            .focusRequester(focusRequester)
+                            .trackTextInputFocus(),
                     singleLine = true,
-                    textStyle = typography.body.copy(color = colors.text),
+                    textStyle = typography.paletteInput.copy(color = colors.text),
                     cursorBrush = SolidColor(colors.accent),
                     decorationBox = { inner ->
                         Box(contentAlignment = Alignment.CenterStart) {
                             if (query.isEmpty()) {
                                 Text(
-                                    text = "搜索页面或连接…",
-                                    style = typography.body,
+                                    text = "搜索页面、动作、连接或命令…",
+                                    style = typography.paletteInput,
                                     color = colors.textTertiary,
                                 )
                             }
@@ -263,7 +338,7 @@ private fun CommandPaletteContent(
                         }
                     },
                 )
-                AppKbd("⌘K")
+                AppKbd(ShortcutLabels.commandKey("K"))
             }
             Box(
                 Modifier
@@ -285,7 +360,7 @@ private fun CommandPaletteContent(
                 ) {
                     if (filtered.isEmpty()) {
                         Text(
-                            text = "没有匹配的页面或连接",
+                            text = "没有匹配的结果",
                             style = typography.body,
                             color = colors.textTertiary,
                             modifier = Modifier.padding(horizontal = dimens.fieldPadding, vertical = dimens.spaceXl),
@@ -332,7 +407,7 @@ private fun CommandPaletteContent(
                 horizontalArrangement = Arrangement.spacedBy(dimens.spaceLg),
             ) {
                 PaletteHint(keys = "↑↓", label = "选择")
-                PaletteHint(keys = "↵", label = "打开")
+                PaletteHint(keys = "Enter", label = "执行")
                 PaletteHint(keys = "Esc", label = "关闭")
                 Spacer(Modifier.weight(1f))
                 Text(
@@ -366,7 +441,7 @@ private fun PaletteRow(
             Modifier
                 .fillMaxWidth()
                 .height(dimens.paletteItemHeight)
-                .background(if (selected) colors.accentSoft else androidx.compose.ui.graphics.Color.Transparent, shape)
+                .background(if (selected) colors.accentSoft else Color.Transparent, shape)
                 .clickable(enabled = entry.enabled, onClick = onClick)
                 .padding(horizontal = dimens.fieldPadding),
         verticalAlignment = Alignment.CenterVertically,
@@ -386,12 +461,21 @@ private fun PaletteRow(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
+        entry.dotColor?.let { dot ->
+            Box(
+                Modifier
+                    .size(dimens.tinyDotSize)
+                    .background(if (entry.enabled) dot else dot.copy(alpha = 0.4f), CircleShape),
+            )
+        }
         if (entry.meta != null) {
             Text(
                 text = entry.meta,
                 style = typography.monoMeta,
                 color = colors.textQuaternary,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.widthIn(max = META_MAX_WIDTH),
             )
         }
     }
@@ -418,6 +502,28 @@ private fun PaletteHint(
     }
 }
 
+private fun SessionStatus?.label(): String =
+    when (this) {
+        SessionStatus.CONNECTED -> "已连接"
+        SessionStatus.CONNECTING -> "连接中"
+        SessionStatus.ERROR -> "连接失败"
+        SessionStatus.DISCONNECTED, null -> "未连接"
+    }
+
+private fun sessionStatusColor(
+    status: SessionStatus,
+    colors: com.czh.rediscompose.design.theme.AppColors,
+): Color =
+    when (status) {
+        SessionStatus.CONNECTED -> colors.success
+        SessionStatus.CONNECTING -> colors.warning
+        SessionStatus.ERROR -> colors.danger
+        SessionStatus.DISCONNECTED -> colors.textQuaternary
+    }
+
+private val META_MAX_WIDTH = 230.dp
+private const val RECENT_COMMAND_COUNT = 5
+
 @Preview(widthDp = 1000, heightDp = 700)
 @Composable
 private fun CommandPalettePreview() {
@@ -425,6 +531,20 @@ private fun CommandPalettePreview() {
         CommandPalette(
             visible = true,
             state = previewStateWithConnections(),
+            dark = true,
+            onDismiss = {},
+        )
+    }
+}
+
+@Preview(widthDp = 1000, heightDp = 700)
+@Composable
+private fun CommandPaletteLightPreview() {
+    AppTheme(dark = false) {
+        CommandPalette(
+            visible = true,
+            state = previewStateWithConnections(openFirst = true),
+            dark = false,
             onDismiss = {},
         )
     }

@@ -151,6 +151,7 @@ fun ConsoleScreen(
         readOnly = console.isReadOnly,
         onDismiss = { helpVisible = false },
     )
+    ConsoleConfirmDialog(console = console)
 }
 
 @Composable

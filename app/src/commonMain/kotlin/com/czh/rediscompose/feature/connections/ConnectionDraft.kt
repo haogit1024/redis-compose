@@ -129,7 +129,7 @@ data class ConnectionDraft(
     }
 
     companion object {
-        fun new(): ConnectionDraft = ConnectionDraft()
+        fun new(keySeparator: String = ":"): ConnectionDraft = ConnectionDraft(keySeparator = keySeparator)
 
         fun fromProfile(
             profile: ConnectionProfile,

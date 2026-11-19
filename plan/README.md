@@ -107,7 +107,7 @@ redis-compose/
 | 6 | [`06-console.md`](06-console.md) | 命令控制台、历史、补全、结果渲染 | 3, 5 | 已验收 |
 | 7 | [`07-insights.md`](07-insights.md) | 实时指标、图表、慢查询、健康检查 | 3 | 已验收 |
 | 8 | [`08-connections.md`](08-connections.md) | 连接库、筛选、新建/编辑侧滑、测试连接 | 3 | 已验收 |
-| 9 | [`09-settings-palette.md`](09-settings-palette.md) | 设置页、主题/强调色/密度、命令面板扩展、全局快捷键 | 5, 8 | 未开始 |
+| 9 | [`09-settings-palette.md`](09-settings-palette.md) | 设置页、主题/强调色/密度、命令面板扩展、全局快捷键 | 5, 8 | 已验收 |
 | 10 | [`10-polish-release.md`](10-polish-release.md) | 全量打磨、测试、性能、删除遗留、文档 | 全部 | 未开始 |
 
 > 状态以 [`STATUS.md`](STATUS.md) 为准；本表只同步粗粒度结果，完成内容、验证命令与遗留风险见各阶段章节。

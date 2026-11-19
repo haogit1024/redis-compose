@@ -57,7 +57,7 @@ private fun AppKbdPreview() {
                     .padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            AppKbd("⌘")
+            AppKbd("Cmd")
             AppKbd("K")
             AppKbd("Esc")
         }

@@ -9,6 +9,7 @@ import com.czh.rediscompose.design.component.ToastKind
 import com.czh.rediscompose.domain.command.RedisReply
 import com.czh.rediscompose.domain.settings.AppSettings
 import com.czh.rediscompose.util.CommandSafety
+import com.czh.rediscompose.util.DangerousCommands
 import com.czh.rediscompose.util.RedisCommandCatalog
 import com.czh.rediscompose.util.RedisCommandParser
 import com.czh.rediscompose.util.RedisCommandSuggestion
@@ -25,10 +26,20 @@ import kotlinx.coroutines.launch
 import kotlin.time.TimeSource
 
 /**
+ * One command waiting for the dangerous-command confirmation dialog.
+ */
+data class PendingDangerousCommand(
+    val command: String,
+    val tokens: List<String>,
+    val at: String,
+)
+
+/**
  * State holder for one command console tab.
  *
  * The console keeps every entry in memory (capped), records history commands through
  * [onRecordCommand], and enforces read-only mode before anything reaches the gateway.
+ * Dangerous commands are parked in [pendingDangerous] until the user confirms.
  */
 class ConsoleState(
     val session: RedisSession,
@@ -55,6 +66,9 @@ class ConsoleState(
         private set
 
     var historyCursor by mutableStateOf(-1)
+        private set
+
+    var pendingDangerous by mutableStateOf<PendingDangerousCommand?>(null)
         private set
 
     private var commandJob: Job? = null
@@ -117,6 +131,10 @@ class ConsoleState(
             onToast("上一条命令仍在执行", ToastKind.Info)
             return
         }
+        if (pendingDangerous != null) {
+            onToast("请先确认或取消待执行的危险命令", ToastKind.Warning)
+            return
+        }
         val command = raw.trim()
         if (command.isEmpty()) return
         val tokens = RedisCommandParser.split(command)
@@ -127,8 +145,6 @@ class ConsoleState(
         if (tokens.isEmpty()) return
 
         val at = now()
-        append(ConsoleEntry.Command(at = at, text = command, promptHost = promptHost))
-        addHistory(command)
         input = ""
         suggestionVisible = false
         historyCursor = -1
@@ -157,7 +173,45 @@ class ConsoleState(
         if (isReadOnly && tokens.first().equals("PUBLISH", ignoreCase = true)) {
             append(ConsoleEntry.Note("只读模式允许 PUBLISH，但消息仍会发布到对应频道。"))
         }
+        if (settings().confirmDangerousCommands && DangerousCommands.isDangerous(tokens)) {
+            pendingDangerous = PendingDangerousCommand(command = command, tokens = tokens, at = at)
+            return
+        }
+        runCommand(command = command, tokens = tokens, at = at)
+    }
 
+    /** Confirms the parked dangerous command and sends it to Redis. */
+    fun confirmDangerous() {
+        val pending = pendingDangerous ?: return
+        pendingDangerous = null
+        if (isReadOnly) {
+            appendError("只读模式已开启，写命令被拦截：${pending.tokens.first().uppercase()}")
+            addHistoryItem(
+                ConsoleHistoryItem(
+                    command = pending.command,
+                    at = pending.at,
+                    durationMillis = null,
+                    summary = "blocked",
+                    failed = true,
+                ),
+            )
+            return
+        }
+        runCommand(command = pending.command, tokens = pending.tokens, at = pending.at)
+    }
+
+    fun dismissDangerous() {
+        pendingDangerous?.let { input = it.command }
+        pendingDangerous = null
+    }
+
+    private fun runCommand(
+        command: String,
+        tokens: List<String>,
+        at: String,
+    ) {
+        append(ConsoleEntry.Command(at = at, text = command, promptHost = promptHost))
+        addHistory(command)
         isRunning = true
         val started = TimeSource.Monotonic.markNow()
         commandJob =
@@ -243,6 +297,13 @@ class ConsoleState(
         entries += ConsoleEntry.Note(welcomeText())
     }
 
+    /** Danger-zone action: drops persisted/in-memory command history but keeps the session log. */
+    fun clearCache() {
+        history.clear()
+        historyItems.clear()
+        historyCursor = -1
+    }
+
     fun refreshWelcome() {
         val welcome = ConsoleEntry.Note(welcomeText())
         if (entries.firstOrNull() is ConsoleEntry.Note) {
@@ -274,6 +335,7 @@ class ConsoleState(
     fun dispose() {
         commandJob?.cancel()
         commandJob = null
+        pendingDangerous = null
         isRunning = false
         consoleJob.cancel()
     }

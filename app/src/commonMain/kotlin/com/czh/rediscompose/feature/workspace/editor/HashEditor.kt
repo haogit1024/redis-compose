@@ -18,6 +18,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -38,6 +39,7 @@ import com.czh.rediscompose.domain.key.KeyValue
 import com.czh.rediscompose.feature.workspace.EditableHashField
 import com.czh.rediscompose.feature.workspace.WorkspaceState
 import com.czh.rediscompose.feature.workspace.previewWorkspaceState
+import com.czh.rediscompose.util.SensitiveFields
 
 /** Editable hash table; new rows stay local until the user saves. */
 @Composable
@@ -54,6 +56,7 @@ internal fun HashEditor(
             }
         }
     var query by remember(state.selectedKey) { mutableStateOf("") }
+    val revealedKeys = remember(state.selectedKey) { mutableStateMapOf<String, Boolean>() }
     val visibleRows by remember(rows, query) {
         derivedStateOf {
             if (query.isBlank()) {
@@ -125,11 +128,15 @@ internal fun HashEditor(
                 itemsIndexed(
                     items = visibleRows,
                     key = { index, row -> row.originalField ?: "new:$index" },
-                ) { _, row ->
+                ) { index, row ->
+                    val rowKey = row.originalField ?: "new:$index"
                     HashRow(
                         row = row,
                         editable = editable,
                         saving = state.isSaving,
+                        maskSensitive = state.maskSensitiveValues,
+                        revealed = revealedKeys[rowKey] == true,
+                        onToggleReveal = { revealedKeys[rowKey] = revealedKeys[rowKey] != true },
                         onSave = { state.saveHashField(row) },
                         onDelete = {
                             if (row.isNew) {
@@ -155,6 +162,9 @@ private fun HashRow(
     row: EditableHashField,
     editable: Boolean,
     saving: Boolean,
+    maskSensitive: Boolean,
+    revealed: Boolean,
+    onToggleReveal: () -> Unit,
     onSave: () -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -162,6 +172,8 @@ private fun HashRow(
     val dimens = LocalAppDimens.current
     val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
+    val sensitive = maskSensitive && SensitiveFields.isSensitive(row.field)
+    val hidden = sensitive && !revealed
     Row(
         modifier =
             Modifier
@@ -187,12 +199,24 @@ private fun HashRow(
             )
         }
         CollectionCell(Modifier.weight(1f)) {
-            CellTextField(
-                value = row.value,
-                onValueChange = { row.value = it },
-                enabled = editable,
-                placeholder = "value",
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CellTextField(
+                    value = row.value,
+                    onValueChange = { row.value = it },
+                    enabled = editable,
+                    placeholder = "value",
+                    masked = hidden,
+                    modifier = Modifier.weight(1f),
+                )
+                if (sensitive) {
+                    RowActionButton(
+                        icon = if (hidden) AppIcons.Eye else AppIcons.EyeOff,
+                        contentDescription = if (hidden) "显示敏感值" else "隐藏敏感值",
+                        onClick = onToggleReveal,
+                        visible = true,
+                    )
+                }
+            }
         }
         CollectionCell(Modifier.width(dimens.collectionActionsWidth)) {
             Row(horizontalArrangement = Arrangement.spacedBy(1.dp)) {

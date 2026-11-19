@@ -129,6 +129,12 @@ class ConnectionDraftTest {
     }
 
     @Test
+    fun `new draft uses the global key separator`() {
+        assertEquals("|", ConnectionDraft.new(keySeparator = "|").keySeparator)
+        assertEquals(":", ConnectionDraft.new().keySeparator)
+    }
+
+    @Test
     fun `new draft generates a stable fallback id when none is supplied`() {
         val first = ConnectionDraft.new().toProfile(nowEpochMillis = 42L)
         val second = ConnectionDraft.new().toProfile(nowEpochMillis = 43L)

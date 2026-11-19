@@ -37,6 +37,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
@@ -63,7 +65,9 @@ import com.czh.rediscompose.design.theme.AppTheme
 import com.czh.rediscompose.design.theme.LocalAppColors
 import com.czh.rediscompose.design.theme.LocalAppDimens
 import com.czh.rediscompose.design.theme.LocalAppTypography
+import com.czh.rediscompose.design.theme.trackTextInputFocus
 import com.czh.rediscompose.util.RedisCommandSuggestion
+import com.czh.rediscompose.util.ShortcutLabels
 
 /** Composer with prompt, run button, history keys and the autocomplete popup. */
 @Composable
@@ -139,6 +143,7 @@ internal fun CommandComposer(
                             Modifier
                                 .fillMaxWidth()
                                 .focusRequester(focusRequester)
+                                .trackTextInputFocus()
                                 .onFocusChanged { state ->
                                     focused = state.isFocused
                                     if (state.isFocused) {
@@ -149,7 +154,12 @@ internal fun CommandComposer(
                                 }
                                 .onPreviewKeyEvent { event ->
                                     if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                                    val command = event.isMetaPressed || event.isCtrlPressed
                                     when {
+                                        command && (event.key == Key.Enter || event.key == Key.NumPadEnter) -> {
+                                            console.execute(console.input)
+                                            true
+                                        }
                                         event.key == Key.Enter || event.key == Key.NumPadEnter -> {
                                             console.execute(console.input)
                                             true
@@ -185,7 +195,7 @@ internal fun CommandComposer(
                     )
                 }
                 Text(
-                    text = "⌘↵ 执行",
+                    text = "${ShortcutLabels.commandEnter()} 执行",
                     style = typography.terminalSmall,
                     color = colors.textQuaternary,
                     maxLines = 1,

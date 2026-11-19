@@ -24,6 +24,7 @@ import com.czh.rediscompose.design.theme.AppTheme
 import com.czh.rediscompose.design.theme.LocalAppColors
 import com.czh.rediscompose.design.theme.LocalAppDimens
 import com.czh.rediscompose.design.theme.LocalAppTypography
+import com.czh.rediscompose.util.ShortcutLabels
 
 /** Page header above the terminal. */
 @Composable
@@ -100,11 +101,11 @@ internal fun ConsoleHelpDialog(
         width = dimens.dialogWideWidth,
     ) {
         HelpRow(keys = "Enter", text = "执行当前输入")
-        HelpRow(keys = "⌘↵ / Ctrl+↵", text = "执行当前输入")
+        HelpRow(keys = ShortcutLabels.commandEnter(), text = "执行当前输入")
         HelpRow(keys = "↑ / ↓", text = "在历史命令中移动")
         HelpRow(keys = "Tab", text = "接受第一条命令补全")
         HelpRow(keys = "Esc", text = "关闭补全弹层")
-        HelpRow(keys = "⌘K", text = "打开全局命令面板")
+        HelpRow(keys = ShortcutLabels.commandKey("K"), text = "打开全局命令面板")
         Text(
             text =
                 if (readOnly) {

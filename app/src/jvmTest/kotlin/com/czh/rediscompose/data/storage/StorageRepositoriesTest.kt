@@ -85,6 +85,30 @@ class StorageRepositoriesTest {
         }
 
     @Test
+    fun `disabling password encryption stores plaintext on the next save`() =
+        runBlocking {
+            val paths = paths()
+            val cipher = AesGcmPasswordCipher(paths)
+            val repository = JsonConnectionRepository(paths, cipher)
+            val profile =
+                ConnectionProfile(
+                    id = "plain",
+                    name = "Plain",
+                    host = "redis.example.com",
+                    password = "redis-secret",
+                )
+            repository.setEncryptPasswords(false)
+
+            repository.save(listOf(profile))
+
+            val raw = Files.readString(paths.connections)
+            assertTrue(raw.contains("redis-secret"))
+            assertFalse(raw.contains("enc:v1:"))
+            val loaded = repository.load().single()
+            assertEquals("redis-secret", loaded.password)
+        }
+
+    @Test
     fun `legacy plaintext connections still load`() =
         runBlocking {
             val paths = paths()

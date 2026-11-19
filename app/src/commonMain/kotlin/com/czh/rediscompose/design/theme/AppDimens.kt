@@ -39,7 +39,6 @@ data class AppDimens(
     val keyPaneValueMin: Dp = 420.dp,
     val splitterWidth: Dp = 4.dp,
     val statusBarHeight: Dp = 30.dp,
-    val settingsNavWidth: Dp = 208.dp,
     val consoleSideWidth: Dp = 272.dp,
     val consolePadding: Dp = 18.dp,
     val consolePaddingTop: Dp = 17.dp,
@@ -127,6 +126,9 @@ data class AppDimens(
     val emptyDescriptionMaxWidth: Dp = 420.dp,
     val placeholderMaxWidth: Dp = 680.dp,
     val settingsCardMaxWidth: Dp = 620.dp,
+    val settingsNavWidth: Dp = 208.dp,
+    val paletteRadius: Dp = 15.dp,
+    val settings: SettingsDimens = SettingsDimens(),
     // Key browser
     val keySearchHeight: Dp = 30.dp,
     val filterChipHeight: Dp = 21.dp,
@@ -239,6 +241,49 @@ data class AppDimens(
     val scrollbarWidth: Dp = 9.dp,
     val toastBottomPadding: Dp = 16.dp,
 ) {
+    data class SettingsDimens(
+        val contentMaxWidth: Dp = 760.dp,
+        val rowMinHeight: Dp = 55.dp,
+        val rowPaddingH: Dp = 14.dp,
+        val rowPaddingV: Dp = 12.dp,
+        val rowGap: Dp = 14.dp,
+        val controlGap: Dp = 6.dp,
+        val sectionGap: Dp = 24.dp,
+        val sectionHeadGap: Dp = 9.dp,
+        val contentPaddingH: Dp = 28.dp,
+        val contentPaddingTop: Dp = 24.dp,
+        val contentPaddingBottom: Dp = 50.dp,
+        val navPaddingV: Dp = 20.dp,
+        val navPaddingH: Dp = 10.dp,
+        val navItemPaddingH: Dp = 9.dp,
+        val navItemGap: Dp = 8.dp,
+        val navGroupTop: Dp = 12.dp,
+        val navGroupBottom: Dp = 5.dp,
+        val panelRadius: Dp = 12.dp,
+        val navItemHeight: Dp = 31.dp,
+        val navItemRadius: Dp = 7.dp,
+        val themeCardWidth: Dp = 132.dp,
+        val themeCardPadding: Dp = 6.dp,
+        val themeThumbHeight: Dp = 62.dp,
+        val themeThumbRailWidth: Dp = 11.dp,
+        val themeThumbRadius: Dp = 6.dp,
+        val themeThumbInnerRadius: Dp = 3.dp,
+        val themeThumbPadding: Dp = 5.dp,
+        val themeThumbLineHeight: Dp = 3.dp,
+        val themeThumbPanelHeight: Dp = 23.dp,
+        val themeCardsGap: Dp = 8.dp,
+        val themeCardsPadding: Dp = 14.dp,
+        val accentSwatchSize: Dp = 24.dp,
+        val accentSwatchGap: Dp = 7.dp,
+        val stepperButtonWidth: Dp = 27.dp,
+        val stepperValueWidth: Dp = 34.dp,
+        val aboutLogoSize: Dp = 42.dp,
+        val aboutCardPadding: Dp = 15.dp,
+        val shortcutCellPaddingH: Dp = 14.dp,
+        val shortcutKeysGap: Dp = 3.dp,
+        val shortcutRowHeight: Dp = 34.dp,
+    )
+
     companion object {
         fun forDensity(density: UiDensity): AppDimens =
             when (density) {
@@ -259,6 +304,14 @@ data class AppDimens(
                         cardPadding = 12.dp,
                         segmentedItemHeight = 22.dp,
                         segmentedItemHeightSmall = 20.dp,
+                        settings =
+                            SettingsDimens(
+                                rowMinHeight = 48.dp,
+                                rowPaddingV = 9.dp,
+                                navItemHeight = 29.dp,
+                                themeThumbHeight = 56.dp,
+                                shortcutRowHeight = 30.dp,
+                            ),
                     )
             }
     }

@@ -39,6 +39,7 @@ fun AppTheme(
     val colors = remember(dark, accent) { AppColors.forTheme(dark, accent) }
     val dimens = remember(density) { AppDimens.forDensity(density) }
     val typography = rememberAppTypography()
+    val textInputFocus = remember { TextInputFocusTracker() }
     val shapes = remember(dimens) { appShapes(dimens) }
     val materialTypography =
         remember(typography) {
@@ -114,6 +115,7 @@ fun AppTheme(
             LocalAppColors provides colors,
             LocalAppDimens provides dimens,
             LocalAppTypography provides typography,
+            LocalTextInputFocus provides textInputFocus,
             LocalTextStyle provides typography.body.copy(color = colors.text),
             LocalContentColor provides colors.text,
             content = content,

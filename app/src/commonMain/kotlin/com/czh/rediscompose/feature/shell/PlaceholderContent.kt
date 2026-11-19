@@ -4,25 +4,19 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import com.czh.rediscompose.app.AppPage
 import com.czh.rediscompose.app.AppState
 import com.czh.rediscompose.app.WorkspaceTabKind
 import com.czh.rediscompose.design.component.AppButton
 import com.czh.rediscompose.design.component.AppButtonVariant
-import com.czh.rediscompose.design.component.AppCard
 import com.czh.rediscompose.design.component.AppLoading
 import com.czh.rediscompose.design.icon.AppIcons
 import com.czh.rediscompose.design.icon.BrandMark
@@ -33,7 +27,9 @@ import com.czh.rediscompose.design.theme.LocalAppTypography
 import com.czh.rediscompose.feature.connections.ConnectionsScreen
 import com.czh.rediscompose.feature.console.ConsoleScreen
 import com.czh.rediscompose.feature.insights.InsightsScreen
+import com.czh.rediscompose.feature.settings.SettingsScreen
 import com.czh.rediscompose.feature.workspace.WorkspaceScreen
+import com.czh.rediscompose.util.ShortcutLabels
 
 @Composable
 fun AppPageContent(
@@ -44,7 +40,16 @@ fun AppPageContent(
         when (state.activePage) {
             AppPage.WORKSPACE -> WorkspaceContent(state)
             AppPage.CONNECTIONS -> ConnectionsScreen(state = state.connectionLibrary)
-            AppPage.SETTINGS -> SettingsPlaceholder(state)
+            AppPage.SETTINGS ->
+                SettingsScreen(
+                    settings = state.settings,
+                    saveStatus = state.settingsSaveStatus,
+                    onSettingsChange = state::updateSettings,
+                    onClearLocalCache = state::clearLocalCache,
+                    onToast = { message, kind -> state.showToast(message, kind) },
+                    requestedSection = state.requestedSettingsSection,
+                    onSectionRequestConsumed = state::consumeSettingsSectionRequest,
+                )
         }
     }
 }
@@ -110,7 +115,7 @@ private fun EmptyWorkspace(state: AppState) {
         Text(
             text =
                 if (state.connections.isEmpty()) {
-                    "还没有连接。打开连接库查看连接配置，或使用 ⌘K 打开命令面板。"
+                    "还没有连接。打开连接库查看连接配置，或使用 ${ShortcutLabels.commandKey("K")} 打开命令面板。"
                 } else {
                     "选择连接后，这里会打开键浏览、控制台与服务器洞察。"
                 },
@@ -133,106 +138,6 @@ private fun EmptyWorkspace(state: AppState) {
     }
 }
 
-@Composable
-private fun SettingsPlaceholder(state: AppState) {
-    val colors = LocalAppColors.current
-    val dimensions = LocalAppDimens.current
-    val typography = LocalAppTypography.current
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(
-                    start = dimensions.pageMargin,
-                    end = dimensions.pageMargin,
-                    top = dimensions.space2Xl,
-                    bottom = dimensions.space3Xl,
-                ),
-    ) {
-        PageHeading(
-            eyebrow = "SETTINGS",
-            title = "设置",
-            description = "主题、强调色、编辑器与安全策略。完整设置页将在 Phase 9 实现。",
-        )
-        AppCard(
-            modifier =
-                Modifier
-                    .padding(top = dimensions.spaceXl)
-                    .widthIn(max = dimensions.settingsCardMaxWidth),
-            title = "外观",
-            description = "当前生效的设置",
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(dimensions.fieldPadding)) {
-                ReadOnlySetting("主题", state.settings.theme.name)
-                ReadOnlySetting("强调色", state.settings.accent.name)
-                ReadOnlySetting("密度", state.settings.density.name)
-                ReadOnlySetting("编辑器字体", state.settings.editorFont)
-                ReadOnlySetting("SCAN 批量", state.settings.scanBatchSize.toString())
-            }
-            Text(
-                text = "主题切换请使用顶栏按钮；设置会立即写入 settings.json。",
-                style = typography.caption,
-                color = colors.textTertiary,
-                modifier = Modifier.padding(top = dimensions.spaceMd),
-            )
-        }
-    }
-}
-
-@Composable
-private fun ReadOnlySetting(
-    label: String,
-    value: String,
-) {
-    val colors = LocalAppColors.current
-    val typography = LocalAppTypography.current
-    Row(Modifier.fillMaxWidth()) {
-        Text(
-            text = label,
-            style = typography.body,
-            color = colors.textSecondary,
-            modifier = Modifier.weight(1f),
-        )
-        Text(
-            text = value,
-            style = typography.monoValue,
-            color = colors.text,
-        )
-    }
-}
-
-@Composable
-private fun PageHeading(
-    eyebrow: String,
-    title: String,
-    description: String,
-) {
-    val colors = LocalAppColors.current
-    val dimensions = LocalAppDimens.current
-    val typography = LocalAppTypography.current
-    Text(
-        text = eyebrow,
-        style = typography.microLabel,
-        color = colors.accent,
-    )
-    Text(
-        text = title,
-        style = typography.pageTitle,
-        color = colors.text,
-        modifier = Modifier.padding(top = dimensions.spaceXs),
-    )
-    Text(
-        text = description,
-        style = typography.body,
-        color = colors.textTertiary,
-        modifier =
-            Modifier
-                .padding(top = dimensions.spaceXs + 1.dp)
-                .widthIn(max = dimensions.pageDescriptionMaxWidth),
-    )
-}
-
 @Preview(widthDp = 1120, heightDp = 720)
 @Composable
 private fun EmptyWorkspacePreview() {
@@ -245,7 +150,7 @@ private fun EmptyWorkspacePreview() {
 
 @Preview(widthDp = 1120, heightDp = 720)
 @Composable
-private fun SettingsPlaceholderPreview() {
+private fun SettingsPagePreview() {
     AppTheme(dark = false) {
         Box(Modifier.fillMaxSize()) {
             AppPageContent(state = previewEmptyState().also { it.setPage(AppPage.SETTINGS) })

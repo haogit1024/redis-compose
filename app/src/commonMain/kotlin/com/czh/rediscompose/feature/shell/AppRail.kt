@@ -42,6 +42,7 @@ import com.czh.rediscompose.design.icon.AppIcons
 import com.czh.rediscompose.design.theme.AppTheme
 import com.czh.rediscompose.design.theme.LocalAppColors
 import com.czh.rediscompose.design.theme.LocalAppDimens
+import com.czh.rediscompose.feature.settings.SettingsSection
 
 @Composable
 fun AppRail(
@@ -128,7 +129,7 @@ fun AppRail(
                 icon = AppIcons.Keyboard,
                 contentDescription = "快捷键",
                 active = false,
-                onClick = { state.showToast("快捷键将在 Phase 9 提供", ToastKind.Info) },
+                onClick = { state.openSettings(SettingsSection.SHORTCUTS) },
             )
         }
     }

@@ -9,6 +9,7 @@ import com.czh.rediscompose.domain.connection.ConnectionEnvironment
 import com.czh.rediscompose.domain.connection.ConnectionField
 import com.czh.rediscompose.domain.connection.ConnectionProfile
 import com.czh.rediscompose.domain.connection.ConnectionTestResult
+import com.czh.rediscompose.domain.settings.AppSettings
 import com.czh.rediscompose.util.currentEpochMillis
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -47,6 +48,7 @@ class ConnectionsState(
     private val onTest: suspend (ConnectionProfile) -> ConnectionTestResult,
     private val onToast: (String, ToastKind) -> Unit,
     scope: CoroutineScope,
+    private val settings: () -> AppSettings = { AppSettings() },
 ) {
     private val stateJob = SupervisorJob(scope.coroutineContext.job)
     private val stateScope = CoroutineScope(scope.coroutineContext + stateJob)
@@ -154,7 +156,7 @@ class ConnectionsState(
 
     fun openNew() {
         testJob?.cancel()
-        draft = ConnectionDraft.new()
+        draft = ConnectionDraft.new(settings().defaultKeySeparator)
         sheetTab = ConnectionSheetTab.BASIC
         validationErrors = emptyMap()
         testResult = null

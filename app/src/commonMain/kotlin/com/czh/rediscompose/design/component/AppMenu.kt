@@ -197,7 +197,7 @@ private fun AppMenuPreview() {
             AppMenuSurface(
                 items =
                     listOf(
-                        AppMenuItem("复制 Key", AppIcons.Copy, shortcut = "⌘C"),
+                        AppMenuItem("复制 Key", AppIcons.Copy, shortcut = "Cmd C"),
                         AppMenuItem("重命名", AppIcons.Edit),
                         AppMenuItem("设置 TTL", AppIcons.Clock),
                         AppMenuItem("删除 Key", AppIcons.Delete, danger = true, separatorBefore = true),

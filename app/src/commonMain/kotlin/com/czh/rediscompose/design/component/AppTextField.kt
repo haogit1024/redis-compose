@@ -48,6 +48,7 @@ import com.czh.rediscompose.design.theme.AppTheme
 import com.czh.rediscompose.design.theme.LocalAppColors
 import com.czh.rediscompose.design.theme.LocalAppDimens
 import com.czh.rediscompose.design.theme.LocalAppTypography
+import com.czh.rediscompose.design.theme.trackTextInputFocus
 
 /**
  * Text input used everywhere in the app.
@@ -72,6 +73,7 @@ fun AppTextField(
     minHeight: Dp? = null,
     height: Dp? = null,
     keyboardType: KeyboardType = KeyboardType.Text,
+    onFocusChanged: ((Boolean) -> Unit)? = null,
 ) {
     val colors = LocalAppColors.current
     val dimens = LocalAppDimens.current
@@ -112,7 +114,11 @@ fun AppTextField(
         modifier =
             modifier
                 .fillMaxWidth()
-                .onFocusChanged { focused = it.isFocused }
+                .onFocusChanged {
+                    focused = it.isFocused
+                    onFocusChanged?.invoke(it.isFocused)
+                }
+                .trackTextInputFocus()
                 .then(if (enabled) Modifier.pointerHoverIcon(PointerIcon.Text) else Modifier),
         enabled = enabled,
         singleLine = singleLine,
@@ -225,7 +231,7 @@ private fun AppTextFieldPreview() {
                 onValueChange = {},
                 isPassword = true,
                 placeholder = "密码",
-                trailingContent = { AppKbd("↵") },
+                trailingContent = { AppKbd("Enter") },
             )
             AppTextField(
                 value = "",

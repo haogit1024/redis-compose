@@ -15,7 +15,7 @@
 | 6 — 控制台 | 已验收 | 2026-11-19 | 见下文 §Phase 6 | 见“遗留风险” |
 | 7 — 洞察 | 已验收 | 2026-11-19 | 见下文 §Phase 7 | 见“遗留风险” |
 | 8 — 连接库 | 已验收 | 2026-11-19 | 见下文 §Phase 8 | 见“遗留风险” |
-| 9 — 设置 + 命令面板 | 未开始 | — | — | — |
+| 9 — 设置 + 命令面板 | 已验收 | 2026-11-19 | 见下文 §Phase 9 | 见“遗留风险” |
 | 10 — 打磨与发布 | 未开始 | — | — | — |
 
 ## 阶段门禁
@@ -700,11 +700,142 @@
 
 ---
 
+## Phase 9 — 设置、主题持久化与命令面板（已验收）
+
+### 完成内容
+
+#### 设置页（`feature/settings/`）
+
+- `SettingsScreen`：左侧 208dp 导航 + 右侧可滚动内容（最大 760dp 居中），顶部 `PREFERENCES` 眉标、标题、描述与“已自动保存”徽标，底部保存状态页脚。内容使用 `LazyColumn`，导航点击 `animateScrollToItem` 平滑滚动，滚动时按首个可见 section 更新 active。
+- `SettingsState`：本地 UI 状态（active section、清除缓存确认框）；持久化值仍由 `AppState.settings` 提供。
+- `SettingsNav`：偏好（外观、编辑器与值、键浏览）/ 系统（安全、快捷键、关于）分组、激活态 accentSoft + accent 边框、底部“同步状态”提示卡。
+- `ThemeChoiceCard`：深色 / 浅色 / 跟随系统三张卡；mini 界面缩略图由 Compose 绘制（rail + 内容 + 面板），选中卡 accent 边框 + 2dp accentSoft 外环。
+- `AccentSwatches`：IRIS / MINT / SKY / AMBER / ROSE 圆点；选中态主题对比色描边 + 内点（新增 `AppColors.swatchDot`）。
+- `SettingsControls`：section 标题/面板/分隔线/55dp 设置行、数字输入（失焦提交并夹取范围）、字号 stepper、静态值 chip。
+- `sections/AppearanceSection`：主题三态、强调色、语言（简体中文 + v1 徽标，其他语言不伪装可切换）、界面密度（舒适/紧凑）。
+- `sections/EditorSection`：默认值格式 Auto/JSON/Text/HEX、等宽字体（v1 JetBrains Mono）、字号 11–18、自动换行、行号、大值截断 1–1024 KB。
+- `sections/BrowserSection`：SCAN 批量 100–10,000、默认视图树形/平铺、全局 Key 分隔符（仅新连接使用）、TTL 徽标、删除确认、自动刷新关闭/30/60 秒。
+- `sections/SecuritySection`：全局只读、加密存储密码（关闭时明确“明文风险”，下次保存连接生效）、隐藏敏感值、危险命令二次确认；危险区“清除本地缓存”带确认对话框。
+- `sections/ShortcutsSection`：只列出本版本真实可用的快捷键；macOS 显示 Cmd/Shift/Enter，Windows/Linux 显示 Ctrl/Shift（原因见差异表）。
+- `sections/AboutSection`：品牌 Logo、0.1.0、技术栈、`~/.redis-compose/` 复制路径、真实 GitHub 仓库链接；不实现“检查更新”。
+
+#### 设置持久化与全局生效
+
+- `AppState.updateSettings`：立即更新内存；300ms debounce 后写 `settings.json`；`SettingsSaveStatus`（SAVED/SAVING/FAILED）与 `lastSettingsSavedAtEpochMillis` 供顶栏、状态栏和页脚显示；保存失败 toast；`settingsSaveDebounceMillis` 可注入以便测试。
+- `JsonSettingsRepository.save` 现在把写入异常向上抛出，由 `AppState` 统一提示（读取仍保持损坏回退默认）。
+- `RedisComposeApp`：`AppTheme(dark, accent, density)` 接入 `settings.density`；`SYSTEM` 按系统深浅解析。
+- `AppTopBar`：设置页显示“已自动保存/保存中/未保存”pill；页面 chip 在设置/连接页显示对应页面名。
+- `AppStatusBar`：设置页显示保存状态；全局/连接只读时显示“只读”chip。
+- 自动刷新：窗口聚焦且间隔 >0 时，定时刷新所有已连接会话的 `INFO` 摘要与 `INFO keyspace` DB 计数；不刷新 Key 列表；窗口失焦/最小化时停止。
+- `AppState.clearLocalCache()`：清空命令历史/最近命令、Key 搜索与类型筛选、洞察采样；不删除连接与设置。
+- `ConnectionRepository.setEncryptPasswords` + `JsonConnectionRepository`：关闭加密后下一次保存使用明文；切换本身不改写已有文件。
+- `ConnectionsState` 接收 settings provider，`ConnectionDraft.new(separator)` 使用全局默认分隔符。
+
+#### 编辑器 / 值 / 键浏览 / 控制台接入
+
+- `CodeEditor`：读取字号（11–18，行高同步）、显示行号、自动换行；关闭换行时按最长行测量（上限 2000 行 / 4000 字符）放入水平滚动，避免大值卡顿；默认字号/行高与原 Phase 5 行为一致。
+- `StringEditor`：初始格式使用 `settings.defaultValueFormat`（二进制仍强制 HEX）。
+- `HashEditor`：`maskSensitiveValues` 开启时，字段名匹配 `password|passwd|secret|token|api[_-]?key|private` 的值默认遮罩，行内眼睛按钮逐行显示/隐藏；`CellTextField` 增加 `masked`。
+- `WorkspaceState`：新增编辑器设置 getter、`confirmDeleteKeys` 行为（关闭后单 Key 直接删除）、`requestSearchFocus()`；删除确认仍走原对话框。
+- `ConsoleState`：新增 `PendingDangerousCommand`；`confirmDangerousCommands` 开启时 FLUSHALL/FLUSHDB/CONFIG SET/SCRIPT FLUSH/EVAL 等进入确认队列，确认后才写终端与历史；只读仍优先拦截。新增 `ConsoleConfirmDialog`。
+- `ConsoleScreen` / `CommandComposer`：⌘Enter 执行（输入框内和全局均可）；快捷键提示改用 Cmd/Ctrl 文案。
+
+#### 命令面板扩展
+
+- 页面：工作区、命令控制台、服务器洞察、连接库、设置。
+- 操作：新建 Key（无 Keys tab 时先打开）、新建连接（跳转连接库并打开 sheet）、刷新当前 Keyspace、切换深/浅主题、复制当前 Key、打开设置。
+- 连接：全部连接，显示 host:port + 真实状态点/文案。
+- 最近命令：`settings.recentCommands` 最多 5 条，选择后打开控制台并填入（不直接执行）。
+- 600dp / 15dp 圆角 / 14sp 输入 / 36dp 行高 / 9sp 分组；空结果、过滤、↑↓/Enter/Esc 保留。
+
+#### 全局快捷键（`feature/shell/GlobalShortcuts.kt`）
+
+- ⌘/Ctrl+K 命令面板；⌘/Ctrl+F 聚焦当前 Keyspace 搜索；⌘/Ctrl+S 保存当前值；⌘/Ctrl+Enter 执行控制台命令；N 新建 Key；R 刷新 Keyspace；⌘/Ctrl+W 关闭当前 Workspace tab；⌘/Ctrl+Shift+L 切换主题；⌘/Ctrl+, 打开设置；Esc 关闭命令面板/弹层。
+- 修饰键快捷键在根节点 preview 阶段处理，因此文本输入中仍可用；N/R 在冒泡阶段处理，并新增 `TextInputFocusTracker`（`design/theme/TextInputFocus.kt`，所有 AppTextField/CellTextField/CodeEditor/Composer/命令面板输入框上报焦点）保证输入时不误触。
+- `AppState.hasBlockingOverlay`：命令面板、连接 sheet、Workspace 对话框、控制台危险命令确认期间屏蔽全局快捷键。
+- 新增 `util/Platform.kt`（expect/actual `isMacOs`，仅用于快捷键文案）。
+- Keys 页的旧本地 N/R/⌘F/⌘S 处理改为全局统一；Esc 仍保留在 WorkspaceScreen（可清搜索/取消选中）。
+
+#### 设计系统补充
+
+- `AppDimens`：新增 `SettingsDimens` 嵌套类（设置页 token）与 `paletteRadius`；嵌套是为了避开 JVM 方法参数 255 上限（顶层 data class 已接近该限制）。
+- `AppTypography`：`settingsLabel/settingsHint/settingsSectionTitle/settingsSectionDesc/paletteInput/aboutMono`。
+- `AppIcons`：`ThemeSystem`、`Remove`。
+- `AppColors`：`swatchDot`。
+- `AppTextField`：可选 `onFocusChanged`（数字输入失焦提交）；`AppScrollbar` 新增 `LazyListState` 版本。
+- 快捷键 glyph 文案集中到 `util/ShortcutLabels`，避免 `⌘/⇧/↵` 在打包字体中显示为豆腐块。
+
+### 与设计稿 / 计划的有意差异
+
+| 设计稿 / 计划 | 实现 |
+| --- | --- |
+| 快捷键显示 `⌘` / `⇧` / `↵` | Inter / JetBrains Mono 不含这些字形，实际渲染为方框；统一改为 `Cmd` / `Shift` / `Enter`（Windows/Linux 为 `Ctrl`），表格保持只读 |
+| 界面语言为 select（含 English/日本語） | 只读“简体中文”chip + `v1 仅此一项`徽标；不提供无效果的切换 |
+| 等宽字体 select（SF Mono / Menlo 等） | 静态 `JetBrains Mono` + `v1 唯一`徽标 |
+| 主题卡缩略图固定紫色 | 缩略图使用当前强调色派生色；system 卡左右明暗渐变 |
+| “检查更新”按钮 | 未实现（无更新服务）；GitHub 指向真实仓库，不显示许可证（仓库无 LICENSE 文件） |
+| 自动刷新“空闲时” | 以窗口聚焦为生命周期；侧栏摘要/DB 计数定时刷新，Key 列表不自动刷新 |
+| 关闭加密后“立即重新加密” | 未实现；按计划提示“下次保存连接时生效” |
+| 命令面板“新建 Key”要求已有 Workspace | 有活动连接即可；自动打开 Keys tab 再弹出新建对话框 |
+| 设置页滚动条 | `LazyListState` 近似滚动条（按可见项数计算 thumb），拖拽按估算像素滚动 |
+| 控制台字号跟随编辑器字号 | v1 未接入（计划允许稍后统一） |
+| 快捷键表 | 额外列出已实现的 `↑/↓` 历史与 `Cmd ,` 打开设置；不列未实现项 |
+
+### 验证
+
+| 命令 | 结果 |
+| --- | --- |
+| `./gradlew ktlintCheck` | 通过 |
+| `./gradlew :app:jvmTest` | 231 tests，0 failures（Phase 8 基线 216 + 15 个新用例） |
+| `./gradlew build` | 通过 |
+| `./gradlew :desktopApp:run` | 启动成功，`MainKt` 进程存活 ≥ 20 秒，无应用异常；未点击真实连接 |
+
+新增/更新测试：
+
+- `SettingsLimitsTest`（4）：范围夹取、分隔符回退、敏感字段匹配、危险命令分类。
+- `SettingsPersistenceTest`（3，jvm）：Phase 9 全字段 debounce 后重载一致、debounce 只保留最后快照、保存失败状态与 toast。
+- `StorageRepositoriesTest`（+1）：关闭加密后下一次保存写入明文并可读回。
+- `ConsoleStateTest`（+4）：危险命令待确认、确认执行、取消/关闭设置后直接执行、只读优先拦截、清缓存保留终端日志。
+- `WorkspaceEditingTest`（+1）：关闭删除确认后单 Key 直接删除；开启时弹对话框。
+- `ConnectionDraftTest`（+1）：新连接使用全局默认 Key 分隔符。
+- `AppStateTest`（+1）：清除本地缓存清空最近命令与控制台历史。
+
+离屏渲染（临时 `ImageComposeScene` 工具，验收后已删除临时测试与 `jvmTest` 的 `compose.desktop.currentOs` 依赖）：
+
+- 设置页 1380×816 深/浅、1060×636 紧凑、1380×1650 长页；安全/快捷键 section 定向滚动；全外壳 1440×900 浅色；命令面板 1000×700。
+- 检查了主题卡缩略图、选中外环、强调色切换（IRIS/MINT/ROSE）、紧凑行高、危险区、保存状态、快捷键表格与 About；文本无截断/溢出。
+- 修正了 `⌘/⇧/↵` 豆腐块、SYSTEM 缩略图面板颜色、`AppDimens` JVM 参数上限问题。
+
+### 真实联调边界
+
+- 本阶段没有连接真实 Redis、没有读取/打印 `~/.redis-compose/connections.json`、没有点击用户真实连接；启动验证只进入默认页面。
+- 设置持久化使用临时目录测试；加密开关的明文写入测试同样使用临时目录，不触碰真实文件。
+- 全局只读、危险命令确认、删除确认通过状态层测试与离屏 UI 验证，未在真实服务器执行任何写命令。
+- 未做自动键盘回放（macOS 未授权 osascript）；⌘/Ctrl 快捷键只做代码级检查与静态界面验证。
+- 未在真实窗口验证系统深/浅切换、窗口失焦暂停轮询与真实 Redis 下的自动刷新。
+
+### 遗留风险与边界
+
+1. **关闭前最后一次设置可能丢失**：debounce 300ms 内直接关窗，最后一次修改可能未落盘；Phase 10 可在 `close()` 增加同步 flush 或应用级 scope。
+2. **自动刷新生命周期**：依赖 `LocalWindowInfo.isWindowFocused`；窗口失焦/最小化会暂停，但“应用在后台但窗口仍聚焦”的桌面场景仍会轮询；同时会与洞察页轮询叠加 `INFO` 请求。
+3. **快捷键自动回放缺失**：N/R 的文本焦点保护通过 `TextInputFocusTracker` 实现，新增文本控件必须调用 `trackTextInputFocus()`；未做真实键盘事件测试。
+4. **命令面板滚动条**：`LazyListState` 滚轮/滚动正常，拖拽 thumb 为估算像素，长列表末端可能不够精确。
+5. **字体 glyph**：快捷键文案已改为 Cmd/Shift/Enter；设计稿中的符号美感有所牺牲，换取可读性。
+6. **加密切换不迁移历史密文**：关闭加密只影响下次保存；已有密文仍保留在文件中，开启后再次保存会重新加密。切换后是否“立即重新加密”留 Phase 10。
+7. **控制台字号未统一**：编辑器字号只作用于值编辑器；控制台仍使用固定 terminal 字号。
+8. **设置保存失败提示**：`JsonSettingsRepository.save` 由静默失败改为抛出异常，AppState 会 toast；极端磁盘错误下的错误文案仍为异常首行。
+9. **全局只读范围**：值编辑器、控制台、新建/删除 Key、TTL/重命名均拦截；连接测试、只读命令与本地设置不受影响（符合计划）。
+10. **设置页 section 预览**：各 section 的 `@Preview` 已提供，但未逐个包裹布局容器；实际页面已通过整页离屏渲染验证。
+11. **依赖/源码体积**：新增设置 token 使用嵌套 `SettingsDimens`；后续继续向 `AppDimens` 顶层加字段会再次触及 JVM 255 参数上限，Phase 10 应考虑拆分更多嵌套组。
+12. **测试与预览 fixture**：`SettingsPersistenceTest` 使用真实 `JsonSettingsRepository` + 临时目录；未新增 UI 测试框架。
+
+---
+
 ## 当前基线
 
 - 分支：`feat/rewrite-ui`；模块：`:desktopApp` + `:app`。
 - 包名：`com.czh.rediscompose`；入口：`com.czh.rediscompose.desktop.MainKt`。
 - 应用启动直接进入新外壳（顶栏 / rail / 连接侧栏 / tab / 状态栏），不再显示设计画廊。
-- `AppState` + `RedisSession` 已接管连接、tab、主题、设置与旧数据迁移；测试 216/216 通过。
-- Keys / Console / Insights / Connections 均已接入真实网关与状态；Settings 仍是占位内容。
-- 下一步 Phase 9：设置页、主题/强调色/密度持久化、命令面板扩展与全局快捷键；不要提前实现发布打包或删除 Phase 8 的 TLS/SSH 能力。
+- `AppState` + `RedisSession` 已接管连接、tab、主题、设置与旧数据迁移；测试 231/231 通过。
+- Keys / Console / Insights / Connections / Settings 均已接入真实网关/设置；设置页 6 个 section 可滚动、可持久化。
+- 下一步 Phase 10：全量打磨、测试、性能、删除遗留、发布打包；不要提前删除 Phase 8 的 TLS/SSH 能力。

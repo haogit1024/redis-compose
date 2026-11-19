@@ -28,10 +28,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.isAltPressed
-import androidx.compose.ui.input.key.isCtrlPressed
-import androidx.compose.ui.input.key.isMetaPressed
-import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
@@ -78,6 +74,9 @@ fun WorkspaceScreen(
     }
 
     LaunchedEffect(workspace) { rootFocusRequester.requestFocus() }
+    LaunchedEffect(workspace.searchFocusRequestId) {
+        if (workspace.searchFocusRequestId > 0) searchFocusRequester.requestFocus()
+    }
 
     LaunchedEffect(workspace, workspace.session.status) {
         if (workspace.session.status == SessionStatus.CONNECTED) workspace.start()
@@ -122,17 +121,7 @@ fun WorkspaceScreen(
                 .onPreviewKeyEvent { event ->
                     if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                     if (dialogVisible) return@onPreviewKeyEvent false
-                    val command = event.isMetaPressed || event.isCtrlPressed
-                    val plain = !command && !event.isAltPressed && !event.isShiftPressed
                     when {
-                        event.key == Key.F && command -> {
-                            searchFocusRequester.requestFocus()
-                            true
-                        }
-                        event.key == Key.S && command -> {
-                            workspace.requestSave()
-                            true
-                        }
                         event.key == Key.Escape -> {
                             when {
                                 workspace.searchInput.isNotEmpty() -> {
@@ -149,14 +138,6 @@ fun WorkspaceScreen(
                                 }
                                 else -> false
                             }
-                        }
-                        event.key == Key.R && plain && !searchFocused -> {
-                            workspace.refresh()
-                            true
-                        }
-                        event.key == Key.N && plain && !searchFocused -> {
-                            workspace.requestNewKey()
-                            true
                         }
                         else -> false
                     }

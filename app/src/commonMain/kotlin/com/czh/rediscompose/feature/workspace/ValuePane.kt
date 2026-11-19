@@ -37,6 +37,7 @@ import com.czh.rediscompose.feature.workspace.editor.SetEditor
 import com.czh.rediscompose.feature.workspace.editor.SortedSetEditor
 import com.czh.rediscompose.feature.workspace.editor.StreamEditor
 import com.czh.rediscompose.feature.workspace.editor.StringEditor
+import com.czh.rediscompose.util.ShortcutLabels
 
 /** Right-hand value inspector: header, metadata and the type-specific editor. */
 @Composable
@@ -229,10 +230,10 @@ private fun EditorFootnote(
             tint = colors.textTertiary,
             modifier = Modifier.size(dimens.iconXs),
         )
-        AppKbd("⌘S")
+        AppKbd(ShortcutLabels.commandKey("S"))
         Text(text = "保存修改", style = typography.monoMicro, color = colors.textTertiary)
         Text(text = "·", style = typography.monoMicro, color = colors.textQuaternary)
-        AppKbd("⌘F")
+        AppKbd(ShortcutLabels.commandKey("F"))
         Text(text = "搜索 Key", style = typography.monoMicro, color = colors.textTertiary)
         Text(text = "·", style = typography.monoMicro, color = colors.textQuaternary)
         Text(

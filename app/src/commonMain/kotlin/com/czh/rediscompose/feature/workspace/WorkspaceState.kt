@@ -22,6 +22,7 @@ import com.czh.rediscompose.domain.key.SortedSetEntry
 import com.czh.rediscompose.domain.key.StreamEntry
 import com.czh.rediscompose.domain.settings.AppSettings
 import com.czh.rediscompose.domain.settings.KeyView
+import com.czh.rediscompose.domain.settings.ValueFormat
 import com.czh.rediscompose.util.currentEpochSeconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -194,6 +195,9 @@ class WorkspaceState(
     var saveRequestId by mutableStateOf(0)
         private set
 
+    var searchFocusRequestId by mutableStateOf(0)
+        private set
+
     private var handledSaveRequest = 0
     private val loadedKeySet = mutableSetOf<String>()
     private val requestedPreviews = mutableSetOf<String>()
@@ -215,6 +219,18 @@ class WorkspaceState(
     val canWrite: Boolean get() = !isReadOnly && session.isConnected
 
     val truncateValueKb: Int get() = settings().truncateValueKb
+
+    val editorFontSize: Int get() = settings().editorFontSize
+
+    val editorWordWrap: Boolean get() = settings().wordWrap
+
+    val showLineNumbers: Boolean get() = settings().showLineNumbers
+
+    val defaultValueFormat: ValueFormat get() = settings().defaultValueFormat
+
+    val maskSensitiveValues: Boolean get() = settings().maskSensitiveValues
+
+    val confirmDeleteKeys: Boolean get() = settings().confirmDeleteKeys
 
     val databaseIndex: Int get() = session.currentDatabase
 
@@ -379,6 +395,11 @@ class WorkspaceState(
         saveRequestId += 1
     }
 
+    /** Global ⌘F asks the screen to focus the SCAN search field. */
+    fun requestSearchFocus() {
+        searchFocusRequestId += 1
+    }
+
     fun consumeSaveRequest(): Boolean {
         if (saveRequestId == handledSaveRequest) return false
         handledSaveRequest = saveRequestId
@@ -447,6 +468,10 @@ class WorkspaceState(
         if (selectedKey == null) return
         if (!canWrite) {
             denyWrite()
+            return
+        }
+        if (!confirmDeleteKeys) {
+            deleteSelectedKey()
             return
         }
         deleteDialogKey = selectedKey

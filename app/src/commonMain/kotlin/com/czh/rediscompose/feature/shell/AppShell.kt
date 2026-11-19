@@ -15,19 +15,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.isCtrlPressed
-import androidx.compose.ui.input.key.isMetaPressed
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalWindowInfo
 import com.czh.rediscompose.app.AppPage
 import com.czh.rediscompose.app.AppState
 import com.czh.rediscompose.design.component.AppToastHost
 import com.czh.rediscompose.design.component.ToastData
 import com.czh.rediscompose.design.theme.LocalAppColors
 import com.czh.rediscompose.design.theme.LocalAppDimens
+import com.czh.rediscompose.design.theme.LocalTextInputFocus
 
 @Composable
 fun AppShell(
@@ -37,8 +32,13 @@ fun AppShell(
 ) {
     val colors = LocalAppColors.current
     val dimens = LocalAppDimens.current
+    val textInputFocus = LocalTextInputFocus.current
+    val windowInfo = LocalWindowInfo.current
     val rootFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { rootFocus.requestFocus() }
+    LaunchedEffect(windowInfo.isWindowFocused) {
+        state.setAppActive(windowInfo.isWindowFocused)
+    }
     LaunchedEffect(state.commandPaletteVisible) {
         if (!state.commandPaletteVisible) rootFocus.requestFocus()
     }
@@ -50,20 +50,11 @@ fun AppShell(
                 .background(colors.background)
                 .focusRequester(rootFocus)
                 .focusable()
-                .onPreviewKeyEvent { event ->
-                    if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
-                    when {
-                        event.key == Key.K && (event.isMetaPressed || event.isCtrlPressed) -> {
-                            state.toggleCommandPalette()
-                            true
-                        }
-                        event.key == Key.Escape && state.commandPaletteVisible -> {
-                            state.setPaletteVisible(false)
-                            true
-                        }
-                        else -> false
-                    }
-                },
+                .globalShortcuts(
+                    state = state,
+                    dark = dark,
+                    isTextInputFocused = { textInputFocus.isTextInputFocused },
+                ),
     ) {
         Column(Modifier.fillMaxSize()) {
             AppTopBar(state = state, dark = dark)
@@ -109,6 +100,7 @@ fun AppShell(
         CommandPalette(
             visible = state.commandPaletteVisible,
             state = state,
+            dark = dark,
             onDismiss = { state.setPaletteVisible(false) },
         )
 

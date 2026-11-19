@@ -54,6 +54,7 @@ import com.czh.rediscompose.design.theme.LocalAppDimens
 import com.czh.rediscompose.design.theme.LocalAppTypography
 import com.czh.rediscompose.domain.key.KeyNode
 import com.czh.rediscompose.domain.key.KeyType
+import com.czh.rediscompose.util.ShortcutLabels
 import com.czh.rediscompose.util.formatCount
 import com.czh.rediscompose.util.formatTtlCompact
 
@@ -225,7 +226,7 @@ internal fun KeyRow(
                     AppMenuItem(
                         label = "复制 Key",
                         icon = AppIcons.Copy,
-                        shortcut = "⌘C",
+                        shortcut = ShortcutLabels.commandKey("C"),
                         onClick = onCopy,
                     ),
                 ),

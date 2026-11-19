@@ -34,6 +34,9 @@ import androidx.compose.ui.unit.dp
 import com.czh.rediscompose.app.AppPage
 import com.czh.rediscompose.app.AppState
 import com.czh.rediscompose.app.SessionStatus
+import com.czh.rediscompose.app.SettingsSaveStatus
+import com.czh.rediscompose.design.component.AppBadge
+import com.czh.rediscompose.design.component.AppBadgeTone
 import com.czh.rediscompose.design.component.AppIconButton
 import com.czh.rediscompose.design.component.AppKbd
 import com.czh.rediscompose.design.component.AppTooltip
@@ -44,6 +47,7 @@ import com.czh.rediscompose.design.theme.LocalAppColors
 import com.czh.rediscompose.design.theme.LocalAppDimens
 import com.czh.rediscompose.design.theme.LocalAppTypography
 import com.czh.rediscompose.domain.settings.ThemeMode
+import com.czh.rediscompose.util.ShortcutLabels
 
 @Composable
 fun AppTopBar(
@@ -86,6 +90,9 @@ fun AppTopBar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(dimens.iconTextGap),
             ) {
+                if (state.activePage == AppPage.SETTINGS) {
+                    SettingsSavePill(state.settingsSaveStatus)
+                }
                 StatusPill(session = session)
                 AppTooltip(if (dark) "切换到浅色主题" else "切换到深色主题") {
                     AppIconButton(
@@ -176,7 +183,14 @@ private fun PageChip(
     val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
     val connection = state.activeConnection
+    val page = state.activePage
     val shape = RoundedCornerShape(dimens.radiusSm)
+    val (chipIcon, chipLabel) =
+        when (page) {
+            AppPage.SETTINGS -> AppIcons.Settings to "偏好设置"
+            AppPage.CONNECTIONS -> AppIcons.Connections to "连接库"
+            AppPage.WORKSPACE -> AppIcons.Database to (connection?.environment?.displayName() ?: "未选择连接")
+        }
     Row(
         modifier =
             Modifier
@@ -196,17 +210,17 @@ private fun PageChip(
         horizontalArrangement = Arrangement.spacedBy(dimens.spaceSm),
     ) {
         Icon(
-            imageVector = AppIcons.Database,
+            imageVector = chipIcon,
             contentDescription = null,
             tint = colors.textTertiary,
             modifier = Modifier.size(dimens.iconSm),
         )
         Text(
-            text = connection?.environment?.displayName() ?: "未选择连接",
+            text = chipLabel,
             style = typography.body,
-            color = if (connection == null) colors.textTertiary else colors.textSecondary,
+            color = if (connection == null && page == AppPage.WORKSPACE) colors.textTertiary else colors.textSecondary,
         )
-        if (connectionName != null) {
+        if (page == AppPage.WORKSPACE && connectionName != null) {
             Text(
                 text = "/",
                 style = typography.body,
@@ -228,6 +242,17 @@ private fun PageChip(
             modifier = Modifier.size(dimens.iconSm),
         )
     }
+}
+
+@Composable
+private fun SettingsSavePill(status: SettingsSaveStatus) {
+    val (text, tone, icon) =
+        when (status) {
+            SettingsSaveStatus.SAVED -> Triple("已自动保存", AppBadgeTone.Success, AppIcons.Check)
+            SettingsSaveStatus.SAVING -> Triple("保存中…", AppBadgeTone.Warning, AppIcons.Refresh)
+            SettingsSaveStatus.FAILED -> Triple("未保存", AppBadgeTone.Danger, AppIcons.ErrorCircle)
+        }
+    AppBadge(text = text, tone = tone, icon = icon)
 }
 
 @Composable
@@ -270,7 +295,7 @@ private fun Omnibox(onClick: () -> Unit) {
             maxLines = 1,
             modifier = Modifier.weight(1f),
         )
-        AppKbd("⌘K")
+        AppKbd(ShortcutLabels.commandKey("K"))
     }
 }
 

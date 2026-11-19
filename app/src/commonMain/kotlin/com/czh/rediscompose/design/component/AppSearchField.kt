@@ -19,7 +19,7 @@ fun AppSearchField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     placeholder: String = "搜索…",
-    kbdText: String? = "⌘F",
+    kbdText: String? = null,
     enabled: Boolean = true,
     mono: Boolean = false,
 ) {

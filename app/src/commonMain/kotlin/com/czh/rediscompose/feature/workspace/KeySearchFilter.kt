@@ -41,6 +41,7 @@ import com.czh.rediscompose.design.theme.LocalAppColors
 import com.czh.rediscompose.design.theme.LocalAppDimens
 import com.czh.rediscompose.design.theme.LocalAppTypography
 import com.czh.rediscompose.domain.key.KeyType
+import com.czh.rediscompose.util.ShortcutLabels
 
 private val TYPE_FILTERS: List<KeyType?> =
     listOf(null, KeyType.STRING, KeyType.HASH, KeyType.LIST, KeyType.SET, KeyType.ZSET, KeyType.STREAM)
@@ -84,7 +85,7 @@ internal fun KeySearchFilter(
                             else -> false
                         }
                     },
-            placeholder = "匹配模式  user:*  ·  ⌘F",
+            placeholder = "匹配模式  user:*  ·  ${ShortcutLabels.commandKey("F")}",
             leadingIcon = AppIcons.Search,
             trailingContent =
                 if (state.searchInput.isNotEmpty()) {

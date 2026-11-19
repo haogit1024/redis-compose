@@ -30,11 +30,7 @@ class JsonSettingsRepository(
 
     override suspend fun save(settings: AppSettings) {
         withContext(Dispatchers.IO) {
-            runCatching {
-                writeAtomically(paths.settings, json.encodeToString(settings))
-            }.onFailure { error ->
-                println("[redis-compose] failed to write settings: ${error.firstLine()}")
-            }
+            writeAtomically(paths.settings, json.encodeToString(settings))
         }
     }
 

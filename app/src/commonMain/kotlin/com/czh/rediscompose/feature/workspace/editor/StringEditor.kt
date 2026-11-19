@@ -60,7 +60,7 @@ internal fun StringEditor(
     val savedText = value.text
     var text by remember(state.selectedKey, savedText) { mutableStateOf(savedText) }
     var format by remember(state.selectedKey, value.isBinary) {
-        mutableStateOf(if (value.isBinary) ValueFormat.HEX else ValueFormat.AUTO)
+        mutableStateOf(if (value.isBinary) ValueFormat.HEX else state.defaultValueFormat)
     }
     var showFull by remember(state.selectedKey) { mutableStateOf(false) }
 
@@ -225,6 +225,9 @@ internal fun StringEditor(
             onValueChange = { updated -> if (!isHex && !truncated) text = updated },
             highlighted = highlighted,
             readOnly = readOnly,
+            fontSize = state.editorFontSize,
+            showLineNumbers = state.showLineNumbers,
+            wordWrap = state.editorWordWrap,
             modifier =
                 Modifier
                     .weight(1f)

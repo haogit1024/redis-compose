@@ -13,6 +13,8 @@ import kotlinx.coroutines.launch
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ConsoleStateTest {
@@ -235,5 +237,70 @@ class ConsoleStateTest {
         assertEquals(2, console.historyItems.size)
         assertEquals("INFO memory", console.historyItems.first().command)
         assertEquals("历史", console.historyItems.first().summary)
+    }
+
+    @Test
+    fun `clear cache drops history but keeps the terminal log`() {
+        val gateway = FakeRedisGateway()
+        gateway.executeReply = RedisReply.Simple("PONG")
+        val console = console(gateway)
+        console.execute("PING")
+
+        console.clearCache()
+
+        assertTrue(console.history.isEmpty())
+        assertTrue(console.historyItems.isEmpty())
+        assertTrue(console.entries.any { it is ConsoleEntry.Output })
+    }
+
+    @Test
+    fun `dangerous commands wait for confirmation when enabled`() {
+        val gateway = FakeRedisGateway()
+        val console = console(gateway, AppSettings(confirmDangerousCommands = true))
+
+        console.execute("FLUSHALL")
+
+        assertNotNull(console.pendingDangerous)
+        assertTrue(gateway.executedCommands.isEmpty())
+        assertTrue(console.history.isEmpty())
+        assertFalse(console.isRunning)
+
+        console.confirmDangerous()
+
+        assertNull(console.pendingDangerous)
+        assertEquals(listOf("FLUSHALL"), gateway.executedCommands.single())
+        assertEquals(listOf("FLUSHALL"), console.history)
+        assertTrue(console.entries.any { it is ConsoleEntry.Command })
+    }
+
+    @Test
+    fun `dangerous confirmation can be dismissed or disabled`() {
+        val gateway = FakeRedisGateway()
+        val console = console(gateway, AppSettings(confirmDangerousCommands = true))
+        console.execute("CONFIG SET maxmemory 1gb")
+        assertNotNull(console.pendingDangerous)
+
+        console.dismissDangerous()
+
+        assertNull(console.pendingDangerous)
+        assertTrue(gateway.executedCommands.isEmpty())
+
+        settings = AppSettings(confirmDangerousCommands = false)
+        console.execute("FLUSHDB")
+
+        assertNull(console.pendingDangerous)
+        assertEquals(listOf("FLUSHDB"), gateway.executedCommands.single())
+    }
+
+    @Test
+    fun `read only still blocks dangerous commands before confirmation`() {
+        val gateway = FakeRedisGateway()
+        val console = console(gateway, AppSettings(globalReadOnly = true, confirmDangerousCommands = true))
+
+        console.execute("FLUSHALL")
+
+        assertNull(console.pendingDangerous)
+        assertTrue(gateway.executedCommands.isEmpty())
+        assertTrue(console.entries.last() is ConsoleEntry.Error)
     }
 }

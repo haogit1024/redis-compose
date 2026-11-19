@@ -23,8 +23,10 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.czh.rediscompose.app.AppPage
 import com.czh.rediscompose.app.AppState
 import com.czh.rediscompose.app.SessionStatus
+import com.czh.rediscompose.app.SettingsSaveStatus
 import com.czh.rediscompose.design.icon.AppIcons
 import com.czh.rediscompose.design.theme.AppTheme
 import com.czh.rediscompose.design.theme.LocalAppColors
@@ -114,6 +116,12 @@ fun AppStatusBar(
             )
         }
         Spacer(Modifier.weight(1f))
+        if (state.activePage == AppPage.SETTINGS) {
+            SettingsStatus(state.settingsSaveStatus)
+        }
+        if (state.settings.globalReadOnly || connection?.readOnly == true) {
+            StatusChip("只读")
+        }
         StatusChip("UTF-8")
         summary?.version?.let { version -> StatusChip("Redis $version") }
         Text(
@@ -148,6 +156,34 @@ private fun StatusItem(
             text = text,
             style = typography.monoMeta,
             color = colors.textTertiary,
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
+private fun SettingsStatus(status: SettingsSaveStatus) {
+    val colors = LocalAppColors.current
+    val (icon, text, color) =
+        when (status) {
+            SettingsSaveStatus.SAVED -> Triple(AppIcons.Check, "设置已保存", colors.success)
+            SettingsSaveStatus.SAVING -> Triple(AppIcons.Refresh, "设置保存中", colors.warning)
+            SettingsSaveStatus.FAILED -> Triple(AppIcons.ErrorCircle, "设置未保存", colors.danger)
+        }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(LocalAppDimens.current.spaceXs + 1.dp),
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier.size(LocalAppDimens.current.iconXs),
+        )
+        Text(
+            text = text,
+            style = LocalAppTypography.current.monoMeta,
+            color = color,
             maxLines = 1,
         )
     }

@@ -65,6 +65,12 @@ data class AppTypography(
     val kbd: TextStyle,
     val segment: TextStyle,
     val tooltip: TextStyle,
+    val settingsLabel: TextStyle,
+    val settingsHint: TextStyle,
+    val settingsSectionTitle: TextStyle,
+    val settingsSectionDesc: TextStyle,
+    val paletteInput: TextStyle,
+    val aboutMono: TextStyle,
 )
 
 @Composable
@@ -402,6 +408,54 @@ fun rememberAppTypography(): AppTypography {
                     fontFamily = uiFamily,
                     fontWeight = FontWeight(450),
                     fontSize = 10.sp,
+                    letterSpacing = 0.sp,
+                    lineHeight = 13.sp,
+                ),
+            settingsLabel =
+                TextStyle(
+                    fontFamily = uiFamily,
+                    fontWeight = FontWeight.W500,
+                    fontSize = 11.5.sp,
+                    letterSpacing = 0.sp,
+                    lineHeight = 16.sp,
+                ),
+            settingsHint =
+                TextStyle(
+                    fontFamily = uiFamily,
+                    fontWeight = FontWeight(450),
+                    fontSize = 9.5.sp,
+                    letterSpacing = 0.sp,
+                    lineHeight = 14.sp,
+                ),
+            settingsSectionTitle =
+                TextStyle(
+                    fontFamily = uiFamily,
+                    fontWeight = FontWeight.W600,
+                    fontSize = 12.5.sp,
+                    letterSpacing = (-0.06).sp,
+                    lineHeight = 17.sp,
+                ),
+            settingsSectionDesc =
+                TextStyle(
+                    fontFamily = uiFamily,
+                    fontWeight = FontWeight(450),
+                    fontSize = 10.5.sp,
+                    letterSpacing = 0.sp,
+                    lineHeight = 15.sp,
+                ),
+            paletteInput =
+                TextStyle(
+                    fontFamily = uiFamily,
+                    fontWeight = FontWeight(450),
+                    fontSize = 14.sp,
+                    letterSpacing = 0.sp,
+                    lineHeight = 20.sp,
+                ),
+            aboutMono =
+                TextStyle(
+                    fontFamily = monoFamily,
+                    fontWeight = FontWeight.W400,
+                    fontSize = 9.sp,
                     letterSpacing = 0.sp,
                     lineHeight = 13.sp,
                 ),

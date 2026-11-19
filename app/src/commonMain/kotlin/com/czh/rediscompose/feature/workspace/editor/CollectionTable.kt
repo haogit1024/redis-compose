@@ -39,6 +39,8 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -55,6 +57,7 @@ import com.czh.rediscompose.design.theme.AppTheme
 import com.czh.rediscompose.design.theme.LocalAppColors
 import com.czh.rediscompose.design.theme.LocalAppDimens
 import com.czh.rediscompose.design.theme.LocalAppTypography
+import com.czh.rediscompose.design.theme.trackTextInputFocus
 
 /** Shared rounded card that hosts an editor toolbar, content and footer. */
 @Composable
@@ -224,6 +227,7 @@ internal fun CellTextField(
     placeholder: String? = null,
     alignEnd: Boolean = false,
     isError: Boolean = false,
+    masked: Boolean = false,
 ) {
     val colors = LocalAppColors.current
     val typography = LocalAppTypography.current
@@ -247,15 +251,18 @@ internal fun CellTextField(
         )
         return
     }
+    val textTransformation =
+        if (masked) PasswordVisualTransformation() else VisualTransformation.None
     val fieldContent: @Composable () -> Unit = {
         Box(modifier.fillMaxWidth(), contentAlignment = if (alignEnd) Alignment.CenterEnd else Alignment.CenterStart) {
             BasicTextField(
                 value = value,
                 onValueChange = onValueChange,
-                modifier = modifier.fillMaxWidth(),
+                modifier = modifier.fillMaxWidth().trackTextInputFocus(),
                 singleLine = true,
                 textStyle = style,
                 cursorBrush = SolidColor(colors.accent),
+                visualTransformation = textTransformation,
                 decorationBox = { inner ->
                     if (value.isEmpty() && placeholder != null) {
                         Text(

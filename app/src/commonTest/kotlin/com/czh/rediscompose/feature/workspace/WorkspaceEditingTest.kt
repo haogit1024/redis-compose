@@ -289,6 +289,28 @@ class WorkspaceEditingTest {
     }
 
     @Test
+    fun `delete confirmation setting can skip the dialog`() {
+        val gateway = gateway()
+        seedString(gateway, "a:1", "1")
+        val state = workspace(gateway)
+        state.start()
+        state.selectKey("a:1")
+        settings = AppSettings(confirmDeleteKeys = true)
+
+        state.openDeleteDialog()
+        assertNotNull(state.deleteDialogKey)
+        assertTrue(gateway.stringValues.containsKey("a:1"))
+
+        state.dismissDeleteDialog()
+        settings = AppSettings(confirmDeleteKeys = false)
+        state.openDeleteDialog()
+
+        assertNull(state.deleteDialogKey)
+        assertFalse(gateway.stringValues.containsKey("a:1"))
+        assertNull(state.selectedKey)
+    }
+
+    @Test
     fun `deleting removes the key tree pin selection and total`() {
         val gateway = gateway()
         seedString(gateway, "a:1", "1")
