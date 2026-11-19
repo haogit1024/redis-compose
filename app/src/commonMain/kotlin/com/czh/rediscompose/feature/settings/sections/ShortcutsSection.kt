@@ -21,6 +21,7 @@ import com.czh.rediscompose.design.theme.LocalAppColors
 import com.czh.rediscompose.design.theme.LocalAppDimens
 import com.czh.rediscompose.design.theme.LocalAppTypography
 import com.czh.rediscompose.feature.settings.SettingsPanel
+import com.czh.rediscompose.feature.settings.SettingsPreviewFrame
 import com.czh.rediscompose.feature.settings.SettingsSection
 import com.czh.rediscompose.feature.settings.SettingsSectionHeader
 import com.czh.rediscompose.util.ShortcutLabels
@@ -100,7 +101,9 @@ internal fun ShortcutsSection() {
 @Composable
 private fun ShortcutsSectionPreview() {
     AppTheme(dark = true) {
-        ShortcutsSection()
+        SettingsPreviewFrame {
+            ShortcutsSection()
+        }
     }
 }
 
@@ -108,6 +111,8 @@ private fun ShortcutsSectionPreview() {
 @Composable
 private fun ShortcutsSectionLightPreview() {
     AppTheme(dark = false) {
-        ShortcutsSection()
+        SettingsPreviewFrame {
+            ShortcutsSection()
+        }
     }
 }

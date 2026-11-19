@@ -4,7 +4,7 @@ package com.czh.rediscompose.util
  * Heuristic for Hash fields whose values should be masked by default.
  *
  * This is deliberately a name match only: Redis has no schema, so the field name is the
- * only signal available. The pattern follows the Phase 9 contract
+ * only signal available. The pattern follows the app settings contract
  * (`password|passwd|secret|token|api[_-]?key|private`).
  */
 object SensitiveFields {

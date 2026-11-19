@@ -23,6 +23,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.czh.rediscompose.app.AppInfo
 import com.czh.rediscompose.app.AppPage
 import com.czh.rediscompose.app.AppState
 import com.czh.rediscompose.app.SessionStatus
@@ -125,7 +126,7 @@ fun AppStatusBar(
         StatusChip("UTF-8")
         summary?.version?.let { version -> StatusChip("Redis $version") }
         Text(
-            text = "Redis Compose 0.1.0",
+            text = "${AppInfo.NAME} ${AppInfo.VERSION}",
             style = typography.monoMeta,
             color = colors.textTertiary,
         )

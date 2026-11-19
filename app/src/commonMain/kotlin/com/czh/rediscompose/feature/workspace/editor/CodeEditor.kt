@@ -43,7 +43,7 @@ import com.czh.rediscompose.util.SettingsLimits
 /**
  * Mono code area with a logical-line gutter and optional JSON token coloring.
  *
- * Font size, line numbers and soft wrap come from settings (Phase 9). Turning wrap off
+ * Font size, line numbers and soft wrap come from settings. Turning wrap off
  * measures the longest line (capped) and places the field in a horizontal scroll container
  * so long JSON stays on one line without freezing on very large values.
  */

@@ -13,6 +13,7 @@ import com.czh.rediscompose.domain.settings.ValueFormat
 import com.czh.rediscompose.feature.settings.SettingRow
 import com.czh.rediscompose.feature.settings.SettingsNumberField
 import com.czh.rediscompose.feature.settings.SettingsPanel
+import com.czh.rediscompose.feature.settings.SettingsPreviewFrame
 import com.czh.rediscompose.feature.settings.SettingsSection
 import com.czh.rediscompose.feature.settings.SettingsSectionHeader
 import com.czh.rediscompose.feature.settings.SettingsStaticValue
@@ -103,7 +104,9 @@ private fun valueFormatLabel(format: ValueFormat): String =
 @Composable
 private fun EditorSectionPreview() {
     AppTheme(dark = true) {
-        EditorSection(settings = AppSettings(), onSettingsChange = {})
+        SettingsPreviewFrame {
+            EditorSection(settings = AppSettings(), onSettingsChange = {})
+        }
     }
 }
 
@@ -111,6 +114,8 @@ private fun EditorSectionPreview() {
 @Composable
 private fun EditorSectionLightPreview() {
     AppTheme(dark = false) {
-        EditorSection(settings = AppSettings(editorFontSize = 16), onSettingsChange = {})
+        SettingsPreviewFrame {
+            EditorSection(settings = AppSettings(editorFontSize = 16), onSettingsChange = {})
+        }
     }
 }

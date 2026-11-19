@@ -29,6 +29,7 @@ import com.czh.rediscompose.design.theme.LocalAppTypography
 import com.czh.rediscompose.domain.settings.AppSettings
 import com.czh.rediscompose.feature.settings.SettingRow
 import com.czh.rediscompose.feature.settings.SettingsPanel
+import com.czh.rediscompose.feature.settings.SettingsPreviewFrame
 import com.czh.rediscompose.feature.settings.SettingsSection
 import com.czh.rediscompose.feature.settings.SettingsSectionHeader
 
@@ -134,7 +135,9 @@ private fun DangerZone(onClearCacheRequest: () -> Unit) {
 @Composable
 private fun SecuritySectionPreview() {
     AppTheme(dark = true) {
-        SecuritySection(settings = AppSettings(), onSettingsChange = {}, onClearCacheRequest = {})
+        SettingsPreviewFrame {
+            SecuritySection(settings = AppSettings(), onSettingsChange = {}, onClearCacheRequest = {})
+        }
     }
 }
 
@@ -142,10 +145,12 @@ private fun SecuritySectionPreview() {
 @Composable
 private fun SecuritySectionLightPreview() {
     AppTheme(dark = false) {
-        SecuritySection(
-            settings = AppSettings(encryptPasswords = false, maskSensitiveValues = true),
-            onSettingsChange = {},
-            onClearCacheRequest = {},
-        )
+        SettingsPreviewFrame {
+            SecuritySection(
+                settings = AppSettings(encryptPasswords = false, maskSensitiveValues = true),
+                onSettingsChange = {},
+                onClearCacheRequest = {},
+            )
+        }
     }
 }

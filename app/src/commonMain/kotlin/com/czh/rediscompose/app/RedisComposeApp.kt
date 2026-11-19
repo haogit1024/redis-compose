@@ -12,8 +12,7 @@ import com.czh.rediscompose.feature.shell.AppShell
 /**
  * Root composition: owns `AppState`, resolves the effective theme, and renders the shell.
  *
- * Phase 4+ replaces the placeholder content behind each workspace tab; the shell itself
- * stays here.
+ * Workspace tabs host the real feature screens; the shell itself stays here.
  */
 @Composable
 fun RedisComposeApp(container: AppContainer) {

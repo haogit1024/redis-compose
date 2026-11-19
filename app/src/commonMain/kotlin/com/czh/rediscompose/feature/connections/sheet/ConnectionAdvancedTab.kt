@@ -61,7 +61,7 @@ fun ConnectionAdvancedTab(
         FormSection("高级拓扑")
         ToggleRow(
             title = "Sentinel / Cluster",
-            hint = "当前版本仅支持单节点；Sentinel 与 Cluster 将在后续版本提供",
+            hint = "当前版本仅支持单节点；v1 暂不支持 Sentinel 与 Cluster",
             checked = false,
             onCheckedChange = {},
             enabled = false,

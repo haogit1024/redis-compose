@@ -21,7 +21,7 @@ enum class SessionStatus { DISCONNECTED, CONNECTING, CONNECTED, ERROR }
 /**
  * Runtime state for one open connection.
  *
- * The gateway is owned here; feature states (Phase 4+) share this session. All state
+ * The gateway is owned here; feature states share this session. All state
  * writes happen on the Compose main thread because callers launch from the app scope.
  */
 class RedisSession(

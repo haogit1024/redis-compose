@@ -55,7 +55,7 @@ import com.czh.rediscompose.design.theme.LocalAppTypography
  * Modal dialog drawn inside the app window.
  *
  * Using an in-composition overlay (instead of a separate `DialogWindow`) keeps the
- * scrim, focus handling and theming identical across the app and the gallery.
+ * scrim, focus handling and theming identical across the app and previews.
  */
 @Composable
 fun AppDialog(

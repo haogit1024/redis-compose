@@ -14,6 +14,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.czh.rediscompose.app.AppInfo
 import com.czh.rediscompose.design.component.AppBadge
 import com.czh.rediscompose.design.component.AppBadgeTone
 import com.czh.rediscompose.design.component.AppButton
@@ -28,18 +29,16 @@ import com.czh.rediscompose.design.theme.LocalAppDimens
 import com.czh.rediscompose.design.theme.LocalAppTypography
 import com.czh.rediscompose.feature.settings.SettingRow
 import com.czh.rediscompose.feature.settings.SettingsPanel
+import com.czh.rediscompose.feature.settings.SettingsPreviewFrame
 import com.czh.rediscompose.feature.settings.SettingsSection
 import com.czh.rediscompose.feature.settings.SettingsSectionHeader
-
-private const val CONFIG_PATH = "~/.redis-compose/"
-private const val REPOSITORY_URL = "https://github.com/haogit1024/redis-compose"
 
 @Composable
 internal fun AboutSection(onToast: (String, ToastKind) -> Unit) {
     val dimens = LocalAppDimens.current
     val clipboard = LocalClipboardManager.current
     val uriHandler = LocalUriHandler.current
-    val openRepository = { uriHandler.openUri(REPOSITORY_URL) }
+    val openRepository = { uriHandler.openUri(AppInfo.REPOSITORY_URL) }
     SettingsSectionHeader(SettingsSection.ABOUT)
     SettingsPanel {
         AboutCard(onOpenRepository = openRepository)
@@ -48,14 +47,14 @@ internal fun AboutSection(onToast: (String, ToastKind) -> Unit) {
             hint = "设置、连接与密钥文件都保存在此目录",
         ) {
             Text(
-                text = CONFIG_PATH,
+                text = AppInfo.CONFIG_DIR,
                 style = LocalAppTypography.current.aboutMono,
                 color = LocalAppColors.current.textSecondary,
             )
             AppButton(
                 text = "复制路径",
                 onClick = {
-                    clipboard.setText(AnnotatedString(CONFIG_PATH))
+                    clipboard.setText(AnnotatedString(AppInfo.CONFIG_DIR))
                     onToast("已复制配置路径", ToastKind.Success)
                 },
                 variant = AppButtonVariant.Ghost,
@@ -79,7 +78,7 @@ internal fun AboutSection(onToast: (String, ToastKind) -> Unit) {
     }
     Column(Modifier.padding(top = dimens.spaceSm)) {
         Text(
-            text = "Redis Compose 0.1.0 · 本地优先的 Redis 工作台",
+            text = "${AppInfo.NAME} ${AppInfo.VERSION} · 本地优先的 Redis 工作台",
             style = LocalAppTypography.current.caption,
             color = LocalAppColors.current.textQuaternary,
         )
@@ -106,11 +105,11 @@ private fun AboutCard(onOpenRepository: () -> Unit) {
                 horizontalArrangement = Arrangement.spacedBy(dimens.spaceSm),
             ) {
                 Text(
-                    text = "Redis Compose",
+                    text = AppInfo.NAME,
                     style = typography.cardTitle,
                     color = colors.text,
                 )
-                AppBadge(text = "0.1.0", tone = AppBadgeTone.Accent)
+                AppBadge(text = AppInfo.VERSION, tone = AppBadgeTone.Accent)
             }
             Text(
                 text = "Kotlin Multiplatform · Compose Desktop",
@@ -133,7 +132,9 @@ private fun AboutCard(onOpenRepository: () -> Unit) {
 @Composable
 private fun AboutSectionPreview() {
     AppTheme(dark = true) {
-        AboutSection(onToast = { _, _ -> })
+        SettingsPreviewFrame {
+            AboutSection(onToast = { _, _ -> })
+        }
     }
 }
 
@@ -141,6 +142,8 @@ private fun AboutSectionPreview() {
 @Composable
 private fun AboutSectionLightPreview() {
     AppTheme(dark = false) {
-        AboutSection(onToast = { _, _ -> })
+        SettingsPreviewFrame {
+            AboutSection(onToast = { _, _ -> })
+        }
     }
 }

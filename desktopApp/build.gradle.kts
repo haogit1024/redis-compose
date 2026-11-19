@@ -28,8 +28,25 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "com.czh.rediscompose"
+            packageName = "RedisCompose"
+            // jpackage on macOS rejects versions whose first component is 0, so the bundle
+            // version is 1.0.0 while the in-app product version remains 0.1.0.
             packageVersion = "1.0.0"
+            description = "Redis Compose — a local-first Redis workspace"
+            vendor = "Redis Compose"
+            copyright = "© 2026 Redis Compose contributors"
+
+            macOS {
+                bundleID = "com.czh.rediscompose"
+                dockName = "Redis Compose"
+            }
+            windows {
+                menuGroup = "Redis Compose"
+            }
+            linux {
+                menuGroup = "Development"
+                appCategory = "Development"
+            }
         }
     }
 }

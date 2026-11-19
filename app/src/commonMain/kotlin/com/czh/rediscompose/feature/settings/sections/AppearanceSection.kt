@@ -19,6 +19,7 @@ import com.czh.rediscompose.feature.settings.AccentSwatches
 import com.czh.rediscompose.feature.settings.SettingRow
 import com.czh.rediscompose.feature.settings.SettingsDivider
 import com.czh.rediscompose.feature.settings.SettingsPanel
+import com.czh.rediscompose.feature.settings.SettingsPreviewFrame
 import com.czh.rediscompose.feature.settings.SettingsSection
 import com.czh.rediscompose.feature.settings.SettingsSectionHeader
 import com.czh.rediscompose.feature.settings.SettingsStaticValue
@@ -87,7 +88,9 @@ private val THEME_CARD_ORDER = listOf(ThemeMode.DARK, ThemeMode.LIGHT, ThemeMode
 @Composable
 private fun AppearanceSectionPreview() {
     AppTheme(dark = true) {
-        AppearanceSection(settings = AppSettings(theme = ThemeMode.SYSTEM), onSettingsChange = {})
+        SettingsPreviewFrame {
+            AppearanceSection(settings = AppSettings(theme = ThemeMode.SYSTEM), onSettingsChange = {})
+        }
     }
 }
 
@@ -95,6 +98,8 @@ private fun AppearanceSectionPreview() {
 @Composable
 private fun AppearanceSectionLightPreview() {
     AppTheme(dark = false) {
-        AppearanceSection(settings = AppSettings(theme = ThemeMode.LIGHT), onSettingsChange = {})
+        SettingsPreviewFrame {
+            AppearanceSection(settings = AppSettings(theme = ThemeMode.LIGHT), onSettingsChange = {})
+        }
     }
 }

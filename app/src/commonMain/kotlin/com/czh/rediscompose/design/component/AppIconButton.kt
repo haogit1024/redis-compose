@@ -16,10 +16,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -50,6 +53,7 @@ fun AppIconButton(
     val dimens = LocalAppDimens.current
     val interactionSource = remember { MutableInteractionSource() }
     val hovered by interactionSource.collectIsHoveredAsState()
+    var focused by remember { mutableStateOf(false) }
     val hoverProgress by animateFloatAsState(
         targetValue = if (hovered && enabled) 1f else 0f,
         animationSpec = tween(durationMillis = 140),
@@ -77,7 +81,8 @@ fun AppIconButton(
                 .size(boxSize)
                 .clip(shape)
                 .background(background)
-                .border(1.dp, Color.Transparent, shape)
+                .border(1.dp, if (focused && enabled) colors.accent else Color.Transparent, shape)
+                .onFocusChanged { focused = it.isFocused }
                 .clickable(
                     interactionSource = interactionSource,
                     indication = null,

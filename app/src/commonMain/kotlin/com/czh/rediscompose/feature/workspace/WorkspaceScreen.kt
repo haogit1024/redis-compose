@@ -51,7 +51,7 @@ import com.czh.rediscompose.feature.workspace.dialog.TtlDialog
 import kotlinx.coroutines.delay
 
 /**
- * Workspace key browser: resizable key column plus the Phase 4 value placeholder.
+ * Workspace key browser: resizable key column plus the value pane.
  *
  * All Redis work lives in [WorkspaceState]; this screen only handles layout, focus and
  * keyboard shortcuts (⌘F, Esc, R, N).

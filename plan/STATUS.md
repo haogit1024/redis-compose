@@ -16,7 +16,7 @@
 | 7 — 洞察 | 已验收 | 2026-11-19 | 见下文 §Phase 7 | 见“遗留风险” |
 | 8 — 连接库 | 已验收 | 2026-11-19 | 见下文 §Phase 8 | 见“遗留风险” |
 | 9 — 设置 + 命令面板 | 已验收 | 2026-11-19 | 见下文 §Phase 9 | 见“遗留风险” |
-| 10 — 打磨与发布 | 未开始 | — | — | — |
+| 10 — 打磨与发布 | 已验收 | 2026-11-19 | 见下文 §Phase 10 | 见“遗留风险” |
 
 ## 阶段门禁
 
@@ -831,11 +831,135 @@
 
 ---
 
+## Phase 10 — 打磨与发布准备（已验收）
+
+发布版本：**0.1.0**（macOS 安装包 bundle version 为 1.0.0，见下）。
+
+### 完成内容
+
+#### 清理
+
+- 删除 `design/gallery/DesignGalleryScreen.kt`（Phase 1 临时组件画廊，运行时已不可达）。
+- 移除未使用的依赖：`androidx.lifecycle:lifecycle-*`、`junit`、`kotlin-test-junit`；`libs.versions.toml` 同步删除条目。
+- 清理代码注释中的阶段编号与“gallery / Phase placeholder”描述；删除 UI 中“将在后续版本提供”的承诺式文案，改为明确的 v1 限制。
+- 确认不存在第二套主题/AppState/图标；`com.czh.redis` 旧包只存在于 `plan/` 历史记录。
+- `AppInfo` 集中管理产品名、版本（0.1.0）、短版本（v0.1）、配置目录与仓库 URL；窗口标题、顶栏、状态栏、设置/关于统一读取。
+- 预览 fixture 仍随生产源集编译（仅 `@Preview` 使用，不参与运行时）；未迁移到独立 tooling 源集，已列为后续改进。
+- `design/`、`plan/` 保留，未删除。
+
+#### 构建与打包
+
+- `settings.gradle.kts` 仅包含 `:app` 与 `:desktopApp`。
+- `desktopApp` 仅依赖 `:app` + Compose Desktop + coroutines-swing + preview。
+- `desktopApp/build.gradle.kts`：
+  - `packageName = RedisCompose`、`bundleID = com.czh.rediscompose`、`dockName = Redis Compose`；
+  - target `Dmg / Msi / Deb`，macOS/Windows/Linux 菜单分组；
+  - 说明 jpackage 版本限制：bundle version 使用 `1.0.0`，产品内版本仍为 `0.1.0`。
+- 成功生成 macOS DMG：`desktopApp/build/compose/binaries/main/dmg/RedisCompose-1.0.0.dmg`。
+- Windows MSI / Linux DEB 目标已配置，本轮未在对应平台执行；未配置代码签名/公证。
+
+#### 视觉与交互打磨
+
+- 离屏渲染检查 5 个页面在 1440、1200/1060、1120/802 内容宽度、深/浅主题、空/数据状态下的布局。
+- 修复/改进：
+  - `AppButton` / `AppIconButton` 增加键盘焦点边框（accent），主要操作 Tab 聚焦可见；
+  - 控制台每条日志包裹 `SelectionContainer`，日志可选中复制；
+  - 连接库空状态说明改为“密码按安全设置加密或明文存储”，不再默认写死加密；
+  - Sentinel / Cluster 文案从“后续版本提供”改为“v1 暂不支持”；
+  - 长 Key、长连接名、长 Host 检查省略/换行，无横向溢出；
+  - 品牌版本、状态栏、关于页统一使用 `AppInfo`。
+- 全部 Phase 占位文案与临时画廊已移除。
+
+#### 性能与稳定性检查
+
+- 代码检查通过：Key 列表/集合编辑器 `LazyColumn`；TYPE/TTL 只对可见行懒加载（并发 6）；搜索 300ms debounce；切换 Key 取消旧请求。
+- 大值：默认按 `truncateValueKb` 截断展示，保留完整复制/“仍然编辑”；保存有 `isSaving` 防重复。
+- 控制台：entry 500、输出数组 200 项/深度 3、单结果 600 行等上限保留。
+- 洞察：5 秒采样、720 条/1 小时上限、离开 tab `stop()`、关闭 tab `dispose()`。
+- 设置：300ms debounce；`AppState.close()` 新增退出前 flush 待写设置，避免最后 300ms 修改丢失。
+- 关闭 tab/连接/窗口会取消 session、feature scope 与 gateway；自动摘要刷新在窗口失焦时停止。
+- 除组合根启动时读取小体积 settings/connections（Plan §8.1 允许）外，无主线程网络/大文件 IO。
+
+#### 可访问性
+
+- 图标按钮强制 `contentDescription`；Rail/工具栏有 tooltip。
+- 主要按钮/图标按钮新增焦点边框；文本输入保持焦点环；Esc 关闭顶层弹层。
+- 值 Key 标题、控制台日志、值编辑器可选中复制；状态与错误使用“文本 + 颜色”双通道。
+- 深/浅主题正文与次级文本在离屏渲染中检查对比度。
+- 未完成：全量 Tab 顺序键盘回放、屏幕阅读器语义树检查（需要人工/专用工具）。
+
+#### 测试
+
+- 新增 `TextInputFocusTrackerTest`：输入焦点计数与负数保护，支撑 N/R 不误触。
+- 新增 `SettingsPersistenceTest` 退出 flush 用例：debounce 未完成时 `close()` 仍写入最后快照。
+- 既有测试全部保留并通过。
+
+#### 文档
+
+- `README.md` 重写：功能、环境、构建/运行/打包、配置目录、快捷键、模块结构、架构约定、已知限制。
+- `AGENTS.md` 重写：真实技术栈、模块/包结构、依赖方向、状态/持久化/设计系统/Compose/测试约定、AppDimens 参数上限、快捷键 glyph 与文本焦点追踪注意事项。
+- 新增 `plan/QA-CHECKLIST.md`：构建门禁、Redis 测试数据准备、手动走查表、视觉/性能/可访问性/打包结果与未执行项。
+- `plan/README.md` 与 `plan/STATUS.md` 更新 Phase 10 为已验收。
+
+### 验证
+
+| 命令 | 结果 |
+| --- | --- |
+| `./gradlew clean build` | 通过 |
+| `./gradlew ktlintCheck` | 通过 |
+| `./gradlew :app:jvmTest --rerun-tasks` | 233 tests，0 failures |
+| `./gradlew :desktopApp:run` | 启动成功，`MainKt` 进程存活 ≥ 20 秒，无异常 |
+| `./gradlew :desktopApp:packageDistributionForCurrentOS` | 通过，生成 `RedisCompose-1.0.0.dmg` |
+
+离屏渲染（临时 `ImageComposeScene`，验收后已删除）：
+
+- Key 浏览器 1074×770 深/浅、802×590 深、超长 Key；控制台 1074×770 深/浅、802×590 浅。
+- 连接库 1380×816 深/浅、1060×636 浅、超长名称/Host；洞察 1074×770 深、802×590 浅。
+- 设置 1380×816 深、1060×636 浅；外壳 1120×720 空状态深、1440×900 连接库浅。
+- 检查结果：无横向溢出；长文本省略/换行；窄宽下工具栏换行、meta grid 2 列、历史栏按阈值隐藏。
+
+### 真实联调边界
+
+- 本轮 Agent 环境没有 Docker、`redis-server` 或 `redis-cli`，未连接真实 Redis，未读取/打印用户 `connections.json`，未点击真实连接。
+- 真实 Redis 的首次连接、写路径、10k Key 滚动、1MB+ 值、SSH/TLS 网络握手仍需按 `plan/QA-CHECKLIST.md` 在本机/CI 补跑。
+- macOS 未授权自动按键，键盘快捷键与焦点顺序只做代码/离屏验证，未做自动回放。
+- 未在 Windows/Linux 实机验证打包、窗口最小尺寸与字体回退。
+
+### 遗留风险与边界
+
+1. **真实 Redis 手动回归未执行**：所有 Redis 读写路径依赖既有单测与 fake gateway；发布前应按 QA 清单跑一次真实实例。
+2. **SSH 主机密钥不校验**：v1 `StrictHostKeyChecking=no`，存在中间人风险；未实现 known_hosts/首次确认。
+3. **TLS 私钥格式有限**：仅未加密 PKCS#8 / RSA PKCS#1；加密私钥、EC SEC1、PKCS#12 明确拒绝。
+4. **未支持 Sentinel / Cluster / 导入导出 / 检查更新 / 自定义快捷键 / i18n**；README 已明确。
+5. **洞察无历史基线**：只有本次会话 1 小时/720 样本；关闭 tab 丢弃，符合设计取舍。
+6. **Stream 只读**，最近 50 条，无 XADD/消费者组管理。
+7. **控制台字号未跟随编辑器字号**；值编辑器字号已生效。
+8. **滚动条近似**：设置/命令面板的 Lazy 滚动条 thumb 与拖拽为估算，滚轮与常规滚动正常。
+9. **焦点与屏幕阅读器**：主要按钮/输入已可聚焦并有视觉焦点；未做全量 Tab 顺序与语义树审计。
+10. **macOS 包版本**：jpackage 要求首段非 0，安装包显示 1.0.0，应用内 0.1.0；后续发布应统一版本策略（例如产品直接使用 1.x）。
+11. **无应用图标/签名/公证**：使用 Compose 默认图标；发布商店或对外分发前需补齐品牌图标与签名。
+12. **预览 fixture / 工具**：`*Previews.kt` 仍在生产源集，Phase 10 未迁移；临时渲染测试已删除。
+13. **启动读取**：组合根同步读取小文件以保证首帧主题正确；若未来连接/设置文件变大，应改为启动 loading。
+14. **设置 flush**：`close()` 使用短 `runBlocking` 写入本地小文件，极端磁盘阻塞时退出可能延迟；不会影响正常运行。
+15. **自动刷新**：窗口聚焦时每 30/60 秒刷新摘要与 DB 计数，会与洞察页轮询叠加 `INFO` 请求。
+
+### 后续建议（非本阶段范围）
+
+- Sentinel / Cluster 支持、连接导入/导出。
+- 洞察跨会话历史与告警规则（需要持久化采样）。
+- SSH known_hosts、SSH agent/ProxyJump；TLS 私钥格式扩展。
+- 自定义快捷键、命令收藏持久化、批量删除 Key。
+- 品牌应用图标、代码签名/公证、Windows/Linux 打包 CI。
+- 全量键盘/屏幕阅读器自动化测试；预览 fixture 移到 tooling 源集。
+
+---
+
 ## 当前基线
 
-- 分支：`feat/rewrite-ui`；模块：`:desktopApp` + `:app`。
-- 包名：`com.czh.rediscompose`；入口：`com.czh.rediscompose.desktop.MainKt`。
-- 应用启动直接进入新外壳（顶栏 / rail / 连接侧栏 / tab / 状态栏），不再显示设计画廊。
-- `AppState` + `RedisSession` 已接管连接、tab、主题、设置与旧数据迁移；测试 231/231 通过。
-- Keys / Console / Insights / Connections / Settings 均已接入真实网关/设置；设置页 6 个 section 可滚动、可持久化。
-- 下一步 Phase 10：全量打磨、测试、性能、删除遗留、发布打包；不要提前删除 Phase 8 的 TLS/SSH 能力。
+- 分支：`feat/rewrite-ui`；模块：`:desktopApp` + `:app`；发布版本 **0.1.0**。
+- 包名：`com.czh.rediscompose`；入口：`com.czh.rediscompose.desktop.MainKt`；窗口标题 `Redis Compose`。
+- Phase 0–10 全部 `已验收`；测试 **233/233** 通过；`clean build`、`ktlintCheck`、`desktopApp:run` 通过。
+- 功能：Keys / Console / Insights / Connections / Settings 全部接入真实网关/设置；TLS/SSH 隧道可用；命令面板与全局快捷键完成。
+- 打包：macOS DMG `desktopApp/build/compose/binaries/main/dmg/RedisCompose-1.0.0.dmg`（jpackage bundle version 1.0.0；应用内版本 0.1.0）。
+- 文档：`README.md`（功能/构建/配置/限制）、`AGENTS.md`（架构与约定）、`plan/QA-CHECKLIST.md`（发布验收）。
+- 发布前仍需：真实 Redis 手动回归、Windows/Linux 打包、应用图标与签名/公证、键盘/屏幕阅读器人工检查。

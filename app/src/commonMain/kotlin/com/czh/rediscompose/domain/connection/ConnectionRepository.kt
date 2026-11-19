@@ -9,7 +9,7 @@ interface ConnectionRepository {
      * Updates the at-rest password preference for future saves.
      *
      * Changing the setting must not rewrite the file immediately; it takes effect the next
-     * time a connection is saved (Phase 9 contract).
+     * time a connection is saved.
      */
     fun setEncryptPasswords(encryptPasswords: Boolean) = Unit
 }

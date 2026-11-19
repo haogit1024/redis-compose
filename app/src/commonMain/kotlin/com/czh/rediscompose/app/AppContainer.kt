@@ -10,7 +10,7 @@ import com.czh.rediscompose.domain.settings.SettingsRepository
 /**
  * Composition root for the app.
  *
- * Phase 3 builds `AppState` from this container; UI code never constructs repositories
+ * `AppState` is built from this container; UI code never constructs repositories
  * or gateways itself.
  */
 interface AppContainer {

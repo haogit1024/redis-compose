@@ -22,10 +22,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -64,6 +67,7 @@ fun AppButton(
     val interactionSource = remember { MutableInteractionSource() }
     val hovered by interactionSource.collectIsHoveredAsState()
     val pressed by interactionSource.collectIsPressedAsState()
+    var focused by remember { mutableStateOf(false) }
 
     val isSmall = size == AppButtonSize.Small
     val height = if (isSmall) dimens.buttonHeightSmall else dimens.buttonHeight
@@ -94,11 +98,12 @@ fun AppButton(
     )
     val background = lerp(baseBackground, hoverBackground, hoverProgress)
     val borderColor =
-        when (variant) {
-            AppButtonVariant.Primary -> Color.White.copy(alpha = if (hovered && interactive) 0.22f else 0.14f)
-            AppButtonVariant.Secondary -> if (hovered && interactive) colors.borderEmphasis else colors.border
-            AppButtonVariant.Ghost -> Color.Transparent
-            AppButtonVariant.Danger -> colors.danger.copy(alpha = 0.26f)
+        when {
+            focused && interactive -> colors.accent
+            variant == AppButtonVariant.Primary -> Color.White.copy(alpha = if (hovered && interactive) 0.22f else 0.14f)
+            variant == AppButtonVariant.Secondary -> if (hovered && interactive) colors.borderEmphasis else colors.border
+            variant == AppButtonVariant.Ghost -> Color.Transparent
+            else -> colors.danger.copy(alpha = 0.26f)
         }
     val contentColor =
         when (variant) {
@@ -143,6 +148,7 @@ fun AppButton(
                     },
                 )
                 .border(1.dp, borderColor, shape)
+                .onFocusChanged { focused = it.isFocused }
                 .clickable(
                     interactionSource = interactionSource,
                     indication = null,

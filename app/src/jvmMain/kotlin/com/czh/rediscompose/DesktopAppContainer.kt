@@ -16,7 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 
 /**
- * JVM composition root used by `Main.kt` in Phase 3.
+ * JVM composition root used by `Main.kt`.
  *
  * Initial settings/connections are read synchronously (the files are tiny) so the first
  * frame can render the correct theme and connection list.

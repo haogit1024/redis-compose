@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -66,11 +67,13 @@ internal fun ConsoleLog(
             count = console.entries.size,
             key = { index -> index },
         ) { index ->
-            ConsoleEntryBlock(
-                entry = console.entries[index],
-                promptUser = console.promptUser,
-                promptHost = console.promptHost,
-            )
+            SelectionContainer {
+                ConsoleEntryBlock(
+                    entry = console.entries[index],
+                    promptUser = console.promptUser,
+                    promptHost = console.promptHost,
+                )
+            }
         }
     }
 }

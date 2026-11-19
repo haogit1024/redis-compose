@@ -21,6 +21,7 @@ import com.czh.rediscompose.domain.settings.KeyView
 import com.czh.rediscompose.feature.settings.SettingRow
 import com.czh.rediscompose.feature.settings.SettingsNumberField
 import com.czh.rediscompose.feature.settings.SettingsPanel
+import com.czh.rediscompose.feature.settings.SettingsPreviewFrame
 import com.czh.rediscompose.feature.settings.SettingsSection
 import com.czh.rediscompose.feature.settings.SettingsSectionHeader
 import com.czh.rediscompose.util.SettingsLimits
@@ -148,7 +149,9 @@ private val AUTO_REFRESH_OPTIONS = listOf(0, 30, 60)
 @Composable
 private fun BrowserSectionPreview() {
     AppTheme(dark = true) {
-        BrowserSection(settings = AppSettings(), onSettingsChange = {})
+        SettingsPreviewFrame {
+            BrowserSection(settings = AppSettings(), onSettingsChange = {})
+        }
     }
 }
 
@@ -156,6 +159,8 @@ private fun BrowserSectionPreview() {
 @Composable
 private fun BrowserSectionLightPreview() {
     AppTheme(dark = false) {
-        BrowserSection(settings = AppSettings(keyView = KeyView.FLAT), onSettingsChange = {})
+        SettingsPreviewFrame {
+            BrowserSection(settings = AppSettings(keyView = KeyView.FLAT), onSettingsChange = {})
+        }
     }
 }

@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.czh.rediscompose.app.AppInfo
 import com.czh.rediscompose.design.component.AppButton
 import com.czh.rediscompose.design.component.AppButtonSize
 import com.czh.rediscompose.design.component.AppButtonVariant
@@ -111,7 +112,7 @@ fun ConnectionsScreen(
                             AppEmptyState(
                                 icon = AppIcons.Connections,
                                 title = "添加你的第一个 Redis 连接",
-                                description = "连接信息保存在 ~/.redis-compose/connections.json，密码会加密存储。",
+                                description = "连接信息保存在 ${AppInfo.CONFIG_DIR}connections.json，密码按安全设置加密或明文存储。",
                                 action = {
                                     AppButton(
                                         text = "新建连接",
@@ -135,7 +136,7 @@ fun ConnectionsScreen(
                 }
                 if (state.totalCount == 0) {
                     Text(
-                        text = "支持的配置：直连、TLS、SSH 隧道；Sentinel / Cluster 将在后续版本提供。",
+                        text = "支持的配置：直连、TLS、SSH 隧道；v1 暂不支持 Sentinel / Cluster。",
                         style = typography.caption,
                         color = colors.textTertiary,
                         modifier = Modifier.padding(top = dimens.spaceMd),

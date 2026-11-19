@@ -99,6 +99,25 @@ class SettingsPersistenceTest {
         }
 
     @Test
+    fun `closing flushes the last pending settings snapshot`() =
+        runBlocking {
+            val repository = RecordingSettingsRepository()
+            val expected = AppSettings(theme = ThemeMode.LIGHT, editorFontSize = 17)
+            val state =
+                AppState(
+                    container = TestContainer(repository),
+                    scope = CoroutineScope(Dispatchers.Unconfined),
+                    initialSettings = AppSettings(),
+                    initialConnections = emptyList(),
+                )
+
+            state.updateSettings(expected)
+            state.close()
+
+            assertEquals(expected, repository.saved)
+        }
+
+    @Test
     fun `settings save failure marks the status and shows a toast`() =
         runBlocking {
             val failing =

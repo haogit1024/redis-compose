@@ -35,7 +35,7 @@ data class SshConfig(
 )
 
 /**
- * Stored connection description. Runtime sessions live in `RedisSession` (Phase 3).
+ * Stored connection description. Runtime sessions live in `RedisSession`.
  *
  * Fields keep defaults so older `connections.json` files without them still load.
  */

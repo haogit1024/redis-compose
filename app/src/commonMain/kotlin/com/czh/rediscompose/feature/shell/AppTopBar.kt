@@ -31,6 +31,7 @@ import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.czh.rediscompose.app.AppInfo
 import com.czh.rediscompose.app.AppPage
 import com.czh.rediscompose.app.AppState
 import com.czh.rediscompose.app.SessionStatus
@@ -161,7 +162,7 @@ private fun Brand() {
             )
         }
         Text(
-            text = "v0.1",
+            text = AppInfo.SHORT_VERSION,
             style = typography.monoMeta,
             color = colors.textQuaternary,
             modifier =

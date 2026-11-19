@@ -1,215 +1,127 @@
-# redis-compose AGENTS.md
+# Redis Compose — AGENTS.md
 
 ## 项目概述
 
-本项目是一个基于 **Kotlin Multiplatform Compose** 的桌面应用开发框架，旨在通过共享代码实现跨平台 UI 开发。在 github 平台上开源
+Redis Compose 是一个 **Compose Desktop** 的 Redis 桌面工作台，使用 Kotlin Multiplatform 共享 UI 与业务逻辑。当前只构建 JVM/Desktop，但保留 KMP 结构以便未来扩展。
 
-### 核心目标
+核心能力：键浏览、6 种值编辑器、命令控制台、服务器洞察、连接库（TLS/SSH）、设置与命令面板。
 
-- 利用 Kotlin Multiplatform 特性实现代码复用
-- 使用 Compose Multiplatform 构建现代化桌面 UI
-- 支持热重载开发，提升开发效率
-- 为未来扩展到 iOS/Android/Web 平台奠定基础
+## 技术栈
 
-### 技术栈
-
-| 分类 | 技术 | 版本             |
-|------|------|----------------|
-| 语言 | Kotlin | 2.4.0          |
-| UI 框架 | Compose Multiplatform | 1.11.1         |
+| 分类 | 技术 | 版本 |
+| --- | --- | --- |
+| 语言 | Kotlin | 2.4.0 |
+| UI | Compose Multiplatform | 1.11.1 |
 | 设计系统 | Material3 | 1.11.0-alpha07 |
-| 异步 | Kotlinx Coroutines | 1.11.0         |
-| 生命周期 | AndroidX Lifecycle | 2.11.0-beta01  |
-| 构建工具 | Gradle (Kotlin DSL) | 9.6.0          |
-| 目标平台 | Desktop (JVM) | -              |
+| 图标 | Material Icons Extended（Outlined，经 `AppIcons`） | 1.7.3 |
+| 协程 | kotlinx.coroutines | 1.11.0 |
+| 序列化 | kotlinx.serialization JSON | 1.9.0 |
+| Redis | Jedis | 5.2.0 |
+| SSH | JSch (mwiede) | 2.28.8 |
+| 构建 | Gradle Kotlin DSL | 9.6.0 |
+| 目标 | Desktop (JVM) | JDK 17+ |
 
----
+## 模块
 
-## 模块结构
-
-```
+```text
 redis-compose/
-├── desktopApp/           # 桌面应用入口模块
-│   └── src/main/kotlin/com/czh/rediscompose/desktop/
-│       └── Main.kt       # 桌面应用主函数
-├── app/                  # KMP 应用模块（由原 shared 重命名）
-│   └── src/
-│       ├── commonMain/   # 跨平台共享代码
-│       │   ├── kotlin/com/czh/rediscompose/  # Kotlin 源代码
-│       │   └── composeResources/  # 资源文件
-│       ├── commonTest/   # 跨平台测试代码
-│       ├── jvmMain/      # JVM 平台特定代码
-│       └── jvmTest/      # JVM 平台测试代码
-├── design/               # HTML 设计参考（不参与构建）
-├── plan/                 # 分阶段实施计划
-├── gradle/               # Gradle 配置
-│   ├── wrapper/          # Gradle Wrapper
-│   └── libs.versions.toml # 依赖版本目录
-└── settings.gradle.kts   # 项目模块配置
+├── desktopApp/src/main/kotlin/com/czh/rediscompose/desktop/Main.kt
+├── app/src/
+│   ├── commonMain/kotlin/com/czh/rediscompose/
+│   │   ├── app/          # RedisComposeApp, AppState, RedisSession, AppContainer, AppPage, AppInfo
+│   │   ├── domain/       # connection / key / command / server / settings / repository
+│   │   ├── data/redis/   # RedisGateway 接口、ValueCodec、InfoParser、Reply/SlowLog/ClientList 解析
+│   │   ├── design/       # theme / icon / component / text
+│   │   ├── feature/      # shell / workspace / console / insights / connections / settings
+│   │   └── util/         # Formatters、命令解析、WriteCommandGuard、SettingsLimits 等纯函数
+│   ├── commonMain/composeResources/font/   # Inter + JetBrains Mono
+│   ├── jvmMain/          # Jedis/Ssh/Tls 实现、JSON 存储、AesGcm、DesktopAppContainer
+│   ├── commonTest/
+│   └── jvmTest/
+├── design/               # HTML 视觉参考（不参与构建）
+├── plan/                 # 阶段合同、参考与验收记录
+└── gradle/libs.versions.toml
 ```
 
-### 模块职责
+允许的依赖方向：
 
-| 模块 | 职责 | 说明 |
-|------|------|------|
-| `desktopApp` | 桌面应用入口 | 包含主函数、桌面特定配置、打包配置 |
-| `app` | 共享 UI 和逻辑 | 包名 `com.czh.rediscompose`，包含 Compose 组件、业务逻辑、跨平台资源 |
+```text
+desktopApp -> app
+app/app    -> feature, design, domain, data, util
+feature    -> design, domain, util, app/AppState（只读 + 回调）
+design     -> domain（只读类型）/ util
+data       -> domain
+domain     -> 无（纯 Kotlin）
+util       -> 无 UI
+```
 
----
+- feature **不能** import Jedis 或 `data/storage`；通过 `RedisGateway` 与组合根回调。
+- `design` 不能依赖 `feature` / `data`。
+- `app` 是唯一组合根：创建 container、AppState、会话与 feature state。
 
-## 开发指南
-
-### 构建命令
+## 命令
 
 ```bash
-# 编译项目
 ./gradlew build
-
-# 清理构建
-./gradlew clean
-```
-
-### 运行方式
-
-```bash
-# 热重载运行（推荐开发使用）
-./gradlew :desktopApp:hotRun --auto
-
-# 标准运行
-./gradlew :desktopApp:run
-```
-
-### 测试命令
-
-```bash
-# 运行所有测试
-./gradlew test
-
-# 代码风格检查
 ./gradlew ktlintCheck
-
-# 仅运行 JVM 测试
 ./gradlew :app:jvmTest
+./gradlew :desktopApp:run
+./gradlew :desktopApp:hotRun --auto
+./gradlew :desktopApp:packageDistributionForCurrentOS
 ```
 
-### IDE 配置
+- 打包：macOS 生成 DMG（jpackage bundle version 1.0.0，应用版本 0.1.0）；Windows/Linux 需在对应平台执行。
+- 不提交 `build/`、`.gradle/`、临时截图。
 
-推荐使用 **IntelliJ IDEA** 进行开发，支持以下功能：
-- Kotlin Multiplatform 插件
-- Compose Preview 支持
-- Gradle 集成
+## 架构与约定
 
----
+### 状态
 
-## 依赖管理
+- 手写 `AppState` + 每页 `XxxState`：`mutableStateOf` / `mutableStateListOf` / `mutableStateMapOf` + 注入的 `CoroutineScope`。
+- 不引入 Decompose、Voyager、Koin、Hilt、Navigation 或图表库。
+- State holder 不依赖 Compose UI；Composable 只读状态并调用方法。
+- 所有长任务可取消；关闭 tab/连接时 dispose 对应 state 和 gateway。
+- Redis 调用必须在 `Dispatchers.IO` 上（`JedisRedisGateway` 内部处理），UI 不直接发起。
 
-项目使用 Gradle Version Catalog 管理依赖，配置文件为 [gradle/libs.versions.toml](file:///Users/chenzhihao/git_clones/my/redis-compose/gradle/libs.versions.toml)。
+### 持久化
 
-### 主要依赖
+- `~/.redis-compose/settings.json`、`connections.json`、`secret.key`。
+- JSON：`ignoreUnknownKeys`、pretty print、临时文件 + 原子 move。
+- 密码：AES-256-GCM，`enc:v1:` 前缀；关闭加密后下一次连接保存写明文。
+- 设置：内存即时更新，300ms debounce 写文件；退出时 flush 待写快照。
+- `initialSettings` / `initialConnections` 在组合根同步读取（文件很小），用于首帧正确主题。
 
-| 依赖 | 坐标 | 用途 |
-|------|------|------|
-| Compose Runtime | `org.jetbrains.compose.runtime:runtime` | Compose 运行时 |
-| Compose Foundation | `org.jetbrains.compose.foundation:foundation` | 基础 UI 组件 |
-| Compose Material3 | `org.jetbrains.compose.material3:material3` | Material Design 3 组件 |
-| Compose Material Icons Extended | `org.jetbrains.compose.material:material-icons-extended` | Outlined 图标（经 `AppIcons` 映射） |
-| Compose UI | `org.jetbrains.compose.ui:ui` | UI 核心功能 |
-| Compose Resources | `org.jetbrains.compose.components:components-resources` | 资源管理 |
-| Compose UI Tooling Preview | `org.jetbrains.compose.ui:ui-tooling-preview` | 预览支持 |
-| AndroidX Lifecycle ViewModel Compose | `org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose` | ViewModel 集成 |
-| AndroidX Lifecycle Runtime Compose | `org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose` | 生命周期感知 |
-| Kotlinx Coroutines Swing | `org.jetbrains.kotlinx:kotlinx-coroutines-swing` | Swing 协程调度 |
+### 设计系统
 
-### 插件
+- 只用 `LocalAppColors` / `LocalAppDimens` / `LocalAppTypography`；禁止 feature 内 `Color(0x...)`、裸 `sp`、魔法圆角。
+- 图标只写 `AppIcons.*`；不要直接使用 `Icons.Outlined.*`。
+- `AppDimens` 顶层 data class 已接近 JVM 255 参数上限；新的分组请放进嵌套 data class（如 `SettingsDimens`）。
+- 快捷键文案使用 `util/ShortcutLabels` 的 Cmd/Shift/Enter；打包字体不含 `⌘/⇧/↵`。
+- 通用组件位于 `design/component/`；不要重复造按钮/输入框/开关/对话框。
 
-| 插件 | ID | 用途 |
-|------|-----|------|
-| Compose Multiplatform | `org.jetbrains.compose` | Compose 多平台支持 |
-| Compose Compiler | `org.jetbrains.kotlin.plugin.compose` | Compose 编译器插件 |
-| Kotlin JVM | `org.jetbrains.kotlin.jvm` | JVM 目标编译 |
-| Kotlin Multiplatform | `org.jetbrains.kotlin.multiplatform` | KMP 支持 |
+### Compose
 
----
+- 公开 Composable：必填参数 → 可选参数 → `modifier: Modifier = Modifier` 最后（slot 除外）。
+- 每个公共组件/屏幕提供深/浅 `@Preview`；预览使用 fake state/remember，不连接 Redis、不读用户文件。
+- 列表使用 `LazyColumn`/`LazyRow`；长 Key、值、日志、命令必须截断/省略。
+- 文本输入需调用 `Modifier.trackTextInputFocus()`（`design/theme/TextInputFocus.kt`），保证 N/R 等单键快捷键不在输入时误触。
+- 颜色/状态不能只靠颜色表达；图标按钮必须有 `contentDescription`/tooltip。
 
-## 编码约定
+### 测试
 
-### Kotlin 代码规范
+- 纯函数必须有单元测试：解析、格式化、树构建、校验、命令分类、设置范围、指标过滤。
+- fake gateway 位于 `commonTest/app/FakeBackend.kt`。
+- 测试不依赖网络、不依赖真实 Redis，使用临时目录写文件。
+- 常用命令：`./gradlew :app:jvmTest ktlintCheck build`。
 
-- 遵循 [Kotlin 官方编码规范](https://kotlinlang.org/docs/coding-conventions.html)
-- 使用 4 空格缩进
-- 文件编码为 UTF-8
-- 类名使用 PascalCase
-- 函数名和变量名使用 camelCase
-- 常量使用 UPPER_CASE_WITH_UNDERSCORES
+## 已知限制
 
-### Compose 组件编写规范
+详见 `README.md`：洞察仅会话采样、Stream 只读、SSH 主机密钥不校验、TLS 私钥格式限制、未支持 Sentinel/Cluster/导入导出、控制台字号未跟随编辑器、近似滚动条。
 
-```kotlin
-@Composable
-fun MyComponent(
-    param1: String,
-    param2: Int,
-    modifier: Modifier = Modifier,
-) {
-    // 组件实现
-}
+## 参考
 
-@Composable
-@Preview
-fun MyComponentPreview() {
-    MaterialTheme {
-        MyComponent(
-            param1 = "示例",
-            param2 = 0,
-        )
-    }
-}
-```
-
-- 组件函数使用 `@Composable` 注解
-- `modifier` 参数作为最后一个参数，默认值为 `Modifier`
-- 为每个组件提供 `@Preview` 预览函数
-- 使用 `MaterialTheme` 包裹预览内容
-
-### 文件命名规则
-
-- Composable 组件：`PascalCase.kt`（如 `Greeting.kt`）
-- ViewModel：`PascalCaseViewModel.kt`
-- 工具类：`PascalCaseUtil.kt`
-
-### 资源管理
-
-- 资源文件放在 `app/src/commonMain/composeResources/`
-- 字体放在 `app/src/commonMain/composeResources/font/`（Inter / JetBrains Mono）
-- 使用 `Res` 对象访问资源（如 `Res.font.inter_regular`）
-
----
-
-## 扩展建议
-
-### 平台扩展
-
-当前项目仅支持 Desktop (JVM)，未来可扩展以下平台：
-
-| 平台 | 目录 | 说明 |
-|------|------|------|
-| Android | `app/src/androidMain/` | Android 平台特定代码 |
-| iOS | `app/src/iosMain/` | iOS 平台特定代码 |
-| Web | `app/src/jsMain/` | Web 平台特定代码 |
-
-### 架构演进
-
-建议采用以下架构模式：
-
-1. **分层架构**：UI层 → 业务逻辑层 → 数据层
-2. **状态管理**：使用 `StateFlow` + `collectAsStateWithLifecycle`
-3. **依赖注入**：考虑使用 Koin 或 Hilt
-4. **导航**：使用 Compose Navigation 组件
-
----
-
-## 参考资源
-
-- [Kotlin Multiplatform Documentation](https://kotlinlang.org/docs/multiplatform.html)
-- [Compose Multiplatform Documentation](https://www.jetbrains.com/lp/compose-multiplatform/)
-- [Jetpack Compose Documentation](https://developer.android.com/jetpack/compose)
+- 计划入口：`plan/README.md`
+- 状态与风险：`plan/STATUS.md`
+- QA 清单：`plan/QA-CHECKLIST.md`
+- 设计 token：`plan/reference/design-tokens.md`
+- 数据/接口契约：`plan/reference/domain-and-data.md`

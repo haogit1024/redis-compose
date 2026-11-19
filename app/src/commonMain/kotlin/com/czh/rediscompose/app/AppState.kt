@@ -24,6 +24,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlin.random.Random
 import kotlin.time.TimeSource
 
@@ -56,6 +57,7 @@ class AppState(
         private set
 
     private var settingsSaveJob: Job? = null
+    private var pendingSettingsSave: AppSettings? = null
     private var autoRefreshJob: Job? = null
     private var appActive = true
 
@@ -373,6 +375,13 @@ class AppState(
     fun close() {
         settingsSaveJob?.cancel()
         settingsSaveJob = null
+        pendingSettingsSave?.let { snapshot ->
+            // Tiny local JSON write; blocking here avoids losing the last change on exit.
+            runBlocking {
+                runCatching { container.settingsRepository.save(snapshot) }
+            }
+        }
+        pendingSettingsSave = null
         autoRefreshJob?.cancel()
         autoRefreshJob = null
         connectJobs.values.forEach { it.cancel() }
@@ -427,6 +436,7 @@ class AppState(
 
     private fun scheduleSettingsSave(snapshot: AppSettings) {
         settingsSaveJob?.cancel()
+        pendingSettingsSave = snapshot
         settingsSaveStatus = SettingsSaveStatus.SAVING
         settingsSaveJob =
             scope.launch {
@@ -434,10 +444,12 @@ class AppState(
                     if (settingsSaveDebounceMillis > 0) delay(settingsSaveDebounceMillis)
                     container.settingsRepository.save(snapshot)
                     lastSettingsSavedAtEpochMillis = currentEpochMillis()
+                    if (pendingSettingsSave == snapshot) pendingSettingsSave = null
                     if (settings == snapshot) settingsSaveStatus = SettingsSaveStatus.SAVED
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (error: Exception) {
+                    if (pendingSettingsSave == snapshot) pendingSettingsSave = null
                     if (settings == snapshot) settingsSaveStatus = SettingsSaveStatus.FAILED
                     showToast("保存设置失败：${error.firstLine()}", ToastKind.Danger)
                 }
