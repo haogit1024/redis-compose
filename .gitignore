@@ -20,3 +20,6 @@ node_modules/
 
 .vscode
 .trae
+
+# Generated macOS icon staging directory
+desktopApp/icons/app.iconset/

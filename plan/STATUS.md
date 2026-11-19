@@ -856,6 +856,7 @@
   - target `Dmg / Msi / Deb`，macOS/Windows/Linux 菜单分组；
   - 说明 jpackage 版本限制：bundle version 使用 `1.0.0`，产品内版本仍为 `0.1.0`。
 - 成功生成 macOS DMG：`desktopApp/build/compose/binaries/main/dmg/RedisCompose-1.0.0.dmg`。
+- 新增品牌应用图标：`desktopApp/icons/app-icon.{icns,ico,png}`，由 `scripts/generate-app-icon.py` 从 BrandMark 的渐变与三条叠层生成；DMG/App 的 `CFBundleIconFile` 已指向 `RedisCompose.icns`，Windows/Linux 打包也配置了对应文件。
 - Windows MSI / Linux DEB 目标已配置，本轮未在对应平台执行；未配置代码签名/公证。
 
 #### 视觉与交互打磨
@@ -937,11 +938,12 @@
 8. **滚动条近似**：设置/命令面板的 Lazy 滚动条 thumb 与拖拽为估算，滚轮与常规滚动正常。
 9. **焦点与屏幕阅读器**：主要按钮/输入已可聚焦并有视觉焦点；未做全量 Tab 顺序与语义树审计。
 10. **macOS 包版本**：jpackage 要求首段非 0，安装包显示 1.0.0，应用内 0.1.0；后续发布应统一版本策略（例如产品直接使用 1.x）。
-11. **无应用图标/签名/公证**：使用 Compose 默认图标；发布商店或对外分发前需补齐品牌图标与签名。
+11. **签名/公证未配置**：品牌图标已包含（ICNS/ICO/PNG）；代码签名、公证与 Windows/Linux 实机打包仍需在发布流水线补齐。
 12. **预览 fixture / 工具**：`*Previews.kt` 仍在生产源集，Phase 10 未迁移；临时渲染测试已删除。
 13. **启动读取**：组合根同步读取小文件以保证首帧主题正确；若未来连接/设置文件变大，应改为启动 loading。
 14. **设置 flush**：`close()` 使用短 `runBlocking` 写入本地小文件，极端磁盘阻塞时退出可能延迟；不会影响正常运行。
 15. **自动刷新**：窗口聚焦时每 30/60 秒刷新摘要与 DB 计数，会与洞察页轮询叠加 `INFO` 请求。
+16. **集合内非 UTF-8 成员**：Hash/List/Set/ZSet/Stream 的成员仅做 HEX 展示，缺少逐行 binary 标记；编辑可能写回 HEX 文本。建议后续为域模型增加 binary 标记与只读行。
 
 ### 后续建议（非本阶段范围）
 
@@ -949,7 +951,7 @@
 - 洞察跨会话历史与告警规则（需要持久化采样）。
 - SSH known_hosts、SSH agent/ProxyJump；TLS 私钥格式扩展。
 - 自定义快捷键、命令收藏持久化、批量删除 Key。
-- 品牌应用图标、代码签名/公证、Windows/Linux 打包 CI。
+- 代码签名/公证、Windows/Linux 打包 CI。
 - 全量键盘/屏幕阅读器自动化测试；预览 fixture 移到 tooling 源集。
 
 ---
@@ -960,6 +962,6 @@
 - 包名：`com.czh.rediscompose`；入口：`com.czh.rediscompose.desktop.MainKt`；窗口标题 `Redis Compose`。
 - Phase 0–10 全部 `已验收`；测试 **233/233** 通过；`clean build`、`ktlintCheck`、`desktopApp:run` 通过。
 - 功能：Keys / Console / Insights / Connections / Settings 全部接入真实网关/设置；TLS/SSH 隧道可用；命令面板与全局快捷键完成。
-- 打包：macOS DMG `desktopApp/build/compose/binaries/main/dmg/RedisCompose-1.0.0.dmg`（jpackage bundle version 1.0.0；应用内版本 0.1.0）。
+- 打包：macOS DMG `desktopApp/build/compose/binaries/main/dmg/RedisCompose-1.0.0.dmg`（jpackage bundle version 1.0.0；应用内版本 0.1.0）；品牌图标已打入 App/DMG。
 - 文档：`README.md`（功能/构建/配置/限制）、`AGENTS.md`（架构与约定）、`plan/QA-CHECKLIST.md`（发布验收）。
-- 发布前仍需：真实 Redis 手动回归、Windows/Linux 打包、应用图标与签名/公证、键盘/屏幕阅读器人工检查。
+- 发布前仍需：真实 Redis 手动回归、Windows/Linux 打包、代码签名/公证、键盘/屏幕阅读器人工检查。

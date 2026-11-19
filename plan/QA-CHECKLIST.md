@@ -52,7 +52,7 @@ for i in $(seq 1 10000); do echo "SET bulk:key:$i $i"; done | redis-cli -n 0 >/d
 | 连接库 | 新建 → 测试连接 → 保存 → 打开工作区 | 未执行（无 Redis） |
 | 多连接 | 同时打开、切换 tab、关闭 tab、删除连接级联关闭 | 单测覆盖 AppState/tab 生命周期 |
 | 键浏览 | SCAN 分页、搜索、类型筛选、树/平铺、置顶、TTL | 离屏 fixture 通过；真实 10k Key 未执行 |
-| 值编辑器 | String JSON/文本/HEX、Hash/List/Set/ZSet 编辑、Stream 只读 | 单测 + 离屏覆盖；真实写路径未执行 |
+| 值编辑器 | String JSON/文本/HEX、Hash/List/Set/ZSet 编辑、Stream 只读、非 UTF-8 集合成员不误写 | 单测 + 离屏覆盖；真实写路径未执行；集合 binary 行仍需专项修复 |
 | Key 操作 | TTL、重命名、删除、新建 5 种类型 | 单测覆盖；真实写路径未执行 |
 | 只读 | 全局只读拦截值编辑/控制台/删除，状态栏徽标 | 单测覆盖；离屏状态检查 |
 | 控制台 | 常用命令、嵌套数组、错误、历史、补全、危险命令确认 | 单测 + 离屏；真实命令未执行 |
@@ -104,8 +104,8 @@ for i in $(seq 1 10000); do echo "SET bulk:key:$i $i"; done | redis-cli -n 0 >/d
 
 - [x] `packageName = RedisCompose`，`bundleID = com.czh.rediscompose`。
 - [x] macOS DMG 生成成功：`desktopApp/build/compose/binaries/main/dmg/RedisCompose-1.0.0.dmg`。
+- [x] 应用图标已提供：`desktopApp/icons/app-icon.icns|ico|png`，DMG/App 内 `CFBundleIconFile` 指向 `RedisCompose.icns`。
 - [x] Windows MSI / Linux DEB 目标已配置（本轮未在对应平台执行）。
-- [ ] 应用图标：使用 Compose 默认图标；自定义品牌图标留待发布迭代。
 - [ ] 代码签名/公证：未配置（需要开发者证书）。
 
 ## 8. 结论

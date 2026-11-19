@@ -39,13 +39,16 @@ compose.desktop {
             macOS {
                 bundleID = "com.czh.rediscompose"
                 dockName = "Redis Compose"
+                iconFile.set(project.file("icons/app-icon.icns"))
             }
             windows {
                 menuGroup = "Redis Compose"
+                iconFile.set(project.file("icons/app-icon.ico"))
             }
             linux {
                 menuGroup = "Development"
                 appCategory = "Development"
+                iconFile.set(project.file("icons/app-icon-linux.png"))
             }
         }
     }

@@ -38,6 +38,8 @@ redis-compose/
 │   ├── jvmMain/          # Jedis/Ssh/Tls 实现、JSON 存储、AesGcm、DesktopAppContainer
 │   ├── commonTest/
 │   └── jvmTest/
+├── desktopApp/icons/     # 应用图标（ICNS / ICO / PNG）
+├── scripts/              # 图标生成等本地脚本
 ├── design/               # HTML 视觉参考（不参与构建）
 ├── plan/                 # 阶段合同、参考与验收记录
 └── gradle/libs.versions.toml
@@ -68,9 +70,13 @@ util       -> 无 UI
 ./gradlew :desktopApp:run
 ./gradlew :desktopApp:hotRun --auto
 ./gradlew :desktopApp:packageDistributionForCurrentOS
+
+# 重新生成品牌图标（Pillow + macOS iconutil）
+python3 scripts/generate-app-icon.py
 ```
 
 - 打包：macOS 生成 DMG（jpackage bundle version 1.0.0，应用版本 0.1.0）；Windows/Linux 需在对应平台执行。
+- 图标：`desktopApp/icons/app-icon.icns|ico|png`，由 `scripts/generate-app-icon.py` 生成（颜色与形状对应 `BrandMark`）。
 - 不提交 `build/`、`.gradle/`、临时截图。
 
 ## 架构与约定
@@ -116,7 +122,7 @@ util       -> 无 UI
 
 ## 已知限制
 
-详见 `README.md`：洞察仅会话采样、Stream 只读、SSH 主机密钥不校验、TLS 私钥格式限制、未支持 Sentinel/Cluster/导入导出、控制台字号未跟随编辑器、近似滚动条。
+详见 `README.md`：洞察仅会话采样、Stream 只读、集合内非 UTF-8 成员编辑风险、SSH 主机密钥不校验、TLS 私钥格式限制、未支持 Sentinel/Cluster/导入导出、控制台字号未跟随编辑器、近似滚动条。
 
 ## 参考
 

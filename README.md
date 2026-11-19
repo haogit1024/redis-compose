@@ -107,6 +107,7 @@ app/src/
 
 - 洞察页只有**本次会话**采样（最多 1 小时 / 720 条），Redis 不提供历史指标；区间不是 24h/7d 历史。
 - **Stream 只读**：不支持 XADD、消费者组管理、分页加载更多（最近 50 条）。
+- **集合中的非 UTF-8 成员**：Hash/List/Set/ZSet/Stream 的成员在展示层回退为 HEX，但没有逐行 binary 标记；编辑这类成员可能把 HEX 文本写回，建议先用控制台/`redis-cli` 处理。
 - **SSH 主机密钥不校验**（v1 使用 `StrictHostKeyChecking=no`）；支持私钥/密码认证，不支持 SSH agent、多跳、ProxyJump。
 - **TLS 客户端私钥**仅支持未加密 PKCS#8 / RSA PKCS#1；不支持加密私钥、EC SEC1、PKCS#12。
 - **未支持** Sentinel、Cluster、导入/导出配置、命令导出文件、检查更新/自动更新、自定义快捷键、i18n 切换。
@@ -114,6 +115,7 @@ app/src/
 - 命令面板/设置页的滚动条在 `LazyListState` 上使用近似 thumb；滚轮与常规滚动正常。
 - 中文字形由系统字体回退（macOS 为 PingFang SC）；应用只打包 Inter / JetBrains Mono。
 - 大值只限制展示，不截断原始数据；超大文本“仍然编辑”仍可能带来输入延迟。
+- 安装包图标已包含；代码签名/公证与 Windows/Linux 实机打包仍未配置。
 - 批量删除 Key 尚未实现；单 Key 删除确认可关闭。
 - macOS 安装包的 bundle version 为 1.0.0（jpackage 要求首位非 0），应用内产品版本为 0.1.0。
 
