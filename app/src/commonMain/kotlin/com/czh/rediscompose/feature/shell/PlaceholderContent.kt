@@ -6,17 +6,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -28,10 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.czh.rediscompose.app.AppPage
 import com.czh.rediscompose.app.AppState
-import com.czh.rediscompose.app.WorkspaceTab
 import com.czh.rediscompose.app.WorkspaceTabKind
-import com.czh.rediscompose.design.component.AppBadge
-import com.czh.rediscompose.design.component.AppBadgeTone
 import com.czh.rediscompose.design.component.AppButton
 import com.czh.rediscompose.design.component.AppButtonVariant
 import com.czh.rediscompose.design.component.AppCard
@@ -44,8 +37,8 @@ import com.czh.rediscompose.design.theme.AppTheme
 import com.czh.rediscompose.design.theme.LocalAppColors
 import com.czh.rediscompose.design.theme.LocalAppDimens
 import com.czh.rediscompose.design.theme.LocalAppTypography
-import com.czh.rediscompose.domain.connection.ConnectionProfile
 import com.czh.rediscompose.feature.console.ConsoleScreen
+import com.czh.rediscompose.feature.insights.InsightsScreen
 import com.czh.rediscompose.feature.workspace.WorkspaceScreen
 
 @Composable
@@ -86,7 +79,17 @@ private fun WorkspaceContent(state: AppState) {
                 AppLoading(label = "正在准备命令控制台…")
             }
         }
-        WorkspaceTabKind.INSIGHTS -> InsightsPlaceholder(state, tab)
+        WorkspaceTabKind.INSIGHTS -> {
+            val insights = state.insightsFor(tab.connectionId)
+            if (insights != null) {
+                InsightsScreen(
+                    state = insights,
+                    onOpenConsole = { state.openTab(tab.connectionId, WorkspaceTabKind.CONSOLE) },
+                )
+            } else {
+                AppLoading(label = "正在准备服务器洞察…")
+            }
+        }
     }
 }
 
@@ -133,26 +136,6 @@ private fun EmptyWorkspace(state: AppState) {
                 icon = AppIcons.Connections,
             )
         }
-    }
-}
-
-@Composable
-private fun InsightsPlaceholder(
-    state: AppState,
-    tab: WorkspaceTab,
-) {
-    val connection = state.connections.firstOrNull { it.id == tab.connectionId }
-    PageScaffold(
-        eyebrow = "WORKSPACE · INSIGHTS",
-        title = "服务器洞察",
-        description = "Phase 7 将展示本次会话采样的内存、吞吐、命中率与慢查询。",
-        meta = connection,
-    ) {
-        PlaceholderCard(
-            icon = AppIcons.Insights,
-            title = "洞察图表尚未接入",
-            description = "会话已经能读取 INFO；图表和指标轮询会在 Phase 7 加入。",
-        )
     }
 }
 
@@ -309,48 +292,6 @@ private fun ReadOnlySetting(
 }
 
 @Composable
-private fun PageScaffold(
-    eyebrow: String,
-    title: String,
-    description: String,
-    meta: ConnectionProfile?,
-    content: @Composable () -> Unit,
-) {
-    val colors = LocalAppColors.current
-    val dimensions = LocalAppDimens.current
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(
-                    start = dimensions.pageMargin,
-                    end = dimensions.pageMargin,
-                    top = dimensions.space2Xl,
-                    bottom = dimensions.space3Xl,
-                ),
-    ) {
-        PageHeading(eyebrow = eyebrow, title = title, description = description)
-        if (meta != null) {
-            Row(
-                modifier = Modifier.padding(top = dimensions.spaceMd),
-                horizontalArrangement = Arrangement.spacedBy(dimensions.spaceSm),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                AppBadge(meta.environment.displayName(), tone = AppBadgeTone.Accent)
-                Text(
-                    text = "${meta.host}:${meta.port}",
-                    style = LocalAppTypography.current.monoMeta,
-                    color = colors.textTertiary,
-                )
-            }
-        }
-        Spacer(Modifier.height(dimensions.spaceXl))
-        content()
-    }
-}
-
-@Composable
 private fun PageHeading(
     eyebrow: String,
     title: String,
@@ -379,48 +320,6 @@ private fun PageHeading(
                 .padding(top = dimensions.spaceXs + 1.dp)
                 .widthIn(max = dimensions.pageDescriptionMaxWidth),
     )
-}
-
-@Composable
-private fun PlaceholderCard(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    description: String,
-) {
-    val colors = LocalAppColors.current
-    val dimensions = LocalAppDimens.current
-    val typography = LocalAppTypography.current
-    AppCard(modifier = Modifier.widthIn(max = dimensions.placeholderMaxWidth)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(dimensions.spaceLg)) {
-            Box(
-                modifier =
-                    Modifier
-                        .size(dimensions.emptyIconSize)
-                        .background(colors.accentSoft, RoundedCornerShape(dimensions.radiusLg)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = colors.accent,
-                    modifier = Modifier.size(dimensions.iconXl),
-                )
-            }
-            Column {
-                Text(
-                    text = title,
-                    style = typography.sectionTitle,
-                    color = colors.text,
-                )
-                Text(
-                    text = description,
-                    style = typography.body,
-                    color = colors.textTertiary,
-                    modifier = Modifier.padding(top = dimensions.spaceXs - 1.dp),
-                )
-            }
-        }
-    }
 }
 
 @Preview(widthDp = 1120, heightDp = 720)

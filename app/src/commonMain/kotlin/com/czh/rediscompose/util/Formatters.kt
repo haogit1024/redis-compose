@@ -75,6 +75,9 @@ expect fun formatEpochSeconds(seconds: Long): String
 /** Current Unix time in seconds; used for honest "read at" labels in the value pane. */
 expect fun currentEpochSeconds(): Long
 
+/** Current Unix time in milliseconds; used for session-local metric sampling. */
+expect fun currentEpochMillis(): Long
+
 /**
  * Cuts [text] to at most [maxBytes] UTF-8 bytes without splitting a code point.
  *

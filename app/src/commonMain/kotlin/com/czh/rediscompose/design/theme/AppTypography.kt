@@ -53,6 +53,15 @@ data class AppTypography(
     val badge: TextStyle,
     val typeChip: TextStyle,
     val filterChip: TextStyle,
+    val kpiValue: TextStyle,
+    val kpiLabel: TextStyle,
+    val chartTitle: TextStyle,
+    val chartAxis: TextStyle,
+    val tableText: TextStyle,
+    val tableHeader: TextStyle,
+    val healthText: TextStyle,
+    val healthDetail: TextStyle,
+    val liveBadge: TextStyle,
     val kbd: TextStyle,
     val segment: TextStyle,
     val tooltip: TextStyle,
@@ -299,6 +308,78 @@ fun rememberAppTypography(): AppTypography {
                     fontSize = 9.sp,
                     letterSpacing = 0.18.sp,
                     lineHeight = 12.sp,
+                ),
+            kpiValue =
+                TextStyle(
+                    fontFamily = monoFamily,
+                    fontWeight = FontWeight(550),
+                    fontSize = 22.sp,
+                    letterSpacing = (-0.9).sp,
+                    lineHeight = 24.sp,
+                ),
+            kpiLabel =
+                TextStyle(
+                    fontFamily = uiFamily,
+                    fontWeight = FontWeight.W600,
+                    fontSize = 8.5.sp,
+                    letterSpacing = 0.68.sp,
+                    lineHeight = 11.sp,
+                ),
+            chartTitle =
+                TextStyle(
+                    fontFamily = uiFamily,
+                    fontWeight = FontWeight.W600,
+                    fontSize = 11.5.sp,
+                    letterSpacing = (-0.06).sp,
+                    lineHeight = 15.sp,
+                ),
+            chartAxis =
+                TextStyle(
+                    fontFamily = monoFamily,
+                    fontWeight = FontWeight.W400,
+                    fontSize = 8.sp,
+                    letterSpacing = 0.sp,
+                    lineHeight = 10.sp,
+                ),
+            tableText =
+                TextStyle(
+                    fontFamily = monoFamily,
+                    fontWeight = FontWeight.W400,
+                    fontSize = 9.sp,
+                    letterSpacing = 0.sp,
+                    lineHeight = 12.sp,
+                ),
+            tableHeader =
+                TextStyle(
+                    fontFamily = uiFamily,
+                    fontWeight = FontWeight.W600,
+                    fontSize = 8.sp,
+                    letterSpacing = 0.56.sp,
+                    lineHeight = 10.sp,
+                ),
+            healthText =
+                TextStyle(
+                    fontFamily = uiFamily,
+                    fontWeight = FontWeight.W500,
+                    fontSize = 9.5.sp,
+                    letterSpacing = 0.sp,
+                    lineHeight = 12.sp,
+                ),
+            healthDetail =
+                TextStyle(
+                    fontFamily = monoFamily,
+                    fontWeight = FontWeight.W400,
+                    fontSize = 8.sp,
+                    letterSpacing = 0.sp,
+                    lineHeight = 10.sp,
+                ),
+            liveBadge =
+                TextStyle(
+                    fontFamily = monoFamily,
+                    fontWeight = FontWeight.W500,
+                    fontSize = 8.sp,
+                    letterSpacing = 0.16.sp,
+                    lineHeight = 10.sp,
                 ),
             kbd =
                 TextStyle(

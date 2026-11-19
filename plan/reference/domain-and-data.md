@@ -708,6 +708,7 @@ class ConsoleState(
 class InsightsState(
     val session: RedisSession,
     private val scope: CoroutineScope,
+    private val onToast: (String, ToastKind) -> Unit = { _, _ -> },
 ) {
     var snapshot by mutableStateOf<ServerSnapshot?>(null)
     var slowLog by mutableStateOf<List<SlowLogEntry>>(emptyList())
@@ -716,13 +717,26 @@ class InsightsState(
     val samples = mutableStateListOf<MetricsSample>()
     var range by mutableStateOf(InsightsRange.LAST_5_MINUTES)
     var autoRefresh by mutableStateOf(true)
+    var isLoading by mutableStateOf(false)
+    var error by mutableStateOf<String?>(null)
+    var lastUpdatedEpochMillis by mutableStateOf<Long?>(null)
+    var isPolling by mutableStateOf(false)
 
     fun start()
     fun stop()
-    fun refresh()
-    fun setRange(range: InsightsRange)
+    fun refreshNow()
+    fun refresh() = refreshNow()
+    fun selectRange(value: InsightsRange)
+    fun updateAutoRefresh(enabled: Boolean)
+    fun dashboardData(): InsightsDashboardData
+    fun dispose()
 }
 ```
+
+- `start()` 立即采样一次，之后每 5 秒；`stop()` 取消轮询但保留 `samples`。
+- 每 3 轮刷新 `SLOWLOG GET 10` 与 `CLIENT LIST`；`INFO` 与 `COMMANDSTATS` 每轮读取。
+- `samples` 仅保留本次会话最多 1 小时（720 条）；关闭 tab 时 `dispose()` 丢弃。
+- `setRange`/`setAutoRefresh` 因 JVM setter 签名冲突改名为 `selectRange`/`updateAutoRefresh`。
 
 **Connections/Settings** 的草稿状态可以直接放在 screen 内 `remember`，但保存/删除/应用必须走 `AppState`。连接表单使用：
 

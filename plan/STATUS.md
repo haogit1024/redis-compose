@@ -13,7 +13,7 @@
 | 4 — Key 浏览器 | 已验收 | 2026-11-18 | 见下文 §Phase 4 | 见“遗留风险” |
 | 5 — 值编辑器 | 已验收 | 2026-11-18 | 见下文 §Phase 5 | 见“遗留风险” |
 | 6 — 控制台 | 已验收 | 2026-11-19 | 见下文 §Phase 6 | 见“遗留风险” |
-| 7 — 洞察 | 未开始 | — | — | — |
+| 7 — 洞察 | 已验收 | 2026-11-19 | 见下文 §Phase 7 | 见“遗留风险” |
 | 8 — 连接库 | 未开始 | — | — | — |
 | 9 — 设置 + 命令面板 | 未开始 | — | — | — |
 | 10 — 打磨与发布 | 未开始 | — | — | — |
@@ -479,12 +479,107 @@
 
 ---
 
+## Phase 7 — 服务器洞察（已验收）
+
+### 完成内容
+
+#### 状态与采样
+
+- `feature/insights/InsightsRange.kt`：`LAST_5_MINUTES / LAST_15_MINUTES / LAST_1_HOUR / SESSION`（标签 5M / 15M / 1H / 会话）。
+- `feature/insights/InsightsState.kt`：
+  - `start()` 立即 `INFO` + `INFO commandstats` 采样一次，之后每 5 秒一轮；`stop()` 取消轮询但保留 `samples`，重新进入页面立即刷新并恢复图表。
+  - 每 3 轮（约 15 秒）刷新 `SLOWLOG GET 10` 与 `CLIENT LIST`；这两项失败只保留旧数据，不覆盖已有内容。
+  - `samples` 记录 `MetricsSample`，按最新样本向前裁剪 1 小时并限制 720 条；关闭 tab 时 `dispose()` 丢弃。
+  - `autoRefresh = false` 时停止自动请求，手动 `refreshNow()` 仍可用；`isLoading` 只用于首轮/手动刷新，轮询不闪烁。
+  - 失败设置 `error` 并保留旧快照、旧样本和旧慢查询；不弹 toast，下一次成功后自动清除错误。
+  - `dashboardData()` 统一产出 KPI、吞吐、内存、命令分布、键空间、健康、慢查询与客户端视图数据；区间只影响图表与 KPI 均值，瞬时指标使用最新样本。
+- `feature/insights/InsightsMetrics.kt`：纯函数区间过滤、样本裁剪、命中率、内存使用率、读 Ops/s、命令 calls 差值、Top 6 + 其他、keyspace 解析、客户端 name 前缀分组、健康状态推导、图表取整与格式化。
+- `util/Formatters` 新增 `currentEpochMillis()` expect/actual（JVM 使用 `Instant`），用于 `MetricsSample` 时间戳。
+
+#### 页面与图表
+
+- `InsightsScreen`：`DisposableEffect` 绑定 `start/stop`；页面可滚动，最大宽度 1220dp，内边距 22/24dp，自绘竖向滚动条。
+- `InsightsHeader`：`OBSERVABILITY` 眉标、服务器洞察 + 呼吸 `LIVE`、`host:port · 版本 · 运行时长 · 自本次连接 · 最后更新`；右侧区间 segmented、自动刷新开关/暂停文案、刷新按钮；内容宽度 < 860dp 时控件换到标题下方，避免副标题折行出现孤立分隔点。
+- `KpiGrid`：四列；内容宽度 < 900dp 时两列。四张卡：已用内存（含 maxmemory / 无上限）、当前 Ops/s + 区间均值、命中率、连接数；每张卡使用样本 Sparkline，样本 < 2 不画线。
+- `ThroughputCard` + `AreaChart`：总 Ops/s（accent 面积/线）与读命令 Ops/s（success 线）；3 条虚线网格、5 个时间刻度、Y 轴 0/中值/最大值；中点三次贝塞尔平滑、900ms 首次揭示；样本 < 2 显示“正在收集数据…”。
+- `MemoryCard` + `DonutChart`：有 maxmemory 时 used vs max 圆环 + 已使用/峰值/碎片率/可用 + 峰值/淘汰键；无 maxmemory 时不画圆环，显示实际用量与“未设置 maxmemory”，不推算百分比。
+- `CommandDistributionCard`：会话内最近两次 samples 的 calls 差值，横向条形 + 百分比，Top 6 + 其他；首轮显示“正在采样…”，后续无增量显示“暂无命令调用”。
+- `KeyspaceCard`：INFO keyspace 的 DB / Keys / Expires / TTL 均值；空 DB 显示 0；显示到最后一个非空 DB 后两行（最少 5、最多 16 行），避免 16 个空 DB 把卡片拉得过长。
+- `HealthCard`：主从复制、RDB、AOF、内存水位；状态色 + 文字（正常/关注/异常/未知/未启用/无上限）；缺字段显示未知，不默认正常；右上角状态点取最严重级别。
+- `SlowLogCard`：真实 `SLOWLOG GET 10`；命令截断、客户端、耗时（>10ms amber）、时间；点击行复制完整命令并 toast；空状态、打开控制台入口。
+- `ClientsCard`：应用连接 / 管理会话 / 空闲 / 最大连接四个 mini stat；按 name 前缀（如 `worker-*`）分组条形；不展示客户端 IP 列表；CLIENT LIST 为空时显示连接数与空状态。
+- `chart/`：全部 Compose Canvas 自绘（Sparkline / AreaChart / DonutChart / ChartPrimitives），未引入任何图表库；颜色全部来自 `AppColors`。
+- 新增 `AppDimens` insights token（页面宽度、KPI、图表、donut、表格行等）与 `AppTypography` token（KPI 数值、图表轴、表格、健康行、LIVE）。
+
+#### 组合根与生命周期
+
+- `AppState` 新增 `insights` 映射与 `insightsFor(connectionId)`；打开 Insights tab 创建，关闭 tab / 保存或删除连接 / `close()` 时 `dispose()`。
+- `PlaceholderContent` 的 `INSIGHTS` 分支路由到真实 `InsightsScreen`，并传入“打开控制台”回调；删除 Insights 占位与不再使用的 PageScaffold/PlaceholderCard。
+- `WorkspaceTabBar` 顶部刷新与“更多 → 刷新”在当前页为 Insights 时调用 `refreshNow()`。
+- `InsightsPreviews.kt`：仅预览/离屏验收使用的内存 gateway 与固定样本，不读取用户连接文件、不连接真实 Redis；覆盖 1440/1120 内容宽度、深/浅、空状态/错误、无 maxmemory、各子卡片与三个图表组件。
+
+### 与设计稿的有意差异
+
+| 设计稿 | 实现 |
+| --- | --- |
+| 1H / 6H / 24H / 7D 历史 | `5M / 15M / 1H / 会话`，数据只来自本次打开页面后的采样；`会话` 也受 1 小时内存保留上限约束 |
+| 命令 / 读取 24h 曲线 | 总 Ops/s 与读命令 Ops/s 的 5 秒会话采样；不伪造 24h |
+| 内存分布 donut（数据集/开销/可用） | used vs max 的 donut；`maxmemory = 0/缺失` 时不画 donut，明确显示未设置上限 |
+| 复制/持久化健康卡 | 从真实 `INFO replication` / `INFO persistence` / `INFO memory` 解析；缺字段为未知 |
+| 慢查询 10 条 | `SLOWLOG GET 10`，按真实命令、客户端、耗时与时间渲染 |
+| 客户端分布 | `CLIENT LIST` 按 name 前缀分组；不展示 IP 列表 |
+| KPI “vs 昨天” delta | 内存为区间首尾差值，Ops 为区间均值，命中率/连接数为较上次采样；无历史基线时显示“最近采样”或省略 |
+| 页面副标题时间范围 | 明确写“自本次连接”和“最后更新 Ns 前” |
+| 底部三列在 1120 保持三列 | 内容宽度 < 900dp 时三卡纵向堆叠；主图表在 < 720dp 时也堆叠，避免压缩内存卡 |
+| 键空间列出 5 个 DB | 显示到最后一个非空 DB 后两行（最少 5、最多 16），空 DB 补 0 |
+
+### 验证
+
+| 命令 | 结果 |
+| --- | --- |
+| `./gradlew :app:jvmTest` | 183 tests，0 failures（Phase 6 基线 164 + 19 个新用例） |
+| `./gradlew ktlintCheck` | 通过 |
+| `./gradlew build` | 通过 |
+| `./gradlew :desktopApp:run` | 启动成功，`MainKt` 进程存活 ≥ 20 秒，无应用异常；验收后结束进程 |
+
+新增测试：
+
+- `InsightsMetricsTest`（12）：区间过滤、1 小时/720 条裁剪、命中率与内存比例空值、读 Ops/s 差值、Top 6 + 其他、keyspace 空 DB、客户端前缀分组、健康状态缺失/主从异常/无 maxmemory、图表取整与格式化、内存统计解析。
+- `InsightsStateTest`（6）：真实 gateway 数据进入快照/命令统计/慢查询/客户端与 sample、start/stop 与保留样本、暂停自动刷新时手动刷新、失败保留旧数据、首轮采样与命令差值、区间切换不发网络请求。
+- `AppStateTest`（1）：Insights tab 创建并随关闭释放状态。
+
+离屏渲染（临时 `ImageComposeScene` 工具，验收后删除临时测试与 `jvmTest` 的 `compose.desktop.currentOs` 依赖）：
+
+- 1440 窗口主内容 1074×770、1120 窗口主内容 802×590、更窄 754×590，以及 1074×1400 长页；深/浅主题。
+- 有样本、无样本 + 错误条、`maxmemory` 未设置、KPI 2/4 列、主图表并排/堆叠、键空间 5 行、慢查询/客户端两列均检查。
+- 确认图表路径、面积渐变、donut、网格/刻度、LIVE 呼吸点、滚动条与浅色主题对比可读。
+
+### 真实 Redis 联调边界
+
+本阶段没有使用真实 Redis 实例：页面只新增 `INFO`、`INFO commandstats`、`SLOWLOG GET 10`、`CLIENT LIST` 四类只读命令，解析器与网关已在 Phase 2/4/6 的真实实例联调中覆盖；本轮离线使用 FakeRedisGateway 与固定 INFO / SLOWLOG / CLIENT LIST fixture 验证状态与渲染。未读取或打印用户 `connections.json`，未点击真实远端连接，未执行任何写命令。
+
+### 遗留风险与边界
+
+1. **真实 UI 采样未人工观察**：没有连接真实 Redis 观察 5–10 秒后的 KPI 增长；Fake gateway 单测覆盖了采样、差值和错误路径，建议用户在自己的测试实例打开一次 Insights 页确认 `SLOWLOG` / `CLIENT LIST` 字段与真实服务端一致。
+2. **CLIENT LIST 分组是启发式**：按 name 的 `-` / `_` / `:` 前缀分组，空 name 归为 `other`；`redis-compose*` / `redis-cli*` 计为“管理会话”，其余计为“应用连接”。不使用 IP，无法区分未命名客户端。
+3. **命令分布只比较最近两次 samples**：上一个 5 秒没有命令时显示“暂无命令调用”；首轮显示“正在采样…”。不做会话累计，避免把累积计数器误当近期分布。
+4. **会话区间不等于无限历史**：内存最多保留 1 小时 / 720 条；关闭 Insights tab 会丢弃样本。跨会话历史、告警、导出按非目标未实现。
+5. **轮询与窗口生命周期**：离开页面（tab 切换/关闭）会 `stop()`；窗口最小化但 tab 仍在前台时轮询继续，未监听窗口可见性。
+6. **图表动画**：首次进入 900ms 揭示；后续每 5 秒数据更新直接跳变，避免持续闪烁。Sparkline 使用原始采样点，客户端数等离散值会呈锯齿状。
+7. **健康判断阈值**：内存水位 ≥90% 异常、≥75% 关注，属于本阶段约定，非可配置告警规则。
+8. **时钟差**：RDB “最近保存 N 前”使用本机当前时间减服务端 `rdb_last_save_time`；客户端与服务端时钟偏差会影响显示。
+9. **键空间空库**：Redis 的 `INFO keyspace` 不列出空 DB；全部 DB 为空时没有 keyspace section，页面显示空状态，而不是 16 行 0。
+10. **剪贴板**：慢查询复制仍使用 `LocalClipboardManager`（与 Phase 4–6 相同的 deprecation warning），Phase 10 统一替换。
+11. **保存连接后的状态**：`saveConnection` 会 dispose insights state，但保留已打开的 Insights tab（与 Keys/Console 现有行为一致）；Phase 8 的连接表单保存后需要重新创建 feature state。
+12. **预览 fixture 随生产源集编译**：`InsightsPreviews.kt` 仅服务 `@Preview`/离屏验收，不参与运行时；Phase 10 可移到 tooling 源集。
+
+---
+
 ## 当前基线
 
 - 分支：`feat/rewrite-ui`；模块：`:desktopApp` + `:app`。
 - 包名：`com.czh.rediscompose`；入口：`com.czh.rediscompose.desktop.MainKt`。
 - 应用启动直接进入新外壳（顶栏 / rail / 连接侧栏 / tab / 状态栏），不再显示设计画廊。
-- `AppState` + `RedisSession` 已接管连接、tab、主题、设置与旧数据迁移；测试 164/164 通过。
-- Keys 页已接入真实 SCAN Key 浏览器与值面板；Console 页已接入真实命令控制台（执行、递归结果、历史、补全、只读拦截）；Insights / Connections / Settings 仍是占位内容。
-- 下一步 Phase 7：服务器洞察仪表盘（KPI、会话内采样图表、慢查询、健康检查）；不要提前实现连接库/设置。
-- 下一阶段前置条件：Phase 6 已在测试实例完成真实命令联调；Phase 7 可直接复用同一连接与 `RedisSession.summary`；开始前需用户确认 Phase 6 验收。
+- `AppState` + `RedisSession` 已接管连接、tab、主题、设置与旧数据迁移；测试 183/183 通过。
+- Keys 页、Console 页、Insights 页均已接入真实网关；Connections / Settings 仍是占位内容。
+- 下一步 Phase 8：连接库与连接表单；不要提前实现设置页，也不要在本阶段继续扩展洞察功能。

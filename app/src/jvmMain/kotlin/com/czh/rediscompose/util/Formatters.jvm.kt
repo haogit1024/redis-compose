@@ -12,3 +12,5 @@ actual fun formatEpochSeconds(seconds: Long): String =
         .format(TIME_FORMATTER)
 
 actual fun currentEpochSeconds(): Long = Instant.now().epochSecond
+
+actual fun currentEpochMillis(): Long = Instant.now().toEpochMilli()

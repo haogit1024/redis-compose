@@ -216,6 +216,19 @@ class AppStateTest {
     }
 
     @Test
+    fun `insights tab owns a state that closes with the tab`() {
+        val container = FakeAppContainer(initialConnections = listOf(profile()))
+        val state = state(container)
+        state.openTab("c1", WorkspaceTabKind.INSIGHTS)
+
+        assertNotNull(state.insightsFor("c1"))
+
+        state.closeTab("c1:insights")
+        assertNull(state.insightsFor("c1"))
+        state.close()
+    }
+
+    @Test
     fun `switching database refreshes the key browser`() {
         val container = FakeAppContainer(initialConnections = listOf(profile()))
         val state = state(container)

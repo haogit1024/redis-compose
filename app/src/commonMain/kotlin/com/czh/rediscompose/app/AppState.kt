@@ -10,6 +10,7 @@ import com.czh.rediscompose.domain.connection.ConnectionProfile
 import com.czh.rediscompose.domain.settings.AppSettings
 import com.czh.rediscompose.domain.settings.ThemeMode
 import com.czh.rediscompose.feature.console.ConsoleState
+import com.czh.rediscompose.feature.insights.InsightsState
 import com.czh.rediscompose.feature.workspace.WorkspaceState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -38,6 +39,7 @@ class AppState(
 
     private val workspaces = mutableMapOf<String, WorkspaceState>()
     private val consoles = mutableMapOf<String, ConsoleState>()
+    private val insights = mutableMapOf<String, InsightsState>()
 
     var activePage by mutableStateOf(AppPage.WORKSPACE)
         private set
@@ -70,6 +72,9 @@ class AppState(
 
     /** Command console state for a connection, created when its Console tab opens. */
     fun consoleFor(connectionId: String): ConsoleState? = consoles[connectionId]
+
+    /** Insights state for a connection, created when its Insights tab opens. */
+    fun insightsFor(connectionId: String): InsightsState? = insights[connectionId]
 
     fun setPage(page: AppPage) {
         activePage = page
@@ -111,6 +116,7 @@ class AppState(
         }
         if (kind == WorkspaceTabKind.KEYS) ensureWorkspace(connectionId, session)
         if (kind == WorkspaceTabKind.CONSOLE) ensureConsole(connectionId, session)
+        if (kind == WorkspaceTabKind.INSIGHTS) ensureInsights(connectionId, session)
         activeTabId = tabId
         commandPaletteVisible = false
     }
@@ -129,7 +135,7 @@ class AppState(
         when (closing.kind) {
             WorkspaceTabKind.KEYS -> workspaces.remove(closing.connectionId)?.dispose()
             WorkspaceTabKind.CONSOLE -> consoles.remove(closing.connectionId)?.dispose()
-            WorkspaceTabKind.INSIGHTS -> Unit
+            WorkspaceTabKind.INSIGHTS -> insights.remove(closing.connectionId)?.dispose()
         }
         if (activeTabId == tabId) {
             val next = tabs.getOrNull(index) ?: tabs.getOrNull(index - 1)
@@ -180,6 +186,7 @@ class AppState(
         sessions.remove(profile.id)?.disconnect()
         workspaces.remove(profile.id)?.dispose()
         consoles.remove(profile.id)?.dispose()
+        insights.remove(profile.id)?.dispose()
         for (tabIndex in tabs.indices) {
             val tab = tabs[tabIndex]
             if (tab.connectionId == profile.id && tab.kind == WorkspaceTabKind.KEYS) {
@@ -194,6 +201,7 @@ class AppState(
         sessions.remove(connectionId)?.disconnect()
         workspaces.remove(connectionId)?.dispose()
         consoles.remove(connectionId)?.dispose()
+        insights.remove(connectionId)?.dispose()
         tabs.removeAll { it.connectionId == connectionId }
         connections = connections.filterNot { it.id == connectionId }
         if (activeConnectionId == connectionId) {
@@ -226,6 +234,8 @@ class AppState(
         workspaces.clear()
         consoles.values.forEach { it.dispose() }
         consoles.clear()
+        insights.values.forEach { it.dispose() }
+        insights.clear()
         sessions.values.forEach { it.disconnect() }
         sessions.clear()
         toastController.clear()
@@ -272,6 +282,18 @@ class AppState(
                 onRecordCommand = ::recordCommand,
                 scope = session.scope,
                 onDatabaseSelected = { workspaces[connectionId]?.refresh() },
+            )
+        }
+
+    private fun ensureInsights(
+        connectionId: String,
+        session: RedisSession,
+    ): InsightsState =
+        insights.getOrPut(connectionId) {
+            InsightsState(
+                session = session,
+                scope = session.scope,
+                onToast = { message, kind -> showToast(message, kind) },
             )
         }
 

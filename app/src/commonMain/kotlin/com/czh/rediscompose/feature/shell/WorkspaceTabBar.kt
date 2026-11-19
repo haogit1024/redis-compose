@@ -55,6 +55,7 @@ import com.czh.rediscompose.design.theme.AppTheme
 import com.czh.rediscompose.design.theme.LocalAppColors
 import com.czh.rediscompose.design.theme.LocalAppDimens
 import com.czh.rediscompose.design.theme.LocalAppTypography
+import com.czh.rediscompose.feature.insights.InsightsState
 import com.czh.rediscompose.feature.workspace.WorkspaceState
 import com.czh.rediscompose.util.formatCount
 
@@ -71,6 +72,10 @@ fun WorkspaceTabBar(
         activeTab
             ?.takeIf { it.kind == WorkspaceTabKind.KEYS }
             ?.let { state.workspaceFor(it.connectionId) }
+    val activeInsights =
+        activeTab
+            ?.takeIf { it.kind == WorkspaceTabKind.INSIGHTS }
+            ?.let { state.insightsFor(it.connectionId) }
 
     Box(modifier.fillMaxWidth()) {
         Row(
@@ -128,15 +133,15 @@ fun WorkspaceTabBar(
                             icon = AppIcons.Refresh,
                             contentDescription = "刷新",
                             onClick = {
-                                if (activeWorkspace != null) {
-                                    activeWorkspace.refresh()
-                                } else {
-                                    state.showToast("当前页面暂不支持刷新", ToastKind.Info)
+                                when {
+                                    activeWorkspace != null -> activeWorkspace.refresh()
+                                    activeInsights != null -> activeInsights.refreshNow()
+                                    else -> state.showToast("当前页面暂不支持刷新", ToastKind.Info)
                                 }
                             },
                         )
                     }
-                    MoreMenu(state = state, activeWorkspace = activeWorkspace)
+                    MoreMenu(state = state, activeWorkspace = activeWorkspace, activeInsights = activeInsights)
                 }
             }
         }
@@ -332,6 +337,7 @@ private fun DatabasePill(
 private fun MoreMenu(
     state: AppState,
     activeWorkspace: WorkspaceState?,
+    activeInsights: InsightsState?,
 ) {
     var expanded by remember { mutableStateOf(false) }
     Box {
@@ -349,10 +355,10 @@ private fun MoreMenu(
                         label = "刷新",
                         icon = AppIcons.Refresh,
                         onClick = {
-                            if (activeWorkspace != null) {
-                                activeWorkspace.refresh()
-                            } else {
-                                state.showToast("当前页面暂不支持刷新", ToastKind.Info)
+                            when {
+                                activeWorkspace != null -> activeWorkspace.refresh()
+                                activeInsights != null -> activeInsights.refreshNow()
+                                else -> state.showToast("当前页面暂不支持刷新", ToastKind.Info)
                             }
                         },
                     ),

@@ -52,6 +52,13 @@ class FakeRedisGateway(
     var executeReply: RedisReply? = null
     var executeError: Exception? = null
 
+    var slowLogEntries: List<SlowLogEntry> = emptyList()
+    var clientConnections: List<ClientConnection> = emptyList()
+    var commandStatValues: List<CommandStat> = emptyList()
+    var slowLogError: Exception? = null
+    var clientsError: Exception? = null
+    var commandStatsError: Exception? = null
+
     val executedCommands = mutableListOf<List<String>>()
 
     /** Page size used by [scan]; smaller than the requested COUNT keeps tests multi-page. */
@@ -318,11 +325,20 @@ class FakeRedisGateway(
         keyTtlByKey = keyTtlByKey - key
     }
 
-    override suspend fun slowLog(count: Int): List<SlowLogEntry> = emptyList()
+    override suspend fun slowLog(count: Int): List<SlowLogEntry> {
+        slowLogError?.let { throw it }
+        return slowLogEntries.take(count)
+    }
 
-    override suspend fun clients(): List<ClientConnection> = emptyList()
+    override suspend fun clients(): List<ClientConnection> {
+        clientsError?.let { throw it }
+        return clientConnections
+    }
 
-    override suspend fun commandStats(): List<CommandStat> = emptyList()
+    override suspend fun commandStats(): List<CommandStat> {
+        commandStatsError?.let { throw it }
+        return commandStatValues
+    }
 
     override suspend fun execute(args: List<String>): RedisReply {
         executedCommands += args
