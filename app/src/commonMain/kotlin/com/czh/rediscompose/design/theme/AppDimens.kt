@@ -106,7 +106,6 @@ data class AppDimens(
     val railSeparatorWidth: Dp = 22.dp,
     val sidebarAvatarSize: Dp = 27.dp,
     val dbRowHeight: Dp = 24.dp,
-    val dbListMaxHeight: Dp = 200.dp,
     val healthCardRadius: Dp = 12.dp,
     val healthBarHeight: Dp = 4.dp,
     val tabHeight: Dp = 30.dp,

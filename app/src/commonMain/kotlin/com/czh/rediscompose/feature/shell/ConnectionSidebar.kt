@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -78,28 +77,9 @@ fun ConnectionSidebar(
     var filter by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
 
-    val visibleConnections =
-        remember(state.connections, filter) {
-            if (filter.isBlank()) {
-                state.connections
-            } else {
-                state.connections.filter {
-                    it.name.contains(filter, ignoreCase = true) || it.host.contains(filter, ignoreCase = true)
-                }
-            }
-        }
     val groups =
-        remember(visibleConnections) {
-            ConnectionEnvironment.entries.mapNotNull { environment ->
-                val entries =
-                    visibleConnections
-                        .filter { it.environment == environment }
-                        .sortedWith(
-                            compareByDescending<ConnectionProfile> { it.lastOpenedAtEpochMillis ?: 0L }
-                                .thenBy { it.name.lowercase() },
-                        )
-                if (entries.isEmpty()) null else environment to entries
-            }
+        remember(state.connections, filter) {
+            sidebarConnectionGroups(state.connections, filter)
         }
 
     Column(
@@ -380,13 +360,11 @@ private fun DatabaseList(
 ) {
     val colors = LocalAppColors.current
     val dimens = LocalAppDimens.current
-    val typography = LocalAppTypography.current
-    val databaseScroll = rememberScrollState()
+    val columns = databaseColumns(databases)
     Row(
         modifier =
             Modifier
                 .padding(start = dimens.space2Xl, bottom = dimens.spaceXs + 2.dp)
-                .heightIn(max = dimens.dbListMaxHeight)
                 .drawBehind {
                     drawLine(
                         color = colors.borderStrong,
@@ -400,38 +378,67 @@ private fun DatabaseList(
             modifier =
                 Modifier
                     .weight(1f)
-                    .verticalScroll(databaseScroll)
                     .padding(start = dimens.fieldPadding),
             verticalArrangement = Arrangement.spacedBy(1.dp),
         ) {
-            databases.forEach { database ->
-                val selected = database.index == current
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(dimens.dbRowHeight)
-                            .clip(RoundedCornerShape(dimens.radiusXs))
-                            .background(if (selected) colors.accentSoft else Color.Transparent)
-                            .clickable { onSelect(database.index) }
-                            .pointerHoverIcon(PointerIcon.Hand)
-                            .padding(horizontal = 7.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "db${database.index}",
-                        style = typography.monoMeta,
-                        color = if (selected) colors.accent else colors.textTertiary,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Text(
-                        text = formatCount(database.keyCount),
-                        style = typography.monoMeta,
-                        color = if (selected) colors.accent else colors.textQuaternary,
-                    )
+            val rows = columns.maxOfOrNull { it.size } ?: 0
+            repeat(rows) { rowIndex ->
+                Row(horizontalArrangement = Arrangement.spacedBy(dimens.spaceXs)) {
+                    columns.forEach { column ->
+                        val database = column.getOrNull(rowIndex)
+                        if (database == null) {
+                            Spacer(Modifier.weight(1f))
+                        } else {
+                            DatabaseCell(
+                                database = database,
+                                selected = database.index == current,
+                                onSelect = onSelect,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun DatabaseCell(
+    database: DatabaseInfo,
+    selected: Boolean,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = LocalAppColors.current
+    val dimens = LocalAppDimens.current
+    val typography = LocalAppTypography.current
+    Row(
+        modifier =
+            modifier
+                .height(dimens.dbRowHeight)
+                .clip(RoundedCornerShape(dimens.radiusXs))
+                .background(if (selected) colors.accentSoft else Color.Transparent)
+                .clickable { onSelect(database.index) }
+                .pointerHoverIcon(PointerIcon.Hand)
+                .padding(horizontal = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(dimens.spaceXs),
+    ) {
+        Text(
+            text = "db${database.index}",
+            style = typography.monoMeta,
+            color = if (selected) colors.accent else colors.textTertiary,
+            maxLines = 1,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = formatCount(database.keyCount),
+            style = typography.monoMeta,
+            color = if (selected) colors.accent else colors.textQuaternary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
