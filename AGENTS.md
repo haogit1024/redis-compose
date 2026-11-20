@@ -75,7 +75,7 @@ util       -> 无 UI
 python3 scripts/generate-app-icon.py
 ```
 
-- 打包：macOS 生成 DMG（jpackage bundle version 1.0.0，应用版本 0.1.0）；Windows/Linux 需在对应平台执行。
+- 打包：macOS 生成 DMG（jpackage bundle version 1.0.0，应用版本 0.1.0）；Windows/Linux 需在对应平台执行。推送 `v*` 标签时 GitHub Actions 会打包 macOS arm64/x64、Linux DEB、Windows MSI 并创建 Release（见 `README.md` 的「发布」）。
 - 图标：`desktopApp/icons/app-icon.icns|ico|png`，由 `scripts/generate-app-icon.py` 生成（颜色与形状对应 `BrandMark`）。
 - 不提交 `build/`、`.gradle/`、临时截图。
 

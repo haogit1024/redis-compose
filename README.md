@@ -43,9 +43,24 @@
 ./gradlew :desktopApp:packageDistributionForCurrentOS
 ```
 
-macOS 产物：`desktopApp/build/compose/binaries/main/dmg/RedisCompose-1.0.0.dmg`。
+macOS 产物：`desktopApp/build/compose/binaries/main/dmg/RedisCompose-1.0.0-arm64.dmg`（CI）或 `RedisCompose-1.0.0.dmg`（本地打包）。
 
 Windows/Linux 分别生成 MSI/DEB；需在对应平台执行打包任务。
+
+## 发布
+
+推送 `v*` 标签会触发 `.github/workflows/build.yml`：
+
+1. 在 macOS（Apple Silicon + Intel）、Ubuntu、Windows 上分别运行 `./gradlew build`（代码风格、测试、桌面端编译）；
+2. 打包 macOS DMG（`-arm64` / `-x64`）、Linux DEB、Windows MSI；
+3. 创建 GitHub Release，附带四个安装包与 `SHA256SUMS.txt`；`v0.2.0-beta.1` 这类标签会自动标记为预发布。
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+普通 `main` push 和 PR 只做代码风格检查与三平台测试，不生成安装包；需要临时产物时在 Actions 里手动运行 `workflow_dispatch`。安装包当前未做 macOS 公证或 Windows 代码签名。
 
 ## 配置目录
 
