@@ -213,6 +213,24 @@ object InsightsMetrics {
     fun hasKeyspace(section: Map<String, String>): Boolean = section.keys.any { DB_KEY.matches(it) }
 
     /**
+     * Keyspace rows to render: at least [minimum] rows, extended so the last non-empty
+     * database stays visible, and never more than [rows]. Servers configured with fewer
+     * than [minimum] databases simply show all of them.
+     */
+    fun visibleKeyspaceRows(
+        rows: List<KeyspaceRow>,
+        minimum: Int = 5,
+    ): List<KeyspaceRow> {
+        if (rows.isEmpty()) return emptyList()
+        val lastNonEmpty = rows.indexOfLast { it.keys > 0L }
+        val visibleCount =
+            (lastNonEmpty + 2)
+                .coerceAtLeast(minimum)
+                .coerceAtMost(rows.size)
+        return rows.take(visibleCount)
+    }
+
+    /**
      * Groups clients by the prefix before `-`, `_` or `:`, e.g. `worker-17` → `worker-*`.
      * Only names and counts are exposed; client addresses stay private.
      */

@@ -24,6 +24,7 @@ import com.czh.rediscompose.domain.settings.AppSettings
 import com.czh.rediscompose.domain.settings.KeyView
 import com.czh.rediscompose.domain.settings.ValueFormat
 import com.czh.rediscompose.util.currentEpochSeconds
+import com.czh.rediscompose.util.formatCount
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -207,7 +208,6 @@ class WorkspaceState(
     private var detailJob: Job? = null
     private var detailGeneration = 0
     private var started = false
-    private var userAdjustedExpansion = false
 
     val showTtl: Boolean get() = settings().showKeyTtl
 
@@ -274,9 +274,15 @@ class WorkspaceState(
         launchScan(fetchTotal = true)
     }
 
-    fun loadMore() {
-        if (isLoading || loadedAll || loadError != null) return
-        launchScan(fetchTotal = false)
+    fun loadMore(notify: Boolean = false) {
+        if (isLoading || loadedAll) return
+        // A failed page leaves the load-more row on screen; clicking it must retry instead
+        // of silently doing nothing.
+        if (loadError != null) {
+            retry()
+            return
+        }
+        launchScan(fetchTotal = false, announce = notify)
     }
 
     fun retry() {
@@ -359,7 +365,6 @@ class WorkspaceState(
 
     fun toggleDirectory(path: String) {
         if (path.isEmpty()) return
-        userAdjustedExpansion = true
         expandedDirs =
             if (path in expandedDirs) {
                 expandedDirs - path
@@ -1042,7 +1047,10 @@ class WorkspaceState(
         rebuildTree()
     }
 
-    private fun launchScan(fetchTotal: Boolean) {
+    private fun launchScan(
+        fetchTotal: Boolean,
+        announce: Boolean = false,
+    ) {
         scanJob?.cancel()
         scanGeneration += 1
         val generation = scanGeneration
@@ -1054,19 +1062,27 @@ class WorkspaceState(
                         total = quietly { session.gateway.databaseSize() } ?: 0L
                     }
                     val batchSize = settings().scanBatchSize.coerceIn(1, MAX_SCAN_BATCH)
-                    val page = session.gateway.scan(cursor, appliedPattern, batchSize)
-                    if (generation != scanGeneration) return@launch
-                    var added = false
-                    page.keys.forEach { key ->
-                        if (key.isNotEmpty() && loadedKeySet.add(key)) {
-                            keys.add(key)
-                            added = true
+                    var added = 0
+                    var emptyPages = 0
+                    // SCAN may return a page whose keys are already loaded, and MATCH can
+                    // filter out a whole page. Keep scanning so a load-more click visibly
+                    // adds keys instead of silently advancing the cursor.
+                    while (true) {
+                        val page = session.gateway.scan(cursor, appliedPattern, batchSize)
+                        if (generation != scanGeneration) return@launch
+                        page.keys.forEach { key ->
+                            if (key.isNotEmpty() && loadedKeySet.add(key)) {
+                                keys.add(key)
+                                added += 1
+                            }
                         }
+                        cursor = page.cursor
+                        loadedAll = page.cursor == 0L
+                        loadError = null
+                        if (added > 0 || loadedAll || ++emptyPages >= MAX_EMPTY_SCAN_PAGES) break
                     }
-                    cursor = page.cursor
-                    loadedAll = page.cursor == 0L
-                    loadError = null
-                    if (added) rebuildTree()
+                    if (added > 0) rebuildTree()
+                    if (announce) announceScanResult(added)
                 } catch (error: CancellationException) {
                     throw error
                 } catch (error: Exception) {
@@ -1083,11 +1099,19 @@ class WorkspaceState(
             }
     }
 
+    private fun announceScanResult(added: Int) {
+        val message =
+            when {
+                added > 0 ->
+                    "本次加载 ${formatCount(added.toLong())} 个 Key（已加载 ${formatCount(keys.size.toLong())}）"
+                loadedAll -> "已加载全部 ${formatCount(keys.size.toLong())} 个 Key"
+                else -> "本次没有扫描到新的 Key，可继续加载或调整匹配模式"
+            }
+        onToast(message, ToastKind.Info)
+    }
+
     private fun rebuildTree() {
         tree = KeyTreeBuilder.build(keys, separator)
-        if (!userAdjustedExpansion) {
-            expandedDirs = tree.filter { it.isDirectory }.map { it.path }.toSet()
-        }
     }
 
     private suspend fun <T> quietly(block: suspend () -> T): T? =
@@ -1107,6 +1131,7 @@ class WorkspaceState(
     private companion object {
         const val PREVIEW_CONCURRENCY = 6
         const val MAX_SCAN_BATCH = 10_000
+        const val MAX_EMPTY_SCAN_PAGES = 5
         const val STREAM_PREVIEW_COUNT = 50
         val CREATABLE_TYPES = setOf(KeyType.STRING, KeyType.HASH, KeyType.LIST, KeyType.SET, KeyType.ZSET)
     }

@@ -5,6 +5,7 @@ import com.czh.rediscompose.app.RedisSession
 import com.czh.rediscompose.data.redis.RedisException
 import com.czh.rediscompose.domain.connection.ConnectionProfile
 import com.czh.rediscompose.domain.key.KeyType
+import com.czh.rediscompose.domain.key.ScanPage
 import com.czh.rediscompose.domain.settings.AppSettings
 import com.czh.rediscompose.domain.settings.KeyView
 import kotlinx.coroutines.CoroutineScope
@@ -163,21 +164,60 @@ class WorkspaceStateTest {
     }
 
     @Test
-    fun `top level directories expand by default and keep manual collapse on refresh`() {
+    fun `load more retries after a failed page instead of doing nothing`() {
+        val gateway = gateway("a", "b", "c", "d").apply { scanPageSize = 2 }
+        val state = workspace(gateway)
+        state.start()
+
+        gateway.scanError = RedisException("连接已断开")
+        state.loadMore()
+        assertNotNull(state.loadError)
+
+        gateway.scanError = null
+        state.loadMore(notify = true)
+
+        assertEquals(listOf("a", "b", "c", "d"), state.keys)
+        assertNull(state.loadError)
+        assertTrue(state.loadedAll)
+    }
+
+    @Test
+    fun `load more keeps scanning past pages with no new keys`() {
+        val gateway =
+            gateway("unused").apply {
+                scanPagesOverride =
+                    listOf(
+                        ScanPage(cursor = 1L, keys = listOf("a", "b")),
+                        ScanPage(cursor = 2L, keys = listOf("a", "b")),
+                        ScanPage(cursor = 0L, keys = listOf("c", "d")),
+                    )
+            }
+        val state = workspace(gateway)
+        state.start()
+        assertEquals(listOf("a", "b"), state.keys)
+
+        state.loadMore(notify = true)
+
+        assertEquals(listOf("a", "b", "c", "d"), state.keys)
+        assertTrue(state.loadedAll)
+        assertEquals(3, gateway.scanCalls.size)
+    }
+
+    @Test
+    fun `top level directories stay collapsed until the user expands one`() {
         val gateway =
             gateway("app:config:a", "app:session:b", "cache:x").apply { scanPageSize = 100 }
         val state = workspace(gateway)
         state.start()
 
-        assertEquals(setOf("app", "cache"), state.expandedDirs)
+        assertTrue(state.expandedDirs.isEmpty())
 
         state.toggleDirectory("app")
-        assertEquals(setOf("cache"), state.expandedDirs)
+        assertEquals(setOf("app"), state.expandedDirs)
 
         state.refresh()
 
-        assertTrue(state.expandedDirs.none { it == "app" })
-        assertEquals(setOf("cache"), state.expandedDirs)
+        assertEquals(setOf("app"), state.expandedDirs)
     }
 
     @Test
@@ -261,6 +301,7 @@ class WorkspaceStateTest {
             gateway("app:config:a", "app:session:b", "cache:x").apply { scanPageSize = 100 }
         val state = workspace(gateway)
         state.start()
+        state.toggleDirectory("app")
 
         val expandedRows = flattenKeyTree(state.tree, state.expandedDirs)
         assertTrue(expandedRows.any { it is KeyTreeRow.Directory && it.node.path == "app" })
@@ -279,6 +320,6 @@ class WorkspaceStateTest {
         assertTrue(collapsedRows.any { it is KeyTreeRow.Directory && it.node.path == "app" })
         assertFalse(collapsedRows.any { it is KeyTreeRow.Directory && it.node.path == "app:config" })
         assertFalse(collapsedRows.any { it is KeyTreeRow.Leaf && it.node.path == "app:config:a" })
-        assertTrue(collapsedRows.any { it is KeyTreeRow.Leaf && it.node.path == "cache:x" })
+        assertTrue(collapsedRows.any { it is KeyTreeRow.Directory && it.node.path == "cache" })
     }
 }

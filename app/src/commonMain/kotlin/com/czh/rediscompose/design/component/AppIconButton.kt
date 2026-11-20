@@ -65,7 +65,7 @@ fun AppIconButton(
     val background =
         when {
             active -> colors.accentSoft
-            else -> lerp(Color.Transparent, colors.surface3, hoverProgress)
+            else -> lerp(colors.surface3.copy(alpha = 0f), colors.surface3, hoverProgress)
         }
     val contentColor =
         when {

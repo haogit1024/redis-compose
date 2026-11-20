@@ -233,7 +233,7 @@ data class AppDimens(
     val segmentedItemHeight: Dp = 24.dp,
     val segmentedItemHeightSmall: Dp = 22.dp,
     val menuItemHeight: Dp = 29.dp,
-    val menuMinWidth: Dp = 168.dp,
+    val menuWidth: Dp = 200.dp,
     val menuPadding: Dp = 5.dp,
     val cardPadding: Dp = 14.dp,
     val emptyIconSize: Dp = 50.dp,

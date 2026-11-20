@@ -87,16 +87,21 @@ class ConnectionsStateTest {
             )
         val state = state(connections)
 
-        assertEquals(listOf("a", "c", "b"), state.filteredConnections.map { it.id })
+        // Default is name order, so opening a connection never moves its card.
+        assertEquals(ConnectionSort.NAME, state.sort)
+        assertEquals(listOf("c", "b", "a"), state.filteredConnections.map { it.id })
 
         state.updateSearch("acme")
-        assertEquals(listOf("a", "c"), state.filteredConnections.map { it.id })
+        assertEquals(listOf("c", "a"), state.filteredConnections.map { it.id })
 
         state.updateSearch("")
         state.selectEnvironment(ConnectionEnvironment.LOCAL)
         assertEquals(listOf("b"), state.filteredConnections.map { it.id })
 
         state.clearFilters()
+        state.chooseSort(ConnectionSort.RECENT)
+        assertEquals(listOf("a", "c", "b"), state.filteredConnections.map { it.id })
+
         state.chooseSort(ConnectionSort.NAME)
         assertEquals(listOf("c", "b", "a"), state.filteredConnections.map { it.id })
         assertFalse(state.hasActiveFilters)

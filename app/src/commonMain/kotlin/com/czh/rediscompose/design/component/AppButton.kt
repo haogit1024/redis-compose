@@ -81,7 +81,9 @@ fun AppButton(
         when (variant) {
             AppButtonVariant.Primary -> colors.accentStrong
             AppButtonVariant.Secondary -> colors.surface2
-            AppButtonVariant.Ghost -> Color.Transparent
+            // Keep the hover color's RGB with zero alpha: lerping from Color.Transparent
+            // would blend through translucent black and flash the button gray.
+            AppButtonVariant.Ghost -> colors.surface2.copy(alpha = 0f)
             AppButtonVariant.Danger -> colors.danger.copy(alpha = 0.12f)
         }
     val hoverBackground =

@@ -418,7 +418,7 @@ private fun LoadMoreRow(state: WorkspaceState) {
                 .clickable(
                     interactionSource = interaction,
                     indication = null,
-                ) { state.loadMore() }
+                ) { state.loadMore(notify = true) }
                 .pointerHoverIcon(PointerIcon.Hand)
                 .padding(vertical = dimens.treeMorePadding),
         verticalAlignment = Alignment.CenterVertically,
@@ -432,9 +432,14 @@ private fun LoadMoreRow(state: WorkspaceState) {
         )
         Spacer(Modifier.size(dimens.spaceXs))
         Text(
-            text = "SCAN 加载更多 · cursor ${state.cursor}",
+            text =
+                if (state.loadError != null) {
+                    "加载失败 · 点击重试"
+                } else {
+                    "SCAN 加载更多 · cursor ${state.cursor}"
+                },
             style = typography.monoMicro,
-            color = if (hovered) colors.textSecondary else colors.textTertiary,
+            color = if (state.loadError != null || hovered) colors.textSecondary else colors.textTertiary,
             maxLines = 1,
         )
     }

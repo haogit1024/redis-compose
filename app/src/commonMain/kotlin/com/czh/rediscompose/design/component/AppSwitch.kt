@@ -55,7 +55,7 @@ fun AppSwitch(
         label = "appSwitchThumb",
     )
     val trackColor = lerp(colors.surface4, colors.accent, progress)
-    val trackBorder = lerp(colors.borderStrong, Color.Transparent, progress)
+    val trackBorder = lerp(colors.borderStrong, colors.borderStrong.copy(alpha = 0f), progress)
     val thumbColor = lerp(colors.textSecondary, Color.White, progress)
     val trackShape = RoundedCornerShape(20.dp)
     val alpha = if (enabled) 1f else 0.45f

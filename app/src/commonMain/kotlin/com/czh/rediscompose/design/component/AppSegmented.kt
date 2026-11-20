@@ -21,7 +21,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
@@ -88,7 +87,7 @@ private fun AppSegmentedItem(
         label = "appSegmentedSelection",
     )
     val activeBackground = if (colors.isDark) colors.surface4 else colors.surface
-    val background = lerp(Color.Transparent, activeBackground, progress)
+    val background = lerp(activeBackground.copy(alpha = 0f), activeBackground, progress)
     val contentColor = lerp(colors.textTertiary, colors.text, progress)
     val height = if (isSmall) dimens.segmentedItemHeightSmall else dimens.segmentedItemHeight
 

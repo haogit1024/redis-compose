@@ -51,11 +51,7 @@ fun KeyspaceCard(
                 icon = AppIcons.Layers,
             )
         } else {
-            val lastNonEmpty = keyspace.rows.indexOfLast { it.keys > 0L }
-            val visibleRows =
-                keyspace.rows.take(
-                    (lastNonEmpty + 2).coerceIn(5, keyspace.rows.size),
-                )
+            val visibleRows = InsightsMetrics.visibleKeyspaceRows(keyspace.rows)
             Column {
                 TableHeader()
                 visibleRows.forEach { row ->

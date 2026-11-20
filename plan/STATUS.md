@@ -257,7 +257,7 @@
   - 搜索状态 `searchInput` + `appliedPattern`：空值清除模式并全量重扫；非空原样传给 `SCAN MATCH`。
   - 类型筛选 `typeFilter` 仅对已加载 Key 生效；类型未知的 Key 先保留（灰点），TYPE 返回后再按筛选隐藏。
   - 置顶 `pinnedKeys` 为当前 WorkspaceState 内存态，按名称稳定排序，搜索/类型筛选时仍显示。
-  - 树状态 `tree`（`KeyTreeBuilder` + profile.keySeparator）、`expandedDirs`；首次加载自动展开深度 0 目录，用户手动收起后刷新不再强制展开；分隔符为空时退化为平铺。
+  - 树状态 `tree`（`KeyTreeBuilder` + profile.keySeparator）、`expandedDirs`；默认全部收起，展开/收起状态在刷新和分页加载后保留；分隔符为空时退化为平铺。
   - `toggleKeyView()` 通过 `AppState.updateSettings` 更新 `settings.keyView`（Phase 9 再决定完整持久化体验）。
   - TYPE/TTL 预览缓存 `keyTypes`/`keyTtls`：每个 Key 只请求一次，`Semaphore(6)` 限并发，失败静默（灰点），刷新时清空。
   - WorkspaceState 使用 session scope 下的独立 `SupervisorJob`；`dispose()` 取消 SCAN 与 TYPE/TTL 任务。关闭 Keys tab、删除连接、退出应用都会 dispose。
@@ -281,7 +281,7 @@
   - Key 行 28dp：类型点（6dp + 11% 光晕）、Mono 10.5sp 名称、TTL（8.5sp，≤60s 用 danger）、hover/选中/置顶显示星标。
   - 选中行 accentSoft 背景 + 左侧 2dp accent 条；右键菜单仅提供“复制 Key”。
   - 搜索/类型筛选激活时改为平铺结果列表，头部显示“N 个结果”与清除按钮。
-  - 接近底部时自动 `loadMore()`；底部提供虚线 “SCAN 加载更多 · cursor N” 行。
+  - 接近底部时自动 `loadMore()`；底部提供虚线 “SCAN 加载更多 · cursor N” 行；空页/重复页会自动继续扫描，手动点击后提示本次新增数量，失败时该行变为“加载失败 · 点击重试”。
   - 空 DB / 无匹配 / 首次加载 / 加载失败（含保留已加载内容的内联错误条）分别有明确状态与重试/清除操作。
 - `KeyPaneFooter.kt`：db 名、SCAN 进度条（accent→success 渐变）、`loaded / total`；全部加载完成显示“已加载全部 N 个 Key”。
 - `ValuePanePlaceholder.kt`：未选择显示品牌图标与提示；已选择显示真实 Key 名、类型 pill、`正在读取值…` 占位，明确标注值编辑器属于 Phase 5。
@@ -334,7 +334,7 @@
 3. **面板宽度**：使用 `rememberSaveable`，同一 tab 内保持；关闭并重开 Keys tab 会回到 316dp（未写入 AppState/设置）。
 4. **置顶不持久化**：按计划为 WorkspaceState 内存态，关闭 Keys tab 即清空。
 5. **TYPE/TTL 失败不重试**：单 Key 预览失败会保留灰点并跳过该 Key 的后续自动重试，刷新后重新请求；这是为了避免 toast 风暴。
-6. **自动展开层级**：按文档只自动展开深度 0 目录，因此首次进入只看到一级目录，需要再展开一层才能看到 Key；与设计稿“部分二级目录默认展开”不同，属于按计划的取舍。
+6. **目录默认收起**：进入 Key 浏览器只显示一级目录与顶层 Key，展开状态由用户控制；刷新和分页不会强制展开。
 7. **搜索无结果时**：直接显示“没有匹配的 Key”空状态（含清除按钮），不额外保留“0 个结果”头部。
 8. **剪贴板 API**：使用 `LocalClipboardManager`（编译有 deprecation 警告）；Compose 新的 `LocalClipboard` 是 suspend API，留 Phase 10 统一替换。
 9. **预览 fixture 在生产源码中**：`WorkspacePreviews.kt` 与 `ShellPreviews.kt` 一样只服务于 `@Preview`/离屏验收，不参与运行时路径；Phase 10 可移到 tooling 源集。
@@ -531,7 +531,7 @@
 | KPI “vs 昨天” delta | 内存为区间首尾差值，Ops 为区间均值，命中率/连接数为较上次采样；无历史基线时显示“最近采样”或省略 |
 | 页面副标题时间范围 | 明确写“自本次连接”和“最后更新 Ns 前” |
 | 底部三列在 1120 保持三列 | 内容宽度 < 900dp 时三卡纵向堆叠；主图表在 < 720dp 时也堆叠，避免压缩内存卡 |
-| 键空间列出 5 个 DB | 显示到最后一个非空 DB 后两行（最少 5、最多 16），空 DB 补 0 |
+| 键空间列出 5 个 DB | 显示到最后一个非空 DB 后两行（最少 5 行，且不超过服务器配置的数据库数） |
 
 ### 验证
 
@@ -568,7 +568,7 @@
 6. **图表动画**：首次进入 900ms 揭示；后续每 5 秒数据更新直接跳变，避免持续闪烁。Sparkline 使用原始采样点，客户端数等离散值会呈锯齿状。
 7. **健康判断阈值**：内存水位 ≥90% 异常、≥75% 关注，属于本阶段约定，非可配置告警规则。
 8. **时钟差**：RDB “最近保存 N 前”使用本机当前时间减服务端 `rdb_last_save_time`；客户端与服务端时钟偏差会影响显示。
-9. **键空间空库**：Redis 的 `INFO keyspace` 不列出空 DB；全部 DB 为空时没有 keyspace section，页面显示空状态，而不是 16 行 0。
+9. **键空间空库**：Redis 的 `INFO keyspace` 不列出空 DB；全部 DB 为空时没有 keyspace section，页面显示空状态，而不是按数据库数量补 0 行。
 10. **剪贴板**：慢查询复制仍使用 `LocalClipboardManager`（与 Phase 4–6 相同的 deprecation warning），Phase 10 统一替换。
 11. **保存连接后的状态**：`saveConnection` 会 dispose insights state，但保留已打开的 Insights tab（与 Keys/Console 现有行为一致）；Phase 8 已改为保存时关闭旧会话与相关 tabs（见 §Phase 8）。
 12. **预览 fixture 随生产源集编译**：`InsightsPreviews.kt` 仅服务 `@Preview`/离屏验收，不参与运行时；Phase 10 可移到 tooling 源集。
@@ -583,7 +583,7 @@
 
 - `feature/connections/`：`ConnectionsScreen`、`ConnectionsState`、`ConnectionsHeader`、`ConnectionCard`、`AddConnectionRow`、`RecentConnectionsTable`、`ConnectionSheet`、`ConnectionDraft`、`ConnectionCardMenu`。
 - 页头：`CONNECTION LIBRARY`、连接库、真实在线数 / 连接总数、描述、禁用并带 tooltip 的“导入配置”、新建连接。
-- 工具栏：本地实时搜索（名称 / Host / 分组）、环境 tabs（全部 / Production / Staging / Local / Analytics / Other）、连接计数、网格/列表切换、最近使用/名称排序。
+- 工具栏：本地实时搜索（名称 / Host / 分组）、环境 tabs（全部 / Production / Staging / Local / Analytics / Other）、连接计数、网格/列表切换、名称（默认）/最近使用排序。
 - 网格：内容宽度 ≥1150dp 三列、≥850dp 两列、其余一列；新增连接行始终跨整行；列表模式单列。
 - 连接卡：顶部 2dp 颜色渐变线、颜色缩写块、环境 badge、host:port、真实状态 pill（已连接 + 延迟 / 连接中 / 失败 / 未连接）、TLS / SSH / 只读 / Redis 版本 / DB 数 / 默认 db 标签、keys / clients / 最近使用统计；错误卡显示错误首行。
 - 卡片菜单：打开工作区、编辑、复制连接、测试连接、删除。卡片点击进入 Workspace。

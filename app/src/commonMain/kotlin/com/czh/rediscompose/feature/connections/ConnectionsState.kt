@@ -21,8 +21,8 @@ import kotlinx.coroutines.launch
 import kotlin.random.Random
 
 enum class ConnectionSort(val label: String) {
-    RECENT("最近使用"),
     NAME("名称"),
+    RECENT("最近使用"),
 }
 
 enum class ConnectionView { GRID, LIST }
@@ -60,7 +60,7 @@ class ConnectionsState(
     var environmentFilter by mutableStateOf<ConnectionEnvironment?>(null)
         private set
 
-    var sort by mutableStateOf(ConnectionSort.RECENT)
+    var sort by mutableStateOf(ConnectionSort.NAME)
         private set
 
     var view by mutableStateOf(ConnectionView.GRID)

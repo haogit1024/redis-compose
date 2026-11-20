@@ -45,6 +45,10 @@ class FakeRedisGateway(
     var databaseSizeValue: Long = 12_480
     var scanKeys: List<String> = emptyList()
     var scanError: Exception? = null
+
+    /** Scripted SCAN responses, consumed in order; lets tests model empty or duplicate pages. */
+    var scanPagesOverride: List<ScanPage>? = null
+    private var scanOverrideIndex = 0
     var keyTypeByKey: Map<String, KeyType> = emptyMap()
     var keyTtlByKey: Map<String, Long> = emptyMap()
     var memoryByKey: Map<String, Long> = emptyMap()
@@ -106,6 +110,12 @@ class FakeRedisGateway(
     ): ScanPage {
         scanCalls += RecordedScan(cursor = cursor, pattern = pattern, count = count)
         scanError?.let { throw it }
+        scanPagesOverride?.let { pages ->
+            require(pages.isNotEmpty()) { "scanPagesOverride must not be empty" }
+            val page = pages[scanOverrideIndex.coerceAtMost(pages.lastIndex)]
+            scanOverrideIndex += 1
+            return page
+        }
         val allKeys = (scanKeys + storeKeys).distinct()
         val matched =
             if (pattern.isNullOrBlank()) {

@@ -157,6 +157,29 @@ class InsightsMetricsTest {
     }
 
     @Test
+    fun `visible keyspace rows never exceed the server database count`() {
+        val rows = InsightsMetrics.keyspaceRows(mapOf("db0" to "keys=10,expires=0,avg_ttl=0"), databaseCount = 4)
+
+        assertEquals(4, InsightsMetrics.visibleKeyspaceRows(rows).size)
+        assertEquals(emptyList(), InsightsMetrics.visibleKeyspaceRows(emptyList()))
+    }
+
+    @Test
+    fun `visible keyspace rows keep five and cover the last non-empty database`() {
+        val compact = InsightsMetrics.keyspaceRows(mapOf("db0" to "keys=10,expires=0,avg_ttl=0"))
+        assertEquals(5, InsightsMetrics.visibleKeyspaceRows(compact).size)
+
+        val spread =
+            InsightsMetrics.keyspaceRows(
+                mapOf(
+                    "db0" to "keys=10,expires=0,avg_ttl=0",
+                    "db10" to "keys=1,expires=0,avg_ttl=0",
+                ),
+            )
+        assertEquals(12, InsightsMetrics.visibleKeyspaceRows(spread).size)
+    }
+
+    @Test
     fun `clients group by name prefix and keep addresses out`() {
         val clients =
             (1..3).map { ClientConnection(id = "$it", address = "10.0.0.$it", name = "worker-$it", database = 0, idleSeconds = 10) } +

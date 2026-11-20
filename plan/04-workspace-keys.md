@@ -84,7 +84,7 @@ app/src/commonMain/kotlin/com/czh/rediscompose/feature/workspace/
 - 面板右上视图按钮切换，并更新 `settings.keyView`（Phase 9 持久化；本阶段可通过 AppState.updateSettings 保存）。
 - 树：
   - `KeyTreeBuilder.build(keys, session.profile.keySeparator)`；
-  - `expandedDirs` 默认展开所有深度为 0 的目录（首次加载后），保留用户手动收起状态；搜索时改为平铺；
+  - `expandedDirs` 默认全部收起，只有用户点击目录后才展开；刷新与分页加载保留展开状态；搜索时改为平铺；
   - 目录行：chevron、folder 图标、名称、count；点击切换；
   - Key 行缩进 = depth × 14dp + 基础 8dp；
   - 目录左侧 1dp 竖向引导线（可用 Box 绘制）；
@@ -151,7 +151,7 @@ app/src/commonMain/kotlin/com/czh/rediscompose/feature/workspace/
 ### 4.3 加载 / 错误
 
 - 首次加载：列表内 3–4 行骨架或居中 Loading；不要全屏遮挡。
-- 分页加载：底部一行 `加载中…` / `点击加载更多`。
+- 分页加载：底部一行 `加载中…` / `点击加载更多`；SCAN 可能返回空页或重复 Key，单次加载会继续扫描直到新增 Key 或迭代结束，手动点击后提示本次新增数量；失败时该行变为 `加载失败 · 点击重试`。
 - 错误：面板内 `AppEmptyState` + 重试按钮，保留已加载内容。
 - 全部加载完：footer 显示 “已加载全部 N 个 Key”。
 
