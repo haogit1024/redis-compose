@@ -181,7 +181,7 @@ class InsightsState(
             keyspace =
                 KeyspaceData(
                     available = InsightsMetrics.hasKeyspace(keyspaceSection),
-                    rows = InsightsMetrics.keyspaceRows(keyspaceSection),
+                    rows = InsightsMetrics.keyspaceRows(keyspaceSection, session.databaseCount),
                 ),
             health = InsightsMetrics.healthItems(summary, nowSeconds),
             slowLog = slowLog,

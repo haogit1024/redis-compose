@@ -33,6 +33,12 @@ interface RedisGateway {
 
     suspend fun info(section: String? = null): String
 
+    /**
+     * Configured database count from `CONFIG GET databases`, or null when the server
+     * disallows/hides CONFIG. Callers fall back to the Redis default of 16.
+     */
+    suspend fun databaseCount(): Int?
+
     suspend fun selectDatabase(index: Int)
 
     suspend fun databaseSize(): Long

@@ -343,7 +343,7 @@ class ConsoleState(
     private fun applySelectedDatabase(tokens: List<String>) {
         if (!tokens.first().equals("SELECT", ignoreCase = true)) return
         val index = tokens.getOrNull(1)?.toIntOrNull() ?: return
-        if (index in 0 until RedisSession.DATABASE_COUNT) {
+        if (index in 0 until session.databaseCount) {
             session.recordDatabaseSelection(index)
             onDatabaseSelected(index)
         }

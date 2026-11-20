@@ -40,6 +40,7 @@ class FakeRedisGateway(
 
     var infoRaw: String = DEFAULT_INFO
     var keyspaceRaw: String = DEFAULT_KEYSPACE
+    var databaseCountValue: Int? = 16
 
     var databaseSizeValue: Long = 12_480
     var scanKeys: List<String> = emptyList()
@@ -89,6 +90,8 @@ class FakeRedisGateway(
         infoError?.let { throw it }
         return if (section == "keyspace") keyspaceRaw else infoRaw
     }
+
+    override suspend fun databaseCount(): Int? = databaseCountValue
 
     override suspend fun selectDatabase(index: Int) {
         selectedDatabase = index

@@ -56,6 +56,8 @@ class JedisRedisGateway(
 
     override suspend fun info(section: String?): String = call { client -> if (section == null) client.info() else client.info(section) }
 
+    override suspend fun databaseCount(): Int? = callOrNull { it.configGet("databases")["databases"]?.toIntOrNull() }
+
     override suspend fun selectDatabase(index: Int) {
         call { it.select(index) }
     }

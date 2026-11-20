@@ -19,10 +19,12 @@ class AppStateTest {
     private fun profile(
         id: String = "c1",
         name: String = "Local",
+        defaultDatabase: Int = 0,
     ) = ConnectionProfile(
         id = id,
         name = name,
         host = "127.0.0.1",
+        defaultDatabase = defaultDatabase,
     )
 
     private fun state(
@@ -58,6 +60,51 @@ class AppStateTest {
         assertEquals("7.4.2", session.summary?.version)
         assertEquals(24, session.summary?.connectedClients)
         assertNotNull(session.latencyMillis)
+        state.close()
+    }
+
+    @Test
+    fun `only databases configured on the server are listed`() {
+        val container = FakeAppContainer(initialConnections = listOf(profile()))
+        container.gateway.databaseCountValue = 4
+        val state = state(container)
+
+        state.openConnection("c1")
+
+        val session = assertNotNull(state.sessionFor("c1"))
+        assertEquals(4, session.databaseCount)
+        assertEquals((0..3).toList(), session.databases.map { it.index })
+
+        state.selectDatabase("c1", 3)
+        assertEquals(3, container.gateway.selectedDatabase)
+        state.selectDatabase("c1", 4)
+        assertEquals(3, container.gateway.selectedDatabase, "out-of-range databases stay unselectable")
+        state.close()
+    }
+
+    @Test
+    fun `a default database beyond the server count falls back to the last one`() {
+        val container = FakeAppContainer(initialConnections = listOf(profile(defaultDatabase = 10)))
+        container.gateway.databaseCountValue = 4
+        val state = state(container)
+
+        state.openConnection("c1")
+
+        val session = assertNotNull(state.sessionFor("c1"))
+        assertEquals(3, session.currentDatabase)
+        assertEquals(3, container.gateway.selectedDatabase)
+        state.close()
+    }
+
+    @Test
+    fun `a server hiding CONFIG falls back to sixteen databases`() {
+        val container = FakeAppContainer(initialConnections = listOf(profile()))
+        container.gateway.databaseCountValue = null
+        val state = state(container)
+
+        state.openConnection("c1")
+
+        assertEquals(16, assertNotNull(state.sessionFor("c1")).databaseCount)
         state.close()
     }
 

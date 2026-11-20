@@ -107,6 +107,8 @@ private class PreviewKeyGateway(
             """.trimIndent()
         }
 
+    override suspend fun databaseCount(): Int? = 16
+
     override suspend fun selectDatabase(index: Int) = Unit
 
     override suspend fun databaseSize(): Long = keys.size.toLong()

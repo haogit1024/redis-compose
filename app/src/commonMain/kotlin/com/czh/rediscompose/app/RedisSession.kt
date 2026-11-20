@@ -41,6 +41,10 @@ class RedisSession(
     var databases by mutableStateOf<List<DatabaseInfo>>(emptyList())
         private set
 
+    /** Server-configured database count; falls back to the Redis default until CONFIG answers. */
+    var databaseCount by mutableStateOf(DEFAULT_DATABASE_COUNT)
+        private set
+
     var currentDatabase by mutableStateOf(profile.defaultDatabase)
         private set
 
@@ -67,9 +71,11 @@ class RedisSession(
         try {
             gateway.ping()
             latencyMillis = started.elapsedNow().inWholeMilliseconds
-            gateway.selectDatabase(profile.defaultDatabase)
-            currentDatabase = profile.defaultDatabase
-            refreshDatabases()
+            databaseCount = gateway.databaseCount()?.takeIf { it > 0 } ?: DEFAULT_DATABASE_COUNT
+            val initialDatabase = profile.defaultDatabase.coerceIn(0, databaseCount - 1)
+            gateway.selectDatabase(initialDatabase)
+            currentDatabase = initialDatabase
+            refreshDatabases(databaseCount)
             refreshSummary()
             status = SessionStatus.CONNECTED
         } catch (error: CancellationException) {
@@ -85,18 +91,20 @@ class RedisSession(
         summary = InfoParser.snapshot(gateway.info())
     }
 
-    suspend fun refreshDatabases() {
+    suspend fun refreshDatabases(count: Int? = null) {
+        val resolved = count ?: gateway.databaseCount()?.takeIf { it > 0 } ?: DEFAULT_DATABASE_COUNT
+        databaseCount = resolved
         val raw = gateway.info("keyspace")
         val section = InfoParser.parse(raw)["Keyspace"].orEmpty()
         val counts = InfoParser.parseKeyspace(section).associate { it.index to it.keyCount }
         databases =
-            (0 until DATABASE_COUNT).map { index ->
+            (0 until resolved).map { index ->
                 DatabaseInfo(index = index, keyCount = counts[index] ?: 0L)
             }
     }
 
     suspend fun switchDatabase(index: Int) {
-        require(index in 0 until DATABASE_COUNT) { "Invalid database index: $index" }
+        require(index in 0 until databaseCount) { "Invalid database index: $index" }
         gateway.selectDatabase(index)
         currentDatabase = index
     }
@@ -106,7 +114,7 @@ class RedisSession(
      * database on the shared connection.
      */
     fun recordDatabaseSelection(index: Int) {
-        if (index in 0 until DATABASE_COUNT) currentDatabase = index
+        if (index in 0 until databaseCount) currentDatabase = index
     }
 
     fun disconnect() {
@@ -124,6 +132,7 @@ class RedisSession(
             ?: "连接失败"
 
     companion object {
-        const val DATABASE_COUNT = 16
+        /** Redis' default `databases` configuration, used when CONFIG is unavailable. */
+        const val DEFAULT_DATABASE_COUNT = 16
     }
 }

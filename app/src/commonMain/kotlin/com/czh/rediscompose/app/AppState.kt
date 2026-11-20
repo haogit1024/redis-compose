@@ -251,7 +251,7 @@ class AppState(
             showToast("请先连接后再切换数据库", ToastKind.Warning)
             return
         }
-        if (index !in 0 until RedisSession.DATABASE_COUNT) return
+        if (index !in 0 until session.databaseCount) return
         scope.launch {
             runCatching { session.switchDatabase(index) }
                 .onSuccess { workspaces[connectionId]?.refresh() }

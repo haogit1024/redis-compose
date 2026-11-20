@@ -345,6 +345,7 @@ enum class ValueFormat { AUTO, JSON, TEXT, HEX }
 interface RedisGateway {
     suspend fun ping(): String
     suspend fun info(section: String? = null): String
+    suspend fun databaseCount(): Int?   // CONFIG GET databases; null when hidden
     suspend fun selectDatabase(index: Int)
     suspend fun databaseSize(): Long
 
@@ -602,6 +603,8 @@ class RedisSession(
         private set
     var databases by mutableStateOf<List<DatabaseInfo>>(emptyList())
         private set
+    var databaseCount by mutableStateOf(DEFAULT_DATABASE_COUNT)
+        private set
     var currentDatabase by mutableStateOf(profile.defaultDatabase)
         private set
     var summary by mutableStateOf<ServerSnapshot?>(null)
@@ -609,7 +612,7 @@ class RedisSession(
 
     suspend fun connect()
     suspend fun refreshSummary()
-    suspend fun refreshDatabases()
+    suspend fun refreshDatabases(count: Int? = null)
     suspend fun switchDatabase(index: Int)
     fun disconnect()
 }

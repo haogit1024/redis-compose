@@ -271,6 +271,8 @@ private class PreviewInsightsGateway : RedisGateway {
 
     override suspend fun info(section: String?): String = info
 
+    override suspend fun databaseCount(): Int? = 16
+
     override suspend fun selectDatabase(index: Int) = Unit
 
     override suspend fun databaseSize(): Long = 24_585L

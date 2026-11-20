@@ -137,13 +137,23 @@ class InsightsMetricsTest {
 
         val rows = InsightsMetrics.keyspaceRows(section)
 
-        assertEquals(InsightsMetrics.DATABASE_COUNT, rows.size)
+        assertEquals(InsightsMetrics.DEFAULT_DATABASE_COUNT, rows.size)
         assertEquals(10L, rows[0].keys)
         assertEquals(5_000L, rows[0].avgTtlMillis)
         assertEquals(1L, rows[3].keys)
         assertEquals(0L, rows[1].keys)
         assertTrue(InsightsMetrics.hasKeyspace(section))
         assertTrue(!InsightsMetrics.hasKeyspace(mapOf("Keyspace" to "")))
+    }
+
+    @Test
+    fun `keyspace rows stop at the server database count`() {
+        val section = mapOf("db0" to "keys=10,expires=0,avg_ttl=0")
+
+        val rows = InsightsMetrics.keyspaceRows(section, databaseCount = 4)
+
+        assertEquals(4, rows.size)
+        assertEquals((0..3).toList(), rows.map { it.databaseIndex })
     }
 
     @Test

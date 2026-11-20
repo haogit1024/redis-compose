@@ -70,6 +70,8 @@ private class PreviewGateway : RedisGateway {
 
     override suspend fun info(section: String?): String = if (section == "keyspace") PREVIEW_KEYSPACE else PREVIEW_INFO
 
+    override suspend fun databaseCount(): Int? = 16
+
     override suspend fun selectDatabase(index: Int) = Unit
 
     override suspend fun databaseSize(): Long = 12_480

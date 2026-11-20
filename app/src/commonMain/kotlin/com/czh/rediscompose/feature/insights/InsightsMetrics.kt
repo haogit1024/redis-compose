@@ -23,7 +23,9 @@ object InsightsMetrics {
     const val SAMPLE_INTERVAL_MILLIS: Long = 5_000L
     const val SAMPLE_RETENTION_MILLIS: Long = 3_600_000L
     const val EXTRAS_EVERY_ROUNDS: Int = 3
-    const val DATABASE_COUNT: Int = 16
+
+    /** Redis' default `databases` configuration, used when CONFIG is unavailable. */
+    const val DEFAULT_DATABASE_COUNT: Int = 16
     const val COMMAND_LIMIT: Int = 6
 
     /** Commands counted as reads for the secondary throughput line. */
@@ -178,8 +180,11 @@ object InsightsMetrics {
         return shares
     }
 
-    /** Keyspace rows for `db0..db15`; databases missing from INFO are shown as zero. */
-    fun keyspaceRows(section: Map<String, String>): List<KeyspaceRow> {
+    /** Keyspace rows for `db0..dbN`; databases missing from INFO are shown as zero. */
+    fun keyspaceRows(
+        section: Map<String, String>,
+        databaseCount: Int = DEFAULT_DATABASE_COUNT,
+    ): List<KeyspaceRow> {
         val parsed =
             section.entries.mapNotNull { (key, value) ->
                 val match = DB_KEY.matchEntire(key) ?: return@mapNotNull null
@@ -200,7 +205,7 @@ object InsightsMetrics {
                         avgTtlMillis = fields["avg_ttl"]?.toLongOrNull() ?: 0L,
                     )
             }.toMap()
-        return (0 until DATABASE_COUNT).map { index ->
+        return (0 until databaseCount).map { index ->
             parsed[index] ?: KeyspaceRow(databaseIndex = index, keys = 0L, expires = 0L, avgTtlMillis = 0L)
         }
     }
